@@ -1,9 +1,0 @@
-system Powerint DOS 386
- file kernel.bin
- boot
-system Powerint DOS
- file command.bin
- boot
-system LDRSHELL
- shell
-wait
