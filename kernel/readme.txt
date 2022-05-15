@@ -1,27 +1,29 @@
-»¶Ó­Ê¹ÓÃPowerint DOS£¡
-ÎªÁË·½±ãÊ¹ÓÃ£¬ÒÔÏÂ²½Öè¿ÉÒÔ½â´ğÒ»Ğ©ÒÉ»ó¡£
-Q1£ºÔõÑù°²×°Powerint DOS£¿
-A£ºĞéÄâ»ú£¨½¨ÒéVMware£¬²»ÄÜÓÃBochs»òÀÏ°æ±¾Qemu£©ÈíÅÌÓ³ÏñÎÄ¼şÑ¡ÔñÄ¿Â¼outfileÖĞµÄindex.img£¬
-ĞÂÌí¼ÓÒ»¸öÓ²ÅÌ£¨²»³¬¹ı1GB£©¡£È»ºóÆô¶¯ĞéÄâ»ú£¬°´ÕÕ°²×°³ÌĞòÌáÊ¾µÄ²½Öè£¨Ó¢Óï£©Ò»²½Ò»²½À´¾Í¿ÉÒÔÁË¡£
-£¨×¢£º°²×°Ê±Ö»ÄÜÑ¡ÔñÈ«²¿°²×°£¬·ñÔò»áÊ§°Ü£©
-Q2£º°²×°ÃÜÔ¿ÔõÃ´Êä£¿
-A£ºOEMXX-K08v5-e4C2h-jbCBa-SETUP
+æ¬¢è¿ä½¿ç”¨Powerint DOSï¼
+ä¸ºäº†æ–¹ä¾¿ä½¿ç”¨ï¼Œä»¥ä¸‹æ­¥éª¤å¯ä»¥è§£ç­”ä¸€äº›ç–‘æƒ‘ã€‚
+Q1ï¼šæ€æ ·å®‰è£…Powerint DOSï¼Ÿ
+Aï¼šè™šæ‹Ÿæœºï¼ˆå»ºè®®VMwareï¼Œä¸èƒ½ç”¨Bochsæˆ–è€ç‰ˆæœ¬Qemuï¼‰è½¯ç›˜æ˜ åƒæ–‡ä»¶é€‰æ‹©ç›®å½•outfileä¸­çš„index.imgï¼Œ
+æ–°æ·»åŠ ä¸€ä¸ªç¡¬ç›˜ï¼ˆä¸è¶…è¿‡1GBï¼‰ã€‚ç„¶åå¯åŠ¨è™šæ‹Ÿæœºï¼ŒæŒ‰ç…§å®‰è£…ç¨‹åºæç¤ºçš„æ­¥éª¤ï¼ˆè‹±è¯­ï¼‰ä¸€æ­¥ä¸€æ­¥æ¥å°±å¯ä»¥äº†ã€‚
+ï¼ˆæ³¨ï¼šå®‰è£…æ—¶åªèƒ½é€‰æ‹©å…¨éƒ¨å®‰è£…ï¼Œå¦åˆ™ä¼šå¤±è´¥ï¼‰
+Q2ï¼šå®‰è£…å¯†é’¥æ€ä¹ˆè¾“ï¼Ÿ
+Aï¼šOEMXX-K08v5-e4C2h-jbCBa-SETUP
 OEMXX-11111-11111-11111-SETUP
-Q3£º°²×°ÍêÔõÃ´°ì£¿
-A£º°ÑÈíÅÌ¹Ò¿Õ£¬ÖØĞÂÆô¶¯ĞéÄâ»ú¡£
-Q4£ºÔõÃ´Ê¹ÓÃPowerint DOS£¿
-A£ºÓĞDOS»ù´¡¾Í²»³ÉÎÊÌâ¡£Ã»DOS»ù´¡µ«»á¿´´úÂëµÄ£¬È¥¿´´úÂë¡£É¶Ò²²»»á¾Í×Ô¼ºÉÏÍø²é²éDOS»ù´¡¡£
+Q3ï¼šå®‰è£…å®Œæ€ä¹ˆåŠï¼Ÿ
+Aï¼šæŠŠè½¯ç›˜æŒ‚ç©ºï¼Œé‡æ–°å¯åŠ¨è™šæ‹Ÿæœºã€‚
+Q4ï¼šæ€ä¹ˆä½¿ç”¨Powerint DOSï¼Ÿ
+Aï¼šæœ‰DOSåŸºç¡€å°±ä¸æˆé—®é¢˜ã€‚æ²¡DOSåŸºç¡€ä½†ä¼šçœ‹ä»£ç çš„ï¼Œå»çœ‹ä»£ç ã€‚å•¥ä¹Ÿä¸ä¼šå°±è‡ªå·±ä¸Šç½‘æŸ¥æŸ¥DOSåŸºç¡€ã€‚
 
 Welcome to Powerint DOS!
-For ease of use, the following steps can answer some questions.
+For ease of use, this FAQ menu can answer some questions of users.
 Q1: How do I install Powerint DOS?
-A: Virtual machine (recommended VMware, can not use Bochs or old version Qemu) floppy disk image file select the directory outfile index.img,
-Add a new hard drive (up to 1GB). Then start the virtual machine and follow the steps prompted by the installer step by step.
-(Note: You can only select all installations when installing, otherwise it will fail)
-Q2: How do I enter the installation key?
+A: You can install it under a VM environment (VMware is recommended, Bochs or old version Qemu are not supported). Use index.img for flp image.
+Add a new hard drive (up to 1GB). Then boot the VM and follow the steps prompted by the installer step by step.
+(Note: While installing, installation option can ONLY be "install all", otherwise IT WILL FAIL)
+Q2: Installation key?
 A: OEMXX-K08V5-e4C2h-jbCBa-SETUP
 OEMXX-11111-11111-11111-SETUP
 Q3: What should I do after installation?
-A: Hang the floppy disk empty and restart the virtual machine.
+A: Unmount the floppy disk and reboot the virtual machine.
 Q4: How to use Powerint DOS?
-A: With a DOS foundation, it is not a problem. Those who don't have a DOS foundation but will look at the code, go to the code. You just check the DOS basics on the Internet by yourself.
+A: It's quite easy for users who have DOS basics. 
+For those who don't have DOS basics but understand my code, simply check it. 
+For those have no experience operating, learn it via Internet by yourself.
