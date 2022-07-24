@@ -16,7 +16,7 @@ mem chview beep mouse pak unpak vbetest get_build_info color
 font cd casm setup win pcnet chat http socket desktop cpptest
 md5s md5f sb16 switch nslookup ping arp ipconfig fork
 实现多任务（多控制台）管理，VGA显示模式（VBE高分辨率模式）切换，ACPI电源管理，IDE硬盘读写，1.44MB软盘读写，ASM编译器，
-FAT12文件系统管理，程序应用运行，BAT批处理文件运行，BMP JPG图片浏览，中文文档浏览，支持PS/2鼠标，计时器，类GRUB引导多系统，
+FAT12文件系统管理，程序应用运行，BAT批处理文件运行，BMP JPG PNG图片浏览，中文文档浏览，支持PS/2鼠标，计时器，类GRUB引导多系统，
 MD5加密，外部驱动程序，SB16声卡，PCNET网卡驱动及TCP/IP协议栈等功能。
 在doc目录里，有对此系统编译的说明以及一些没用的废话。
 命令行小程序被砍了很多（软盘装不下），不过你可以修改Makefile。
