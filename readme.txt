@@ -8,6 +8,7 @@
 不过，现在我们实现了基本的图形界面（真彩色）。也区分了图形界面程序和命令行程序。
 风格接近Windows2000。
 有基本的网络通讯功能（TCP/IP协议栈），但应用层的HTTP协议等还未完善。
+chat目录是我们基于UDP实现的聊天器的Windows版的服务器/客户端，在kernel/cmd/chat.c里是本系统版的客户端。
 基本命令：
 cls dir mkfile mkdir reboot halt jpgview bmp(32)view
 tl kill type pause ver time date pcils pcinfo echo poke visit
