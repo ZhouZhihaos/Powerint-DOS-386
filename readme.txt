@@ -1,21 +1,23 @@
-这是我和@min0911_花了5个月写出来的操作系统。
+这是我和@min0911_花了8个月写出来的操作系统。
 目前功能还不太完善，希望见谅。
-最近把多任务和分页（PAE分页）写完了，总算松了口气呢！
 系统基本信息：
 由GCC和nasm编译而成，由Haribote的工具链接而成，但仅仅支持执行文件格式为HRB和COFF，不支持ELF。
-保护模式，分页内存管理，多任务系统，最低内存16MB。
+保护模式，分页内存管理，多任务系统，最低内存32MB。
 顾名思义，和DOS系统很接近，基本命令和DOS系统无太大区别。
+不过，现在我们实现了基本的图形界面（真彩色）。也区分了图形界面程序和命令行程序。
+风格接近Windows2000。
+有基本的网络通讯功能（TCP/IP协议栈），但应用层的HTTP协议等还未完善。
 基本命令：
 cls dir mkfile mkdir reboot halt jpgview bmp(32)view
 tl kill type pause ver time date pcils pcinfo echo poke visit
 mem chview beep mouse pak unpak vbetest get_build_info color
-font cd casm setup win
+font cd casm setup win pcnet chat http socket desktop cpptest
+md5s md5f sb16 switch nslookup ping arp ipconfig fork
 实现多任务（多控制台）管理，VGA显示模式（VBE高分辨率模式）切换，ACPI电源管理，IDE硬盘读写，1.44MB软盘读写，ASM编译器，
-FAT12文件系统管理，程序应用运行，BAT批处理文件运行，BMP JPG图片浏览，中文文档浏览，支持PS/2鼠标，计时器，类GRUB引导多系统，等功能。
+FAT12文件系统管理，程序应用运行，BAT批处理文件运行，BMP JPG图片浏览，中文文档浏览，支持PS/2鼠标，计时器，类GRUB引导多系统，
+MD5加密，外部驱动程序，SB16声卡，PCNET网卡驱动及TCP/IP协议栈等功能。
 因为软盘读写速度很慢所以有开机界面。
-第一次使用会有友好的向导，引导注册用户密码。在注册后输入reboot或halt后存盘再使用本系统，有登入功能。
-有类Win95样子的图形界面（摆设），输入win进入后，有一个DOSMODE，鼠标点击返回命令行。
-有很多命令行小程序的，在other目录中，有兴趣可以玩玩。
-DOC文件夹和SRC/API中有开发手册便于理解代码，不过本身思路就较为简单，所以还是很易懂的。
-话说一个DOS系统没必要进长模式吧（笑）。
-如果出现了打开的程序自己无法返回系统，请试试按F1（Break Key）。
+命令行小程序被砍了很多（软盘装不下），不过你可以修改Makefile。
+图形界面应用程序多半是没写完善（比如说俄罗斯方块）。
+一个DOS系统没必要进长模式吧（笑）。
+BUG向我们反馈：我：2901197932@qq.com min0911_：1474635462@qq.com
