@@ -43,7 +43,7 @@ You will see four images in kernel/img folder
 ```cmd
 cd ..
 cd kernel
-make img_run
+make full_run
 ```
 You will see four images in kernel/img folder
 
