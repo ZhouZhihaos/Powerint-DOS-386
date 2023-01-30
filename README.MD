@@ -45,12 +45,10 @@ cd kernel
 make
 ```
 
-Or you can add `img_run` in order to start debug after the compilation:
+Or you can add `run` in order to start debug after the compilation:
 
 ```cmd
-cd ..
-cd kernel
-make img_run
+make run
 ```
 
 You will see Powerint DOS splitted into four images in kernel/img folder.
