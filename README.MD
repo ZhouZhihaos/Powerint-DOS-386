@@ -79,7 +79,8 @@ qemu-system-i386 -fda img/Powerint_DOS_386.img -net nic,model=pcnet -net user
 
 ## Thanks
 
-- theflysong
+- TheFlySong
 - yywd_123
 - Oildum-was-ejected
-- ......
+- wenxuanjun
+- ...
