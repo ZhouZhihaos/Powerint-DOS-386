@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>页面标题</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* {
+    box-sizing: border-box;
+}
+
+/* body 样式 */
+body {
+    font-family: Arial;
+    margin: 0;
+}
+
+/* 标题 */
+.header {
+    padding: 80px;
+    text-align: center;
+    background: #1abc9c;
+    color: white;
+}
+
+/* 标题字体加大 */
+.header h1 {
+    font-size: 40px;
+}
+
+/* 导航 */
+.navbar {
+    overflow: hidden;
+    background-color: #333;
+}
+
+/* 导航栏样式 */
+.navbar a {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+}
+
+/* 右侧链接*/
+.navbar a.right {
+    float: right;
+}
+
+/* 鼠标移动到链接的颜色 */
+.navbar a:hover {
+    background-color: #ddd;
+    color: black;
+}
+
+/* 列容器 */
+.row {  
+    display: -ms-flexbox; /* IE10 */
+    display: flex;
+    -ms-flex-wrap: wrap; /* IE10 */
+    flex-wrap: wrap;
+}
+
+/* 创建两个列 */
+/* 边栏 */
+.side {
+    -ms-flex: 30%; /* IE10 */
+    flex: 30%;
+    background-color: #f1f1f1;
+    padding: 20px;
+}
+
+/* 主要的内容区域 */
+.main {   
+    -ms-flex: 70%; /* IE10 */
+    flex: 70%;
+    background-color: white;
+    padding: 20px;
+}
+
+/* 测试图片 */
+.fakeimg {
+    background-color: #aaa;
+    width: 100%;
+    padding: 20px;
+}
+
+/* 底部 */
+.footer {
+    padding: 20px;
+    text-align: center;
+    background: #ddd;
+}
+
+/* 响应式布局 - 在屏幕设备宽度尺寸小于 700px 时, 让两栏上下堆叠显示 */
+@media screen and (max-width: 700px) {
+    .row {   
+        flex-direction: column;
+    }
+}
+
+/* 响应式布局 - 在屏幕设备宽度尺寸小于 400px 时, 让导航栏目上下堆叠显示 */
+@media screen and (max-width: 400px) {
+    .navbar a {
+        float: none;
+        width: 100%;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>菜鸟教程网页测试实例</h1>
+  <p>创建一个页面。</p>
+</div>
+
+<div class="navbar">
+  <a href="TEST1.HTM">test1.htm</a>
+  <a href="#">链接</a>
+  <a href="#">链接</a>
+  <a href="#" class="right">链接</a>
+</div>
+
+<div class="row">
+  <div class="side">
+      <h2>关于我</h2>
+      <h5>我的照片:</h5>
+      <div class="fakeimg" style="height:200px;">这边插入图像</div>
+      <p>关于我的介绍..</p>
+      <h3>更多内容</h3>
+      <p>我的更多内容</p>
+      <div class="fakeimg" style="height:60px;">这边插入图像</div><br>
+      <div class="fakeimg" style="height:60px;">这边插入图像</div><br>
+      <div class="fakeimg" style="height:60px;">这边插入图像</div>
+  </div>
+  <div class="main">
+      <h2>标题</h2>
+      <h5>副标题</h5>
+      <div class="fakeimg" style="height:200px;">图像</div>
+      <p>一些文本..</p>
+      <p>菜鸟教程，学的不仅是技术，更是梦想！！！菜鸟教程，学的不仅是技术，更是梦想！！！菜鸟教程，学的不仅是技术，更是梦想！！！</p>
+      <br>
+      <h2>标题</h2>
+      <h5>副标题</h5>
+      <div class="fakeimg" style="height:200px;">图像</div>
+      <p>一些文本..</p>
+      <p>菜鸟教程，学的不仅是技术，更是梦想！！！菜鸟教程，学的不仅是技术，更是梦想！！！菜鸟教程，学的不仅是技术，更是梦想！！！</p>
+  </div>
+</div>
+
+<div class="footer">
+  <h2>底部内容</h2>
+</div>
+
+</body>
+</html>

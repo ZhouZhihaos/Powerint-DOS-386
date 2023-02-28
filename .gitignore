@@ -1,0 +1,11 @@
+kernel/obj/*
+!kernel/obj/.gitkeep
+kernel/img/*
+!kernel/img/.gitkeep
+Loader/out/*
+!Loader/out/.gitkeep
+apps/out/*
+!apps/out/.gitkeep
+kernel/*.img
+c.py
+cloc.exe

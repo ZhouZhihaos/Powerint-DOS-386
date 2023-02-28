@@ -1,0 +1,1 @@
+make.exe --dry-run --keep-going --print-directory
