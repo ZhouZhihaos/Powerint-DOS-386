@@ -44,7 +44,7 @@ int run_bat(char *cmdline) {
     file = (char *)fp->buf;
     //读取每行的内容，然后调用命令解析函数（command_run）
     for (i = 0; i != finfo->size; i++) {
-      if (file[i] == 0x0a) {
+      if (file[i] == 0x0a || file[i] == 0x0d) {
         if(file[i] == '\r') {
           i++;
         }
