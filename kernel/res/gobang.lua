@@ -1,8 +1,5 @@
-map = {}
-for i = 1,19 do
-  map[i] = {}
-end
-
+-- l_x = 0
+-- l_y = 0
 function show(map)
   local s = ""
   for i = 1,19 do
@@ -22,8 +19,8 @@ end
 function win(map)
   for i = 1,19 do
     for j = 1,19 do
-      k_w = 0
-      k_b = 0
+      local k_w = 0
+      local k_b = 0
       for k=0,5 do
         if map[i][j+k] == 1 then
           k_b = k_b + 1
@@ -90,27 +87,71 @@ function win(map)
     end
   end
 end
-now = 1
-while 1 do
-  x = 0
-  y = 0
-  print("Please input x:")
-  x = tonumber(input())
-  print("Please input y:")
-  y = tonumber(input())
-  map[y][x] = now
-  if now == 1 then
-    now = 2
-  elseif now == 2 then
-    now = 1
-  end
+function g_xy(map,l_x,l_y)
+  io.gotoxy(0,0)
   show(map)
-  
+  --l_x = 0
+  --l_y = 0
+  io.gotoxy(l_x,l_y)
+  while 1 do
+     c = io.getch()
+     -- io.putstr(string.char(c))
+     if(string.char(c) == 'a') then
+        if(l_x ~= 0) then
+          l_x = l_x - 1
+        end
+     elseif(string.char(c) == 's') then
+        if(l_y ~= 18) then
+          l_y = l_y + 1
+        end
+     elseif(string.char(c) == 'w') then
+        if(l_y ~= 0) then
+          l_y = l_y -1
+        end
+     elseif(string.char(c) == 'd') then
+        if(l_x ~= 18) then
+          l_x = l_x + 1
+        end
+     end
+     if(c == 0x0a) then
+        break
+     end
+     io.gotoxy(l_x,l_y)
+  end
+  return l_x+1,l_y+1
+end
+map = {}
+for i = 1,19 do
+  map[i] = {}
+end
+now = 1
+l_x = 0
+l_y = 0
+exec("cls")
+while 1 do
+  x,y = g_xy(map,l_x,l_y)
+  -- print(x,y)
+  if map[y][x] == nil then
+    -- print("Luo!")
+    -- while 1 do end
+    map[y][x] = now
+    if now == 1 then
+      now = 2
+    elseif now == 2 then
+      now = 1
+    end
+  end
+  l_x = x - 1
+  l_y = y - 1
+  show(map)
+  io.gotoxy(0,0)
   w = win(map)
   if w == 1 then
+    exec("cls")
     print("Black Win!")
     break
   elseif w == 2 then
+    exec("cls")
     print("White Win!")
     break
   end
