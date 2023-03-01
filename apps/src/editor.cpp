@@ -5,24 +5,25 @@
 #include <string.h>
 #include <syscall.h>
 
-#define VIEW_LINE 0 // 有bug，暂时不开启
+#define VIEW_LINE 0  // 有bug，暂时不开启
 int mLine(char* buffer, int len);
 #define T_DrawBox(x, y, w, h, c) Text_Draw_Box((y), (x), (h) + y, (w) + x, (c))
 #define MAX_LINE 24
 // Editor处理超过最大行的文件的方式：
-/* 
+/*
   利用这个Camera结构体中的y来处理当前的位置
   比喻为摄像机（其实是一个base结构体，存储着一些信息：比如buffer之类的）
  */
 struct Camera {
-  int y;  // 摄像机高度
-  int curser_pos_x, curser_pos_y; // 光标位置
-  int index;  //光标指向位置的index
-  char* buffer; // 缓冲区
-  int array_len; // 缓冲区长度（已malloc） => 如果字符数量超过这个数，就会调用realloc
-  int len;     // 字符总长
+  int y;                           // 摄像机高度
+  int curser_pos_x, curser_pos_y;  // 光标位置
+  int index;                       //光标指向位置的index
+  char* buffer;                    // 缓冲区
+  int array_len;                   // 缓冲区长度（已malloc） =>
+                  // 如果字符数量超过这个数，就会调用realloc
+  int len;  // 字符总长
 #if VIEW_LINE
-  int ml; // 行数
+  int ml;  // 行数
 #endif
 };
 // Editor利用这两个结构体描述当前渲染的结果，以便render类输出到屏幕
@@ -32,9 +33,9 @@ struct Char {
   unsigned char ch;
 };
 struct Line {
-  int line_flag;  // 是不是回车敲出的行
-  Char line[80];  // 一整行
-  int len;        // 这个行有几个字符
+  int line_flag;    // 是不是回车敲出的行
+  Char line[80];    // 一整行
+  int len;          // 这个行有几个字符
   int start_index;  // 行首索引
 };
 // 用“ ”画一个长方形
@@ -49,17 +50,19 @@ void putSpace(int x, int y, int w, int h) {
 }
 // 显示状态栏
 void setState(char* msg) {
-  putSpace(0, MAX_LINE, 80, 1); // 先清空最下面那行
-  goto_xy(0, MAX_LINE); // 然后控制光标到那边
-  print(msg); // 然后咱们把信息打印出来
-  T_DrawBox(0, MAX_LINE, 80, 1, 0x70); // 染色染一下
+  putSpace(0, MAX_LINE, 80, 1);         // 先清空最下面那行
+  goto_xy(0, MAX_LINE);                 // 然后控制光标到那边
+  print(msg);                           // 然后咱们把信息打印出来
+  T_DrawBox(0, MAX_LINE, 80, 1, 0x70);  // 染色染一下
 }
 // 插入一个字符
 void insert_char(char* str, int pos, char ch, Camera* c) {
   // 如果我们已经malloc的字节数小于添加字符后字符总数的大小（存不下了），我们就要进行realloc
   // realloc需要干两件事：1. realloc本身 2. 重新设置c->buffer和array_len
   if (c->len + 1 > c->array_len) {
-    str = (char*)realloc(c->buffer, c->array_len + 100); // 多malloc 100还是别的 可以自行选择，我选100
+    str = (char*)realloc(
+        c->buffer,
+        c->array_len + 100);  // 多malloc 100还是别的 可以自行选择，我选100
     c->buffer = str;
     c->array_len += 100;
   }
@@ -81,13 +84,13 @@ void insert_str(char* str, int pos, Camera* c) {
 void delete_char(char* str, int pos, Camera* c) {
   int i;
   int l = c->len;
-  if (l == 0) { // 你没事吧？
+  if (l == 0) {  // 你没事吧？
     return;
   }
   for (i = pos; i < c->len; i++) {
     str[i] = str[i + 1];
   }
-  str[l - 1] = 0; // 设置一下字符串结束符
+  str[l - 1] = 0;  // 设置一下字符串结束符
   c->len--;
 }
 // 获取向上n行的第一个字符的索引
@@ -162,44 +165,46 @@ int get_index_of_nth_next_line(int n, char* buf, int pos, int len) {
   }
 }
 /* parse类是重要《核心》之一 */
-/*  
+/*
   Editor利用他来获取当前的一个渲染布局，才能控制光标啊什么的走向以及index
   利用先获取布局中字符的index，再进行选择index的值（Parse类的用处），会使程序变得简单、稳定、bug少
 */
 class parse {
  public:
-  parse(Camera* c) { // 构造函数，初始化了Line缓冲区和各个变量
+  parse(Camera* c) {  // 构造函数，初始化了Line缓冲区和各个变量
     camera = c;
     clean();
-    /* 这三个都只有一个用处减少遍历缓冲区的次数，降低时间复杂度 
+    /* 这三个都只有一个用处减少遍历缓冲区的次数，降低时间复杂度
       ny就是指上一次Set的y值（摄像机高度），我们通过get_index_of_nth_xxx_line函数来定位当前摄像机高度下，
       我们布局中，第一个字符的位置是在哪里，并且给到nidx，而是否启用，和从哪里开始，就要用到ny这个媒介来存储
-      nidx刚刚提到，nidx是now index的缩写，editor中是用于记录布局中第一个字符的索引，通过记录这样一个索引，
+      nidx刚刚提到，nidx是now
+      index的缩写，editor中是用于记录布局中第一个字符的索引，通过记录这样一个索引，
       我们就不用每次都重新遍历一遍，大大增加程序的效率
-      cf的全称是change_flag => 在用户输入、删除缓冲区中的内容时，cf会置为1,所以cf是用来记录这个缓冲区有没有改变，
+      cf的全称是change_flag =>
+      在用户输入、删除缓冲区中的内容时，cf会置为1,所以cf是用来记录这个缓冲区有没有改变，
       以此用来判断是否需要Set，没有改变就不需要Set，减少遍历次数
     */
     ny = 0;
     nidx = 0;
-    cf = 1; // 调用构造函数时，布局为空，必须要设置为1才能正常加载
+    cf = 1;  // 调用构造函数时，布局为空，必须要设置为1才能正常加载
   }
-  void SetUse() { cf = 1; } // 这里就是用来告诉parse类，缓冲区修改过了
+  void SetUse() { cf = 1; }  // 这里就是用来告诉parse类，缓冲区修改过了
   // 核心函数：设置布局
   void Set() {
     // 首先，要判断到底需不需要重新设置布局
     // 当满足下列条件时，则不用设置布局
     /*
       1. ny和当前摄像机高度相同
-      2. 缓冲区没有被修改过 
+      2. 缓冲区没有被修改过
      */
-    if (ny == camera->y && cf == 0) { // 不用重新设置布局
+    if (ny == camera->y && cf == 0) {  // 不用重新设置布局
       return;
     }
     cf = 0;
     // 根据camera的y值来设置布局
-    clean(); // 清空布局
+    clean();  // 清空布局
     /* 这n个变量有的有用有的没有用，我一一来解释一下 */
-    /* 
+    /*
       l ----- 没用，历史残留，不做解释，有用到也是废话工程
       sc ----- 记录当前行的字符数量
       f  ---- 没用
@@ -216,28 +221,29 @@ class parse {
     int sl = 0;
     int i;
     // 首先，重新设置nidx，控制nidx到当前摄像机高度下的第一个字符
-    if (ny == camera->y) { // 摄像机高度没变，所以不用设置
+    if (ny == camera->y) {  // 摄像机高度没变，所以不用设置
       i = nidx;
       l = ny;
-    } else if (ny > camera->y) { // ny > 摄像机高度，说明用户往前移动了几行
+    } else if (ny > camera->y) {  // ny > 摄像机高度，说明用户往前移动了几行
       nidx = get_index_of_nth_last_line(ny - camera->y, camera->buffer, nidx,
                                         camera->len);
       i = nidx;
       l = camera->y;
       ny = l;
-    } else { // ny < 摄像机高度， 说明用户向下移动了几行
+    } else {  // ny < 摄像机高度， 说明用户向下移动了几行
       i = get_index_of_nth_next_line(camera->y - ny, camera->buffer, nidx,
                                      camera->len);
       nidx = i;
       ny = camera->y;
     }
-    for (; i < camera->len && nl < MAX_LINE; i++) { // 开始解析
-      if (sc == 0) { // sl == 0 处于行开头
-        this->l[nl].start_index = i; // 设置行开始的index
+    for (; i < camera->len && nl < MAX_LINE; i++) {  // 开始解析
+      if (sc == 0) {                                 // sl == 0 处于行开头
+        this->l[nl].start_index = i;                 // 设置行开始的index
       }
-      if (camera->buffer[i] == '\n' || sc == 80) { // 是否需要进行换行？
-        this->l[nl].line_flag = 1;  // 此行不是空白行（即有东西记录，如字符、换行符等）
-        this->l[nl].len = len;      // 设置长度
+      if (camera->buffer[i] == '\n' || sc == 80) {  // 是否需要进行换行？
+        this->l[nl].line_flag =
+            1;  // 此行不是空白行（即有东西记录，如字符、换行符等）
+        this->l[nl].len = len;  // 设置长度
         // reset(全部归零，nl自增，换下一行)
         len = 0;
         sl = 0;
@@ -247,14 +253,16 @@ class parse {
       } else {
         // 设置字符
         this->l[nl].line[sc++].ch = camera->buffer[i];
-        this->l[nl].line[sc - 1].index = i; // 设置索引
+        this->l[nl].line[sc - 1].index = i;  // 设置索引
         len++;
         // 如果满80个字符，就在这里换行
         if (sc == 80) {
-          if (i + 1 < camera->len && camera->buffer[i + 1] == '\n') { // 后面还有东西，说明不是一个超过屏幕长度的行
+          if (i + 1 < camera->len &&
+              camera->buffer[i + 1] ==
+                  '\n') {  // 后面还有东西，说明不是一个超过屏幕长度的行
             i++;
           }
-          this->l[nl].len = 80; // 设置长度
+          this->l[nl].len = 80;  // 设置长度
           // reset
           nl++;
           f = sc == 80 ? 1 : 0;
@@ -284,7 +292,7 @@ class parse {
   unsigned int ny;
   int nidx;
   int cf;
-  void clean() { // 重置
+  void clean() {  // 重置
     for (int i = 0; i < MAX_LINE; i++) {
       l[i].line_flag = 0;
       l[i].len = 0;
@@ -297,7 +305,7 @@ class parse {
   }
 };
 class render {
-  /* 
+  /*
     buf ---- 文件缓冲区
     c ---- 基结构体
     p ---- parse类，用于处理布局
@@ -505,7 +513,7 @@ class Note {
   void Click(int x, int y) {
     p->Set();
     Line* l = p->getBuf();  // 获取当前行布局
-    if(y >= MAX_LINE) {
+    if (y >= MAX_LINE) {
       return;
     }
     if (l[y].line[0].ch == '\0' && l[y].line_flag == 0) {
@@ -705,6 +713,32 @@ class Editor {
     n->Click(x, y);
     r->showAll();
   }
+  void Up() {
+    if (c->y == 0) {
+      // 无法上移
+      // printf("Can not up.\n");
+      return;
+    }
+    c->curser_pos_x = 0;
+    c->curser_pos_y = 0;
+
+    n->up();
+    r->showAll();
+  }
+  void Down() {
+    // if (c->y != MAX_LINE - 1) {
+    //   return;
+    // }
+    int temp_x = c->curser_pos_x;
+    int temp_y = c->curser_pos_y;
+    c->curser_pos_x = 0;
+    c->curser_pos_y = MAX_LINE-1;
+    if (n->down() == 0) {
+      c->curser_pos_x = temp_x;
+      c->curser_pos_y = temp_y;
+    }
+    r->showAll();
+  }
   char* Main(char* filename) {
     system("cls");
     c = (Camera*)malloc(sizeof(Camera));
@@ -822,6 +856,10 @@ void m_thread(void* s) {
     int mouse = get_mouse();
     if (GetMouse_btn(mouse) == CLICK_LEFT) {
       b->Click(GetMouse_x(mouse), GetMouse_y(mouse));
+    } else if (GetMouse_btn(mouse) == 4) {
+      b->Up();
+    } else if (GetMouse_btn(mouse) == 5) {
+      b->Down();
     }
   }
 }

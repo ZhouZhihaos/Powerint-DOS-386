@@ -149,6 +149,9 @@ void inthandler36(int edi,
             } else if ((mdec.btn & 0x04) != 0) {
               intreturn(eax, ebx, NowTask()->mx, NowTask()->my, 3, edi, ebp);
               break;
+            } else if (mdec.roll != MOUSE_ROLL_NONE) {
+              intreturn(eax, ebx, NowTask()->mx, NowTask()->my, 3+mdec.roll, edi, ebp);
+              break;
             }
             mx1 = NowTask()->mx;
             my1 = NowTask()->my;
