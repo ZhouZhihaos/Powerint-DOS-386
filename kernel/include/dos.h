@@ -41,6 +41,8 @@ struct FIFO8* TaskGetKeyfifo(struct TASK* task);
 struct FIFO8* TaskGetMousefifo(struct TASK* task);
 struct TASK*
 AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp);
+struct TASK*
+AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp);
 void SleepTask(struct TASK* task);
 void WakeUp(struct TASK* task);
 void SleepTaskFIFO(struct TASK* task);

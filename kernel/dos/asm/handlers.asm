@@ -727,7 +727,7 @@ asm_net_api:
 asm_inthandler20:
 		cli
 		push	ax
-		mov	ax,ds
+		mov	ax,ss
 		cmp	ax,1 * 8
 		je	.from_kernel
 		pop	ax
@@ -808,7 +808,7 @@ asm_inthandler20:
 asm_inthandler21:
 		cli
 		push	ax
-		mov	ax,ds
+		mov	ax,ss
 		cmp	ax,1 * 8
 		je	.from_kernel
 		pop	ax
