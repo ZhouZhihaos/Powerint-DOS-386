@@ -14,7 +14,7 @@ void Main()
     stderr->mode = WRITE;
     stdin->buffer = NULL;
     stdin->mode = READ;
-    char *buf = api_malloc(1024);
+    char *buf = (char *)api_malloc(1024);
     char **argv;
     GetCmdline(buf);
     argv = api_malloc(sizeof(char*)*(Get_Argc(buf)+1));
@@ -25,6 +25,7 @@ void Main()
     for(int i=0;i<=Get_Argc(buf);i++)
     {
         Get_Arg(argv[i],buf,i);
+        
     }
     main(Get_Argc(buf)+1,argv);
 	exit();

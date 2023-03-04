@@ -97,6 +97,7 @@ void sleep(int s) {
 uint32_t mt2flag = 0;
 static uint32_t count = 0;
 void inthandler20(int* esp) {
+  //printk("*");
   extern struct TIMER *mt_timer1, *mt_timer2, *mt_timer3;
   extern int tasknum;
   struct TIMER* timer;

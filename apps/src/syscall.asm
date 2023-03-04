@@ -382,24 +382,25 @@ pop	eax
 ret
 
 RAND:
-push edx
-MOV AX, 32767   ;产生从1到AX之间的随机数
-MOV DX, 41H ;用端口41H，或者上面说的其他端口也行
-OUT DX, AX  ;有这句话后，我发现就可以产生从1到AX之间的随机数了
-IN AL, DX   ;产生的随机数AL
-bswap eax
-MOV AX, 32767   ;产生从1到AX之间的随机数
-MOV DX, 41H ;用端口41H，或者上面说的其他端口也行
-OUT DX, AX  ;有这句话后，我发现就可以产生从1到AX之间的随机数了
-IN AL, DX   ;产生的随机数AL
-pop edx
+; push edx
+; MOV AX, 32767   ;产生从1到AX之间的随机数
+; MOV DX, 41H ;用端口41H，或者上面说的其他端口也行
+; OUT DX, AX  ;有这句话后，我发现就可以产生从1到AX之间的随机数了
+; IN AL, DX   ;产生的随机数AL
+; bswap eax
+; MOV AX, 32767   ;产生从1到AX之间的随机数
+; MOV DX, 41H ;用端口41H，或者上面说的其他端口也行
+; OUT DX, AX  ;有这句话后，我发现就可以产生从1到AX之间的随机数了
+; IN AL, DX   ;产生的随机数AL
+; pop edx
+mov eax,0x114514
 ret
 
 GetCmdline:
 push eax;4
 push edx;8
 mov eax,0x1b
-mov edx,[ss:esp+4+8]
+mov edx,[esp+4+8]
 int 36h
 pop edx
 pop eax

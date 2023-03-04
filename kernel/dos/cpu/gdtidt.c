@@ -43,9 +43,7 @@ void init_gdtidt(void) {
   }
   set_segmdesc(gdt + 1, 0xffffffff, 0x00000000, AR_DATA32_RW);
   set_segmdesc(gdt + 2, LIMIT_BOTPAK, ADR_BOTPAK, AR_CODE32_ER);
-  // for user task test
-  set_segmdesc(gdt + 1145, 0xffffffff, 0x00000000, AR_DATA32_RW | 3 << 5);
-  set_segmdesc(gdt + 1146, LIMIT_BOTPAK, ADR_BOTPAK, AR_CODE32_ER | 3 << 5);
+
   load_gdtr(LIMIT_GDT, ADR_GDT);  //加载GDT表
 
   /* IDT */
@@ -90,15 +88,15 @@ void init_gdtidt(void) {
   set_gatedesc(idt + 0x21, (int)asm_inthandler21, 2 * 8,
                AR_INTGATE32);  // 键盘中断
   set_gatedesc(idt + 0x36, (int)asm_inthandler36, 2 * 8,
-               AR_INTGATE32);  // 系统API
+               AR_INTGATE32 | 3 << 5);  // 系统API
   set_gatedesc(idt + 0x2c, (int)asm_inthandler2c, 2 * 8,
                AR_INTGATE32);  // 鼠标中断
   set_gatedesc(idt + 0x20 + 15, (int)asm_ide_irq, 2 * 8,
                AR_INTGATE32);  // IDE中断
   set_gatedesc(idt + 0x28, (int)asm_rtc_handler, 2 * 8,
                AR_INTGATE32);                                       // RTC
-  set_gatedesc(idt + 0x30, (int)asm_net_api, 2 * 8, AR_INTGATE32);  // NET API
-  set_gatedesc(idt + 0x72, (int)asm_gui_api, 2 * 8, AR_INTGATE32);  // GUI API
+  set_gatedesc(idt + 0x30, (int)asm_net_api, 2 * 8, AR_INTGATE32 | 3 << 5);  // NET API
+  set_gatedesc(idt + 0x72, (int)asm_gui_api, 2 * 8, AR_INTGATE32 | 3 << 5);  // GUI API
   return;
 }
 // 注册中断处理函数

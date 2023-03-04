@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syscall.h>
+#include <rand.h>
 #include <gui.h>
 /* setup for luaconf.h */
 #define LUA_CORE
@@ -515,7 +516,7 @@ static int LSleep(lua_State* L) {
   return 0;
 }
 static int Lsrand(lua_State* L) {
-  
+  mysrand(RAND());
   return 0;
 }
 static int lua_ReadFile(lua_State* L) {

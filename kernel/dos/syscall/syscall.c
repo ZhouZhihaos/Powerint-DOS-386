@@ -17,7 +17,6 @@ void inthandler36(int edi,
                   int ecx,
                   int eax) {
   // PowerintDOS API
-  // printk("API (%08x)\n", eax);
   struct TASK* task = NowTask();
   int cs_base = task->cs_base;
   int ds_base = task->ds_base;
@@ -66,8 +65,6 @@ void inthandler36(int edi,
         //   unsigned char c = (unsigned)memman[l];
         //   printk("%02x ", c);
         // }
-        // printk("DS_BASE:%08x ALLOC_ADDR:%08x ALLOC:%08x ~ %08x\n", ds_base,
-        //        alloc_addr, (i - j) * 128 + (alloc_addr - ds_base));
         intreturn(eax, ebx, ecx, (i - j) * 128 + (alloc_addr - ds_base), esi,
                   edi, ebp);
         return;
@@ -78,6 +75,7 @@ void inthandler36(int edi,
         j = 0;
       }
     }
+    printk("malloc error\n");
     intreturn(eax, ebx, ecx, 0, esi, edi, ebp);
   } else if (eax == 0x09) {
     ecx = ((ecx - 1) + 128) / 128;
@@ -347,7 +345,9 @@ void inthandler36(int edi,
       ttask->alloc_size = task->alloc_size;
       ttask->memman = task->memman;
       stack = page_kmalloc(4 * 1024);
-      ttask->esp0 = (int)((uint32_t)stack + 4 * 1024);
+      ttask->tss.esp0 = (int)((uint32_t)stack + 4 * 1024);
+      ttask->tss.ss0 = 1 * 8;
+      
       intreturn(eax, ebx, (ttask->sel / 8) - (task->sel / 8), edx, esi, edi,
                 ebp);  // 返回子进程（线程）ID号
       ClearMaskIrq(0);
@@ -394,7 +394,8 @@ void inthandler36(int edi,
       t->alloc_size = task->alloc_size;
       t->app = 1;
       t->forever = task->forever;
-      t->esp0 = (int)page_malloc(64 * 1024) + 64 * 1024;
+      t->tss.esp0 = (int)page_malloc(64 * 1024) + 64 * 1024;
+      t->tss.ss0 = 1 * 8;
       t->cs_base = task->cs_base;
       t->ds_base = task->ds_base;
       char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));

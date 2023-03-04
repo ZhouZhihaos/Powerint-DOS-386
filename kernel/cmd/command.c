@@ -600,11 +600,11 @@ CHECK_OK:
     // ftp_c->Logout(ftp_c);
     // SubTask(GetTask(2));
 
-    io_cli();
-    struct TASK* task = AddUserTask("UsrTask", 1, 1146 * 8, usertasktest, 1145*8,1145*8,(unsigned int)malloc(16*1024)+16*1024);
-    task->tss.ss0 = 1*8;
-    task->tss.esp0 = malloc(16*1024)+16*1024;
-    io_sti();
+    // io_cli();
+    // struct TASK* task = AddUserTask("UsrTask", 1, 1146 * 8, usertasktest, 1145*8,1145*8,(unsigned int)malloc(16*1024)+16*1024);
+    // task->tss.ss0 = 1*8;
+    // task->tss.esp0 = malloc(16*1024)+16*1024;
+    // io_sti();
   } else if (strincmp("MOUNT ", cmdline, 6) == 0) {
     int c = mount(cmdline + 6);
     printf("mount file in %c:\\\n", c);
