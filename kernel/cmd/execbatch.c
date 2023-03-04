@@ -146,6 +146,7 @@ struct TASK* start_drv(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)(stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
+      this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
       strcpy(this_task->path, NowTask()->path);
@@ -252,6 +253,7 @@ struct TASK* start_drv(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
+      this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
       this_task->line = NowTask()->line;
@@ -345,6 +347,7 @@ struct TASK* start_drv(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
+      this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
       strcpy(this_task->path, NowTask()->path);
@@ -483,6 +486,7 @@ int cmd_app(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((unsigned int)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
+      this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
       this_task->line = NowTask()->line;
@@ -600,6 +604,7 @@ int cmd_app(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
+      this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
       this_task->line = NowTask()->line;
@@ -703,6 +708,7 @@ int cmd_app(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
+      this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
       strcpy(this_task->path, NowTask()->path);

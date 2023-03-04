@@ -387,8 +387,9 @@ void inthandler36(int edi,
       getMsgAll((void*)(ds_base + edx));
     } else if (ebx == 0x0a) {
       io_cli();  // 防止任务提前运行
-      struct TASK* t = AddTask((char*)(ecx + ds_base), task->level,
+      struct TASK* t = AddUserTask((char*)(ecx + ds_base), task->level,
                                task->ss1 - 8, edx, task->ss1, task->ss1, esi);
+      //printk("task->ss1=%d\n",task->ss1);
       t->alloc_addr = task->alloc_addr;
       t->memman = task->memman;
       t->alloc_size = task->alloc_size;
