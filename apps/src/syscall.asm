@@ -393,7 +393,8 @@ RAND:
 ; OUT DX, AX  ;有这句话后，我发现就可以产生从1到AX之间的随机数了
 ; IN AL, DX   ;产生的随机数AL
 ; pop edx
-mov eax,0x114514
+mov eax,0x2d
+int 36h
 ret
 
 GetCmdline:

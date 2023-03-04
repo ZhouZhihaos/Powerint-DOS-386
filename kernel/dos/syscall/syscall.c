@@ -347,7 +347,7 @@ void inthandler36(int edi,
       stack = page_kmalloc(4 * 1024);
       ttask->tss.esp0 = (int)((uint32_t)stack + 4 * 1024);
       ttask->tss.ss0 = 1 * 8;
-      
+
       intreturn(eax, ebx, (ttask->sel / 8) - (task->sel / 8), edx, esi, edi,
                 ebp);  // 返回子进程（线程）ID号
       ClearMaskIrq(0);
@@ -523,6 +523,10 @@ void inthandler36(int edi,
       (void)(vram_buffer);
       SDraw_Box((vram_t*)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
     }
+  } else if (eax == 0x2d) {
+    intreturn(NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
+                           get_hour_hex(), get_min_hex(), get_sec_hex()),
+              ebx, ecx, edx, esi, edi, ebp);
   }
   return;
 }
