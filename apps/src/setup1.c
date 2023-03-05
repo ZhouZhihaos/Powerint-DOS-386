@@ -2,6 +2,7 @@
 #include <syscall.h>
 #define All_Kernel_files_count 7
 #define All_App_files_count 36
+#define All_Res_files_count 22
 #define Line_X 205
 #define Line_Y 186
 #define Left_Up 201
@@ -51,7 +52,7 @@ void putSpace(int x, int y, int w, int h) {
     }
   }
 }
-int OKCancelMsg(char* msg) {
+int OKCancelMsg(char *msg) {
   putSpace(40 - (strlen(msg) + 15) / 2, 4, strlen(msg) + 20, 8);
   Box(40 - (strlen(msg) + 15) / 2, 4, strlen(msg) + 15, 8);
   goto_xy(40 - (strlen(msg) + 15) / 2 + 1, 4);
@@ -69,24 +70,24 @@ int OKCancelMsg(char* msg) {
   while (c != '\n') {
     c = getch();
     switch (c) {
-      case -3:
-        T_DrawBox(40 - (strlen(msg) + 15) / 2 + 6, 10, 6, 1, 0x4f);
-        T_DrawBox(40 - (strlen(msg) + 15) / 2 + 13, 10, 10, 1, 0x0f);
-        res = 1;
-        break;
-      case -4:
-        res = 0;
-        T_DrawBox(40 - (strlen(msg) + 15) / 2 + 6, 10, 6, 1, 0x0f);
-        T_DrawBox(40 - (strlen(msg) + 15) / 2 + 13, 10, 10, 1, 0x4f);
-        break;
-      default:
-        break;
+    case -3:
+      T_DrawBox(40 - (strlen(msg) + 15) / 2 + 6, 10, 6, 1, 0x4f);
+      T_DrawBox(40 - (strlen(msg) + 15) / 2 + 13, 10, 10, 1, 0x0f);
+      res = 1;
+      break;
+    case -4:
+      res = 0;
+      T_DrawBox(40 - (strlen(msg) + 15) / 2 + 6, 10, 6, 1, 0x0f);
+      T_DrawBox(40 - (strlen(msg) + 15) / 2 + 13, 10, 10, 1, 0x4f);
+      break;
+    default:
+      break;
     }
   }
   putSpace(40 - (strlen(msg) + 15) / 2, 4, strlen(msg) + 15, 8);
   return res;
 }
-int OKMsg(char* msg) {
+int OKMsg(char *msg) {
   putSpace(40 - (strlen(msg) + 15) / 2, 4, strlen(msg) + 15, 8);
   Box(40 - (strlen(msg) + 15) / 2, 4, strlen(msg) + 15, 8);
   goto_xy(40 - (strlen(msg) + 15) / 2 + 1, 4);
@@ -106,7 +107,7 @@ int OKMsg(char* msg) {
   putSpace(40 - (strlen(msg) + 15) / 2, 4, strlen(msg) + 15, 8);
   return res;
 }
-void setState(char* msg) {
+void setState(char *msg) {
   putSpace(0, 24, 80, 1);
   goto_xy(0, 24);
   print(msg);
@@ -187,7 +188,7 @@ int main() {
   Set_Loading(
       (int)((float)((float)(CopyFilesCount) / (float)All_Kernel_files_count) *
             100.0));
-  if (OKCancelMsg("System has installed.")) {
+  if (OKCancelMsg("System has installed. Install apps?")) {
     Box(0, 0, 80, 24);
     goto_xy(26, 0);
     print("Powerint DOS 386 Installation");
@@ -247,19 +248,19 @@ int main() {
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 5
+              100.0)); // 5
     setState("Copy Apps --- Copy file: bin/cale.bin");
     Copy("A:\\CALE.BIN", "bin/cale.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 6
+              100.0)); // 6
     setState("Copy Apps --- Copy file: bin/copy.bin");
     Copy("A:\\COPY.BIN", "bin/copy.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 7
+              100.0)); // 7
     setState("Copy Apps --- Copy file: bin/calc.bin");
     Copy("A:\\CALC.BIN", "bin/calc.bin");
     CopyFilesCount++;
@@ -277,73 +278,73 @@ int main() {
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 8
+              100.0)); // 8
     setState("Copy Apps --- Copy file: bin/aigobang.bin");
     Copy("A:\\AIGOBANG.BIN", "bin/aigobang.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 9
+              100.0)); // 9
     setState("Copy Apps --- Copy file: bin/snake.bin");
     Copy("A:\\SNAKE.BIN", "bin/snake.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 10
+              100.0)); // 10
     setState("Copy Apps --- Copy file: bin/gobang.bin");
     Copy("A:\\GOBANG.BIN", "bin/gobang.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 11
+              100.0)); // 11
     setState("Copy Apps --- Copy file: bin/cgobang.bin");
     Copy("A:\\CGOBANG.BIN", "bin/cgobang.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 12
+              100.0)); // 12
     setState("Copy Apps --- Copy file: bin/game.bin");
     Copy("A:\\GAME.BIN", "bin/game.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 13
+              100.0)); // 13
     setState("Copy Apps --- Copy file: bin/login.bin");
     Copy("A:\\LOGIN.BIN", "bin/login.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 14
+              100.0)); // 14
     setState("Copy Apps --- Copy file: bin/pwsh.bin");
     Copy("A:\\pwsh.BIN", "bin/pwsh.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 15
+              100.0)); // 15
     setState("Copy Apps --- Copy file: bin/pfn.bin");
     Copy("A:\\PFN.BIN", "bin/pfn.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 16
+              100.0)); // 16
     setState("Copy Apps --- Copy file: bin/RandNum.bin");
     Copy("A:\\RANDNUM.BIN", "bin/RandNum.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 17
+              100.0)); // 17
     setState("Copy Apps --- Copy file: bin/sort.bin");
     Copy("A:\\SORT.BIN", "bin/sort.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 18
+              100.0)); // 18
     setState("Copy Apps --- Copy file: bin/student.bin");
     Copy("A:\\STUDENT.BIN", "bin/student.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 19
+              100.0)); // 19
     setState("Copy Apps --- Copy file: bin/tetris.bin");
     Copy("A:\\TETRIS.BIN", "bin/tetris.bin");
     CopyFilesCount++;
@@ -373,26 +374,26 @@ int main() {
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 20
+              100.0)); // 20
     setState("Copy Apps --- Copy file: bin/invader.bin");
     Copy("A:\\invader.bin", "bin/invader.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 21
+              100.0)); // 21
     setState("Copy Apps --- Copy file: bin/basic.bin");
     Copy("A:\\basic.bin", "bin/basic.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 21
+              100.0)); // 21
     system("C:");
     setState("Copy Apps --- Copy file: bin/lua.bin");
     Copy("A:\\lua.bin", "bin/lua.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 21
+              100.0)); // 21
     OKMsg("Please Insert Disk3.");
     system("A:");
     system("C:");
@@ -401,19 +402,19 @@ int main() {
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 21
+              100.0)); // 21
     setState("Copy Apps --- Copy file: bin/ttf.bin");
     Copy("A:\\ttf.bin", "bin/ttf.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 21
+              100.0)); // 21
     setState("Copy Apps --- Copy file: bin/font.ttf");
     Copy("A:\\font.ttf", "bin/font.ttf");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 21
+              100.0)); // 21
     setState("Copy Apps --- Copy file: bin/tedit.bin");
     Copy("A:\\tedit.bin", "bin/tedit.bin");
     CopyFilesCount++;
@@ -426,6 +427,152 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
+    if (OKCancelMsg("Apps have installed. Install resources?")) {
+      CopyFilesCount = 0;
+      Box(0, 0, 80, 24);
+      goto_xy(26, 0);
+      print("Powerint DOS 386 Installation");
+      T_DrawBox(26, 0, 29, 1, 0x4f);
+      OKMsg("Please Insert res disk.");
+      system("A:");
+      system("C:");
+      Set_Loading(0);
+      setState("Copy Apps --- mkdir res");
+      mkdir("res");
+
+      setState("Copy Apps --- Copy file: res/bainian.lua");
+      Copy("A:\\bainian.lua", "res/bainian.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/fib.lua");
+      Copy("A:\\fib.lua", "res/fib.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/pluaui.lua");
+      Copy("A:\\pluaui.lua", "res/pluaui.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/gobang.lua");
+      Copy("A:\\gobang.lua", "res/gobang.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/guess.lua");
+      Copy("A:\\guess.lua", "res/guess.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/uicalc.lua");
+      Copy("A:\\uicalc.lua", "res/uicalc.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/window.lua");
+      Copy("A:\\window.lua", "res/window.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/desktop.jpg");
+      Copy("A:\\desktop.jpg", "res/desktop.jpg");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/load.jpg");
+      Copy("A:\\load.jpg", "res/load.jpg");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/huaji.jpg");
+      Copy("A:\\huaji.jpg", "res/huaji.jpg");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/yee.bmp");
+      Copy("A:\\yee.bmp", "res/yee.bmp");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/shot.png");
+      Copy("A:\\shot.png", "res/shot.png");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/bf.txt");
+      Copy("A:\\bf.txt", "res/bf.txt");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/chinese.txt");
+      Copy("A:\\chinese.txt", "res/chinese.txt");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/c4.c");
+      Copy("A:\\c4.c", "res/c4.c");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/demo.asm");
+      Copy("A:\\demo.asm", "res/demo.asm");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/demo2.asm");
+      Copy("A:\\demo2.asm", "res/demo2.asm");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/io.bas");
+      Copy("A:\\io.bas", "res/io.bas");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/test.htm");
+      Copy("A:\\test1.htm", "res/test1.htm");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/test1.htm");
+      Copy("A:\\test1.htm", "res/test1.htm");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/coin.wav");
+      Copy("A:\\coin.wav", "res/coin.wav");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/test.wav");
+      Copy("A:\\test.wav", "res/test.wav");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+    }
     Set_Loading(0);
     setState("Config --- mkdir path.sys");
     mkfile("path.sys");

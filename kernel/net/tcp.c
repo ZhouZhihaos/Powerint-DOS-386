@@ -1,4 +1,4 @@
-#include <net.h>
+#include <dos.h>
 // TCP
 void TCPProviderSend(uint32_t dstIP, uint32_t srcIP, uint16_t dstPort,
                      uint16_t srcPort, uint32_t Sequence, uint32_t ackNum,
@@ -57,8 +57,8 @@ void tcp_handler(void *base) {
       Socket_Find(swap32(ipv4->srcIP), swap16(tcp->srcPort),
                   swap32(ipv4->dstIP), swap16(tcp->dstPort), TCP_PROTOCOL);
   if (socket == -1) {
-    //printf("Not found %08x %d %08x %d\n",swap32(ipv4->srcIP), swap16(tcp->srcPort),
-                  //swap32(ipv4->dstIP), swap16(tcp->dstPort));
+    // printf("Not found %08x %d %08x %d\n",swap32(ipv4->srcIP),
+    // swap16(tcp->srcPort), swap32(ipv4->dstIP), swap16(tcp->dstPort));
     return;
   }
   uint8_t flags = (tcp->ACK << 4) | (tcp->PSH << 3) | (tcp->SYN << 1) |
@@ -143,13 +143,12 @@ void tcp_handler(void *base) {
       if (socket->ackNum == swap32(tcp->seqNum) &&
           swap16(ipv4->totalLength) !=
               (sizeof(struct IPV4Message) + (tcp->headerLength * 4))) {
-          if (socket->Handler != NULL) {
-            socket->Handler(socket, base);
-          }
-          socket->ackNum += swap16(ipv4->totalLength) -
-                            sizeof(struct IPV4Message) -
-                            (tcp->headerLength * 4);
+        if (socket->Handler != NULL) {
+          socket->Handler(socket, base);
         }
+        socket->ackNum += swap16(ipv4->totalLength) -
+                          sizeof(struct IPV4Message) - (tcp->headerLength * 4);
+      }
       TCPProviderSend(socket->remoteIP, socket->localIP, socket->remotePort,
                       socket->localPort, socket->seqNum, socket->ackNum, 0, 1,
                       1, 0, 0, 0, 0, 0, 0, 0);

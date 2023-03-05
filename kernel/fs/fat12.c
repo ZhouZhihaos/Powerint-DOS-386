@@ -495,13 +495,22 @@ struct List *Get_wildcard_File_Address(char *path) {
     ext = true;
   }
   if (!name && !ext) {
-    return (struct List *)NULL;
+    bool back = true;
+    for (int i = 0; i != 12; i++) {
+      if (s[i] == '?') {
+        back = false;
+        break;
+      }
+    }
+    if (back) {
+      return (struct List *)NULL;
+    }
   }
   for (int i = 0; i != drive_ctl.drives[task->drive_number].RootMaxFiles; i++) {
     bool add = true;
     if (!name) {
       for (int j = 0; j != 8; j++) {
-        if (finfo[i].name[j] != s[j]) {
+        if (finfo[i].name[j] != s[j] && s[j] != '?') {
           add = false;
           break;
         }
@@ -509,7 +518,7 @@ struct List *Get_wildcard_File_Address(char *path) {
     }
     if (!ext) {
       for (int j = 8; j != 11; j++) {
-        if (finfo[i].ext[j - 8] != s[j]) {
+        if (finfo[i].ext[j - 8] != s[j] && s[j] != '?') {
           add = false;
           break;
         }
@@ -709,6 +718,82 @@ void del(char *cmdline) {
   drive_ctl.drives[drive_number].fat[finfo->clustno] = 0;
   drive_ctl.drives[drive_number].FatClustnoFlags[finfo->clustno] = false;
   file_saveinfo(Get_dictaddr(name), drive_number);
+  file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
+  return;
+}
+void deldir(char *path) {
+  struct TASK *task = NowTask();
+  struct FILEINFO *finfo = Get_dictaddr(path);
+  struct FILEINFO *f = task->directory;
+  task->directory = finfo;
+  for (int i = 2; finfo[i].name[0] != '\0'; i++) {
+    if (finfo[i].type == 0x10 && finfo[i].name[0] != 0xe5) {
+      char s[30];
+      int j = 0;
+      for (; finfo[i].name[j] != ' '; j++) {
+        s[j] = finfo[i].name[j];
+      }
+      s[j] = '\0';
+      // printf("(CALL)DEL DIR:%s\n", s);
+      deldir(s);
+      // return -1;
+    }
+  }
+  for (int i = 2; finfo[i].name[0] != '\0'; i++) {
+    if (finfo[i].name[0] != 0xe5 && finfo[i].type != 0x10) {
+      char s[30] = {'D', 'E', 'L', ' '};
+      int p = 4;
+      for (int j = 0; finfo[i].name[j] != ' '; j++, p++) {
+        s[p] = finfo[i].name[j];
+      }
+      if (finfo[i].ext[0] != ' ') {
+        s[p++] = '.';
+        for (int j = 0; finfo[i].ext[j] != ' ' || j != 3; j++, p++) {
+          s[p] = finfo[i].ext[j];
+        }
+      }
+      s[p] = '\0';
+      // printf("(IN)DEL FILE:%s\n", s);
+      del(s);
+    }
+  }
+  task->directory = f;
+  // printf("(IN)DEL SELF\n");
+  struct FILEINFO *root_finfo;
+  if (finfo[1].clustno == 0) {
+    root_finfo = drive_ctl.drives[task->drive_number].root_directory;
+  } else {
+    for (int i = 1;
+         FindForCount(
+             i, drive_ctl.drives[task->drive_number].directory_clustno_list) !=
+         NULL;
+         i++) {
+      if (FindForCount(
+              i, drive_ctl.drives[task->drive_number].directory_clustno_list)
+              ->val == finfo[1].clustno) {
+        root_finfo = (struct FILEINFO *)FindForCount(
+                         i, drive_ctl.drives[task->drive_number].directory_list)
+                         ->val;
+        // printf("FIND ROOT %08x\n", root_finfo);
+      }
+    }
+  }
+  for (int i = 0; root_finfo[i].name[0] != '\0'; i++) {
+    // printf("ROOT FILE:%s\n", root_finfo[i].name);
+    if (root_finfo[i].clustno == finfo[0].clustno) {
+      root_finfo[i].name[0] = 0xe5;
+      break;
+    }
+  }
+  int drive_number;
+  if (strncmp(path + 1, ":\\", 2) == 0 || strncmp(path + 1, ":/", 2) == 0) {
+    drive_number = *path - 0x41;
+  } else {
+    drive_number = task->drive_number;
+  }
+  drive_ctl.drives[drive_number].fat[finfo->clustno] = 0;
+  drive_ctl.drives[drive_number].FatClustnoFlags[finfo->clustno] = false;
+  file_saveinfo(Get_dictaddr(path), drive_number);
   file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
   return;
 }

@@ -17,6 +17,7 @@ void mkdir(char *dictname, int last_clust);
 void Copy(char *path, char *path1);
 struct FILEINFO *clust_sech(int clustno, struct FILEINFO *finfo, int max);
 void del(char *cmdline);
+void deldir(char *path);
 void mkfile(char *name);
 void changedict(char *dictname);
 void rename(char *src_name, char *dst_name);
