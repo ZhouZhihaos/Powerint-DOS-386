@@ -247,7 +247,6 @@ void MsgBox(char* infomation, char* title) {
   char* buf = (char*)malloc(l);
   for (int i = 0,j=0; i <= l; i++) {
     if (infomation[i] == '\n' || infomation[i] == '\0') {
-      
       buf[j] = 0;
       putfonts_asc_sht(msg_box, x, y, COL_000000, COL_C6C6C6,
                        buf, strlen(buf));

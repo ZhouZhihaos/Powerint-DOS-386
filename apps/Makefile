@@ -1,6 +1,6 @@
 NASM = ../tools/nasm.exe
 OBJS_PACK = ./out/entry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
-			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj
+			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj ./out/time.obj
 OBJS_GUI = ./out/WinEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 			./out/math.obj ./out/gui_syscall.obj ./out/libc.obj ./out/net_syscall.obj
 OBJS_PACK_CPP = ./out/CppEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \

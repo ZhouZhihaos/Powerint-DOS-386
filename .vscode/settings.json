@@ -96,7 +96,11 @@
         "interrupts.h": "c",
         "IO.H": "cpp",
         "fs.h": "c",
-        "map": "c"
+        "map": "c",
+        "rand.h": "c",
+        "time.h": "c",
+        "locale.h": "c",
+        "math.h": "c"
     },
     "cSpell.words": [],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [

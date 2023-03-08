@@ -149,7 +149,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 
 
 
-#elif defined(LUA_DL_DLL)	/* }{ */
+#elif 0	/* }{ */
 /*
 ** {======================================================================
 ** This is an implementation of loadlib for Windows using native functions.
@@ -708,13 +708,8 @@ static const luaL_Reg ll_funcs[] = {
 
 
 static void createsearcherstable (lua_State *L) {
-  static const lua_CFunction searchers[] = {
-    searcher_preload,
-    searcher_Lua,
-    searcher_C,
-    searcher_Croot,
-    NULL
-  };
+  static const lua_CFunction searchers[] =
+    {searcher_preload, searcher_Lua, searcher_C, searcher_Croot, NULL};
   int i;
   /* create 'searchers' table */
   lua_createtable(L, sizeof(searchers)/sizeof(searchers[0]) - 1, 0);

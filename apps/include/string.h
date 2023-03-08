@@ -21,6 +21,7 @@ void strrev(char* s);
 void F2S(double d, char* str, int l);
 char *strchr(const char *s, int c);
 char *strrchr(const char *s1, int ch);
+double strtod(const char * nptr, char ** endptr);
 #ifdef __cplusplus
 }
 #endif

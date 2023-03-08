@@ -325,7 +325,7 @@ typedef l_uint32 Instruction;
 /* exponentiation */
 #if !defined(luai_numpow)
 #define luai_numpow(L,a,b)  \
-  ((void)L, (b == 2) ? (a)*(a) : l_mathop(intpower)(a,b))
+  ((void)L, (b == 2) ? (a)*(a) : l_mathop(pow)(a,b))
 #endif
 
 /* the others are quite standard operations */

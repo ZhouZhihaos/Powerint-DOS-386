@@ -53,6 +53,7 @@
 
 
 #if defined(LUA_USE_WINDOWS)
+#define LUA_DL_DLL	/* enable support for DLL */
 #define LUA_USE_C89	/* broadly, Windows is C89 */
 #endif
 
@@ -151,7 +152,7 @@
 #else		/* }{ */
 /* use defaults */
 
-#define LUA_INT_TYPE	LUA_INT_DEFAULT
+#define LUA_INT_TYPE	LUA_INT_INT
 #define LUA_FLOAT_TYPE	LUA_FLOAT_DEFAULT
 
 #endif				/* } */
@@ -461,7 +462,7 @@
 #define LUAI_UACNUMBER	double
 
 #define LUA_NUMBER_FRMLEN	""
-#define LUA_NUMBER_FMT		"%f"
+#define LUA_NUMBER_FMT		"%.14g"
 
 #define l_mathop(op)		op
 
@@ -504,6 +505,10 @@
 #define LUA_UNSIGNED		unsigned LUAI_UACINT
 
 
+/* now the variable definitions */
+
+#if LUA_INT_TYPE == LUA_INT_INT		/* { int */
+
 #define LUA_INTEGER		int
 #define LUA_INTEGER_FRMLEN	""
 
@@ -512,7 +517,53 @@
 
 #define LUA_MAXUNSIGNED		UINT_MAX
 
+#elif LUA_INT_TYPE == LUA_INT_LONG	/* }{ long */
 
+#define LUA_INTEGER		long
+#define LUA_INTEGER_FRMLEN	"l"
+
+#define LUA_MAXINTEGER		LONG_MAX
+#define LUA_MININTEGER		LONG_MIN
+
+#define LUA_MAXUNSIGNED		ULONG_MAX
+
+#elif LUA_INT_TYPE == LUA_INT_LONGLONG	/* }{ long long */
+
+/* use presence of macro LLONG_MAX as proxy for C99 compliance */
+#if defined(LLONG_MAX)		/* { */
+/* use ISO C99 stuff */
+
+#define LUA_INTEGER		long long
+#define LUA_INTEGER_FRMLEN	"ll"
+
+#define LUA_MAXINTEGER		LLONG_MAX
+#define LUA_MININTEGER		LLONG_MIN
+
+#define LUA_MAXUNSIGNED		ULLONG_MAX
+
+#elif defined(LUA_USE_WINDOWS) /* }{ */
+/* in Windows, can use specific Windows types */
+
+#define LUA_INTEGER		__int64
+#define LUA_INTEGER_FRMLEN	"I64"
+
+#define LUA_MAXINTEGER		_I64_MAX
+#define LUA_MININTEGER		_I64_MIN
+
+#define LUA_MAXUNSIGNED		_UI64_MAX
+
+#else				/* }{ */
+
+#error "Compiler does not support 'long long'. Use option '-DLUA_32BITS' \
+  or '-DLUA_C89_NUMBERS' (see file 'luaconf.h' for details)"
+
+#endif				/* } */
+
+#else				/* }{ */
+
+#error "numeric integer type not defined"
+
+#endif				/* } */
 
 /* }================================================================== */
 
@@ -677,7 +728,7 @@
 ** CHANGE it if you need a different limit. This limit is arbitrary;
 ** its only purpose is to stop Lua from consuming unlimited stack
 ** space (and to reserve some numbers for pseudo-indices).
-** (It must fit into max(size_t)/32 and max(int)/2.)
+** (It must fit into max(size_t)/32.)
 */
 #if LUAI_IS32INT
 #define LUAI_MAXSTACK		1000000
@@ -696,15 +747,14 @@
 
 /*
 @@ LUA_IDSIZE gives the maximum size for the description of the source
-** of a function in debug information.
+@@ of a function in debug information.
 ** CHANGE it if you want a different size.
 */
 #define LUA_IDSIZE	60
 
 
 /*
-@@ LUAL_BUFFERSIZE is the initial buffer size used by the lauxlib
-** buffer system.
+@@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
 */
 #define LUAL_BUFFERSIZE   ((int)(16 * sizeof(void*) * sizeof(lua_Number)))
 

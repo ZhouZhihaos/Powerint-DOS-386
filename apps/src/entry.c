@@ -4,6 +4,7 @@
 int main(int argc,char **argv);
 void Main()
 {
+    init_float();
     // 初始化stdio stderr
     stdout = malloc(sizeof(FILE));
     stdin =  malloc(sizeof(FILE));

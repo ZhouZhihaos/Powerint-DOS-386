@@ -122,7 +122,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 ** is thread safe
 */
 #if !defined(l_signalT)
-#define l_signalT	unsigned int
+#define l_signalT	int
 #endif
 
 
@@ -138,7 +138,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 #define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
 
-#define stacksize(th)	cast_int((th)->stack_last.p - (th)->stack.p)
+#define stacksize(th)	cast_int((th)->stack_last - (th)->stack)
 
 
 /* kinds of Garbage Collection */
@@ -169,8 +169,8 @@ typedef struct stringtable {
 ** before the function starts or after it ends.
 */
 typedef struct CallInfo {
-  StkIdRel func;  /* function index in the stack */
-  StkIdRel	top;  /* top for this function */
+  StkId func;  /* function index in the stack */
+  StkId	top;  /* top for this function */
   struct CallInfo *previous, *next;  /* dynamic call link */
   union {
     struct {  /* only for Lua functions */
@@ -305,13 +305,13 @@ struct lua_State {
   lu_byte status;
   lu_byte allowhook;
   unsigned short nci;  /* number of items in 'ci' list */
-  StkIdRel top;  /* first free slot in the stack */
+  StkId top;  /* first free slot in the stack */
   global_State *l_G;
   CallInfo *ci;  /* call info for current function */
-  StkIdRel stack_last;  /* end of stack (last element + 1) */
-  StkIdRel stack;  /* stack base */
+  StkId stack_last;  /* end of stack (last element + 1) */
+  StkId stack;  /* stack base */
   UpVal *openupval;  /* list of open upvalues in this stack */
-  StkIdRel tbclist;  /* list of to-be-closed variables */
+  StkId tbclist;  /* list of to-be-closed variables */
   GCObject *gclist;
   struct lua_State *twups;  /* list of threads with open upvalues */
   struct lua_longjmp *errorJmp;  /* current error recover point */
