@@ -993,5 +993,6 @@ typedef struct {
                 unsigned int lba);
   int flag;
   unsigned int size;  // 大小
+  char DriveName[50];
 } vdisk;
 #endif

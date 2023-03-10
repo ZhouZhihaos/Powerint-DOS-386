@@ -48,7 +48,7 @@ OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUT
 				$(OUTPATH)inffast.o $(OUTPATH)inflate.o $(OUTPATH)inftrees.o \
 				$(OUTPATH)trees.o $(OUTPATH)uncompr.o $(OUTPATH)zutil.o $(OUTPATH)ftp.o\
 			    $(OUTPATH)linux_style_file.o $(OUTPATH)netgobang.o $(OUTPATH)ide.o $(OUTPATH)net_syscall.o $(OUTPATH)ntp.o \
-				$(OUTPATH)vdisk.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o $(OUTPATH)GraphicMode.o
+				$(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o $(OUTPATH)GraphicMode.o
 # 默认动作
 
 default :

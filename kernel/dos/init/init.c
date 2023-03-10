@@ -22,6 +22,7 @@ void disable_sb16(void);
 void init_mount_disk(void);
 int getReadyDisk();
 void Socket_all_init();
+void init_rootfs();
 void sysinit(void) {
   struct FIFO8 keyfifo, mousefifo;
   struct FIFO8 keyfifo_sr1, keyfifo_sr2;
@@ -64,16 +65,15 @@ void sysinit(void) {
   }
   pf_set(memsize);
   init_acpi();
+  init_vdisk();
   init_floppy();
+  init_rootfs();
   disable_sb16();
   Input_Stack_Init();
   Socket_all_init();
   init_driver();
-  init_vdisk();
   init_mount_disk();
-  SetDrive((unsigned char *)"FLOPPY_DRIVE");
-  SetDrive((unsigned char *)"IDE_DRIVE");
-  SetDrive((unsigned char *)"VDISK_DRIVE");
+  SetDrive((unsigned char *)"DISK_DRIVE");
   SetDrive((unsigned char *)"NETCARD_DRIVE");
   normal.tss.ldtr = 0;
   normal.tss.iomap = 0x40000000;
@@ -111,144 +111,3 @@ void sysinit(void) {
     ;
 }
 
-static unsigned char *drive_name[16] = {NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL};
-static struct FIFO8 drive_fifo[16];
-static unsigned char drive_buf[16][256];
-bool SetDrive(unsigned char *name) {
-  for (int i = 0; i != 16; i++) {
-    if (drive_name[i] == NULL) {
-      drive_name[i] = name;
-      fifo8_init(&drive_fifo[i], 256, drive_buf[i]);
-      return true;
-    }
-  }
-  return false;
-}
-unsigned int GetDriveCode(unsigned char *name) {
-  for (int i = 0; i != 16; i++) {
-    if (strcmp((char *)drive_name[i], (char *)name) == 0) {
-      return i;
-    }
-  }
-  return 16;
-}
-
-bool DriveSemaphoreTake(unsigned int drive_code) {
-  if (drive_code >= 16) {
-    return true;
-  }
-  fifo8_put(&drive_fifo[drive_code], Get_Tid(NowTask()));
-  // printk("FIFO: %d PUT: %d STATUS: %d\n", drive_code, Get_Tid(NowTask()),
-  //        fifo8_status(&drive_fifo[drive_code]));
-  while (drive_buf[drive_code][drive_fifo[drive_code].q] != Get_Tid(NowTask()))
-    ;
-  return true;
-}
-void DriveSemaphoreGive(unsigned int drive_code) {
-  if (drive_code >= 16) {
-    return;
-  }
-  if (drive_buf[drive_code][drive_fifo[drive_code].q] != Get_Tid(NowTask())) {
-    // 暂时先不做处理 一般不会出现这种情况
-    return;
-  }
-  fifo8_get(&drive_fifo[drive_code]);
-  // printk("FIFO: %d GET: %d STATUS: %d\n", drive_code, Get_Tid(NowTask()),
-  //        fifo8_status(&drive_fifo[drive_code]));
-}
-
-void Disk_Read(unsigned int lba, unsigned int number, void *buffer,
-               char drive) {
-  if (drive == 'A') {
-    if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"FLOPPY_DRIVE"))) {
-      for (int i = 0; i != number; i++) {
-        fdc_rw(lba + i, (unsigned char *)(buffer + i * 512), 1, 1);
-      }
-      DriveSemaphoreGive(GetDriveCode((unsigned char *)"FLOPPY_DRIVE"));
-    }
-  } else if (drive != 'B') {
-    unsigned char drive1 = drive;
-    if (DiskReady(drive1)) {
-      if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"IDE_DRIVE"))) {
-        ide_read_sectors(drive1 - 'C', number, lba, 8, (unsigned int)buffer);
-        DriveSemaphoreGive(GetDriveCode((unsigned char *)"IDE_DRIVE"));
-      }
-    } else if (have_vdisk(drive1)) {
-      if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"VDISK_DRIVE"))) {
-        rw_vdisk(drive1, lba, buffer, number, 1);
-        DriveSemaphoreGive(GetDriveCode((unsigned char *)"VDISK_DRIVE"));
-      }
-    } else {
-      printk("Disk Not Ready.\n");
-    }
-  }
-}
-int disk_Size(char drive) {
-  if (drive == 'A') {
-    return 2880 * 512;
-  } else if (drive != 'B') {
-    unsigned char drive1 = drive;
-    if (DiskReady(drive1)) {
-      return ide_devices[drive1 - 'C'].Size / 2 * 1024;
-    } else if (have_vdisk(drive1)) {
-      extern vdisk vdisk_ctl[255];
-      int indx = drive1 - ('C' + getReadyDisk());
-      return vdisk_ctl[indx].size;
-    } else {
-      printk("Disk Not Ready.\n");
-      return 0;
-    }
-  }
-  return 0;
-}
-bool DiskReady(char drive) {
-  unsigned char drive1 = drive;
-  drive1 -= 'C';
-  // printk("Drive1=%d ide_devices[drive1].Reserved = %d\n",
-  // drive1,ide_devices[drive1].Reserved);
-  if (drive1 > 3) {
-    //  printk("false\n");
-    return false;
-  }
-  if (ide_devices[drive1].Reserved == 0) {
-    return false;
-  }
-  // printk("true\n");
-  return true;
-}
-int getReadyDisk() {
-  for (int i = 0; i < 4; i++) {
-    if (ide_devices[i].Reserved == 0) {
-      return i;
-    }
-  }
-  return 0;
-}
-void Disk_Write(unsigned int lba, unsigned int number, void *buffer,
-                char drive) {
-  if (drive == 'A') {
-    if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"FLOPPY_DRIVE"))) {
-      for (int i = 0; i != number; i++) {
-        fdc_rw(lba + i, (unsigned char *)(buffer + i * 512), 0, 1);
-      }
-      DriveSemaphoreGive(GetDriveCode((unsigned char *)"FLOPPY_DRIVE"));
-    }
-  } else if (drive != 'B') {
-    unsigned char drive1 = drive;
-    if (DiskReady(drive1)) {
-      if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"IDE_DRIVE"))) {
-        ide_write_sectors(drive1 - 'C', number, lba, 8, (unsigned int)buffer);
-        DriveSemaphoreGive(GetDriveCode((unsigned char *)"IDE_DRIVE"));
-      }
-    } else if (have_vdisk(drive1)) {
-      if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"VDISK_DRIVE"))) {
-        rw_vdisk(drive1, lba, buffer, number, 0);
-        DriveSemaphoreGive(GetDriveCode((unsigned char *)"VDISK_DRIVE"));
-      }
-    } else {
-      printk("Disk Not Ready.\n");
-    }
-  }
-}

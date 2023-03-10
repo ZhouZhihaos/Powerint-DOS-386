@@ -55,6 +55,19 @@ static DrvGeom geometry = {DG144_HEADS, DG144_TRACKS, DG144_SPT};
 unsigned long tbaddr = 0x80000L; /* 位于1M以下的轨道缓冲器的物理地址 */
 void sendbyte(int byte);
 int getbyte();
+
+static void Read(char drive,
+                 unsigned char* buffer,
+                 unsigned int number,
+                 unsigned int lba) {
+  fdc_rw(lba,buffer,1,number);
+}
+static void Write(char drive,
+                  unsigned char* buffer,
+                  unsigned int number,
+                  unsigned int lba) {
+  fdc_rw(lba,buffer,0,number);
+}
 void init_floppy() {
   sendbyte(
       CMD_VERSION); //发送命令（获取软盘版本），如果收到回应，说明软盘正在工作
@@ -72,6 +85,13 @@ void init_floppy() {
   printf("FLOPPY DISK:reset over!\n");
   sendbyte(CMD_VERSION);               //获取软盘版本
   printf("FDC_VER:0x%x\n", getbyte()); //并且输出到屏幕上
+  vdisk vd;
+  strcpy(vd.DriveName,"floppy");
+  vd.Read = Read;
+  vd.Write =Write;
+  vd.size = 1474560;
+  vd.flag = 1;
+  register_vdisk(vd);
 }
 void flint(int *esp) {
   /**

@@ -1,7 +1,5 @@
 #include <dos.h>
-static inline nul(char *f,...) {
-  
-}
+static inline nul(char* f, ...) {}
 #define printk nul
 unsigned char ide_read(unsigned char channel, unsigned char reg);
 #define inb io_in8
@@ -103,6 +101,18 @@ static inline void insl(uint32_t port, uint32_t* addr, int cnt) {
     addr[i] = io_in32(port);
   }
 }
+static void Read(char drive,
+                 unsigned char* buffer,
+                 unsigned int number,
+                 unsigned int lba) {
+  ide_read_sectors(drive - 'C', number, lba, 1 * 8, buffer);
+}
+static void Write(char drive,
+                  unsigned char* buffer,
+                  unsigned int number,
+                  unsigned int lba) {
+  ide_write_sectors(drive - 'C', number, lba, 1 * 8, buffer);
+}
 void ide_initialize(unsigned int BAR0,
                     unsigned int BAR1,
                     unsigned int BAR2,
@@ -110,7 +120,7 @@ void ide_initialize(unsigned int BAR0,
                     unsigned int BAR4) {
   ClearMaskIrq(15);
   int j, k, count = 0;
-  for(int i = 0;i<4;i++) {
+  for (int i = 0; i < 4; i++) {
     ide_devices[i].Reserved = 0;
   }
   // 1- Detect I/O Ports which interface IDE Controller:
@@ -213,12 +223,19 @@ void ide_initialize(unsigned int BAR0,
     }
 
   // 4- Print Summary:
+  vdisk vd;
   for (int i = 0; i < 4; i++)
     if (ide_devices[i].Reserved == 1) {
       printk(" %d Found %s Drive %dMB - %s\n", i,
              (const char*[]){"ATA", "ATAPI"}[ide_devices[i].Type], /* Type */
              ide_devices[i].Size / 1024 / 2,                       /* Size */
              ide_devices[i].Model);
+      strcpy(vd.DriveName, ide_devices[i].Model);
+      vd.flag =1;
+      vd.Read = Read;
+      vd.Write = Write;
+      vd.size = ide_devices[i].Size / 2 * 1024;
+      register_vdisk(vd);
     }
 }
 unsigned char ide_read(unsigned char channel, unsigned char reg) {
@@ -606,14 +623,14 @@ unsigned char ide_atapi_read(unsigned char drive,
   // (VIII): Sending the packet data:
   // ------------------------------------------------------------------
   printk("VIII\n");
-  uint16_t *_atapi_packet = atapi_packet;
+  uint16_t* _atapi_packet = atapi_packet;
   for (int i = 0; i < 6; i++) {
     io_out16(bus, _atapi_packet[i]);
   }
   // (IX): Receiving Data:
   // ------------------------------------------------------------------
   printk("IX\n");
-  uint16_t *_word = edi;
+  uint16_t* _word = edi;
   for (i = 0; i < numsects; i++) {
     ide_wait_irq();  // Wait for an IRQ.
     if (err = ide_polling(channel, 1))
