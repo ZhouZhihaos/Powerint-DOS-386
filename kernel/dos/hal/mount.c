@@ -26,8 +26,8 @@ int mount(char *fileName) {
       md[i].vd.size = fp->size;
       md[i].flag = 1;
       md[i].fp = fp;
-      md[i].drive = register_vdisk(md[i].vd);
       strcpy(md[i].vd.DriveName,fileName);
+      md[i].drive = register_vdisk(md[i].vd);
       return md[i].drive; // 成功
     }
   }
