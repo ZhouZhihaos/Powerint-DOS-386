@@ -144,6 +144,8 @@ struct TASK {
   uint32_t CatchEIP;
   char flagOfexp;
   int mx,my;
+  int fpu_use;
+  char fxsave_region[512] __attribute__((aligned(16)));
 } __attribute__((packed));
 #define PG_P 1
 #define PG_USU 4

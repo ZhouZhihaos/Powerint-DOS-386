@@ -1,11 +1,40 @@
 #include <stdio.h>
 #include <syscall.h>
 
-//char* BitMap[] = {"01110", "10001", "10001", "10001", "01110"};
+class A {
+ public:
+  virtual void func() { printf("call father\n"); }
+};
+
+class B : public A {
+ public:
+  virtual void func() { printf("call kid\n"); }
+};
 
 int main() {
-  SwitchTo320X200X256_BIOS();
-  Draw_Str(0,0,"320x200x256 graphic mode.",0x2);
-  for (;;)
-    ;
+  A obj1;
+
+  obj1.func();  // 父类
+
+  A* obj2 = new A();
+
+  obj2->func();  // 父类
+
+  A* obj3 = new B();
+
+  obj3->func();  // 子类
+
+  B obj4_temp;
+
+  A* obj4 = &obj4_temp;
+
+  obj4->func();  // 子类
+
+  B obj5_temp;
+
+  A& obj5 = obj5_temp;
+
+  obj5.func();  // 子类
+
+  return 0;
 }

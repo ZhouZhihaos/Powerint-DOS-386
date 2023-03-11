@@ -950,5 +950,6 @@ clock:
 	int 36h
 	ret
 init_float:
-	fninit
+	mov eax,0x2f
+	int 36h
 	ret
