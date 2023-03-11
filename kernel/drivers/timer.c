@@ -150,9 +150,12 @@ void inthandler20(int* esp) {
   }
   if (NowTask()->fpu_use == 1 && NowTask()->app == 1) {
     io_cli();
+    printk("switch %s\n",NowTask()->name);
     asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
     NowTask()->fpu_use = 0;
     io_sti();
+  } else {
+    //asm volatile("fninit");
   }
   // if(GetExpFlag()) {
   //   printk("Warning: an Error for CPU!\n");

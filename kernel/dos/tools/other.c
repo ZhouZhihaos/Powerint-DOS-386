@@ -144,7 +144,11 @@ void ERROR6(uint32_t eip) {
   loadregisters();  // 恢复寄存器状态
 }
 void ERROR7(uint32_t eip) {
+  if(NowTask()->fpu_use) {
+    return;
+  }
   io_cli();
+  printk("save %s\n",NowTask()->name);
   NowTask()->fpu_use = 1;
   st_task = Get_Tid(NowTask());
   if (st_task) {
