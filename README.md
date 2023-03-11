@@ -81,4 +81,5 @@ qemu-system-i386 -fda img/Powerint_DOS_386.img -net nic,model=pcnet -net user
 - yywd_123
 - Oildum-was-ejected
 - wenxuanjun
+- duoduo70
 - ...
