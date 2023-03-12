@@ -349,8 +349,12 @@ class render {
     sprintf(buf0, "COL %d ROW %d      %s | Text", camera->index,
             camera->y + camera->curser_pos_y + 1, filename);
 #endif
-    sprintf(buf2, "%d%%",
-            (int)(((float)camera->index / (float)camera->len) * 100));
+    if (camera->len != 0) {
+      sprintf(buf2, "%d%%",
+              (int)(((float)camera->index / (float)camera->len) * 100));
+    } else {
+      sprintf(buf2, "--%%");
+    }
     for (int i = 0; i < strlen(buf0); i++) {
       buf1[i] = buf0[i];
     }
