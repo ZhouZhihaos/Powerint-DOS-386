@@ -3,6 +3,8 @@
 time_t time(time_t timer) {
   return RAND();
 }
+
+//TODO: wday
 struct tm *localtime(time_t t)
 {
     struct tm *tm_;

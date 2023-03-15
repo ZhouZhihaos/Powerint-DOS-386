@@ -123,6 +123,7 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
 		copy from:$(APPSOUTPATH)invader.bin to:@: \
 		copy from:$(APPSOUTPATH)tetris.bin to:@: \
 		copy from:$(APPSOUTPATH)cc.bin to:@: \
+		copy from:$(APPSOUTPATH)spgame.bin to:@: \
 		copy from:$(APPSOUTPATH)ps2test.bin to:@: \
 		copy from:$(RESPATH)codeedit.ini to:@: \
 		copy from:$(RESPATH)hanzi.txt to:@: \

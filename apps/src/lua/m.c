@@ -302,6 +302,7 @@ static int pushargs (lua_State *L) {
 static int handle_script (lua_State *L, char **argv) {
   int status;
   const char *fname = argv[0];
+  // printf("fname = %s\n",fname);
   if (strcmp(fname, "-") == 0 && strcmp(argv[-1], "--") != 0)
     fname = NULL;  /* stdin */
   status = luaL_loadfile(L, fname);
@@ -393,6 +394,7 @@ static int collectargs (char **argv, int *first) {
 static int runargs (lua_State *L, char **argv, int n) {
   int i;
   for (i = 1; i < n; i++) {
+    printf("run args: %s\n",argv[i]);
     int option = argv[i][1];
     lua_assert(argv[i][0] == '-');  /* already checked */
     switch (option) {

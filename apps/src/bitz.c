@@ -2,6 +2,7 @@
 #include <syscall.h>
 #include <stdio.h>
 int main(int argc, char** argv) {
+  printf("argc = %d\n",argc);
   if (argc == 1) {
     print("ERROR:No input file.");
     return 0;

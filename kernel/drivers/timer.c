@@ -97,7 +97,7 @@ void sleep(int s) {
 uint32_t mt2flag = 0;
 static uint32_t count = 0;
 void inthandler20(int* esp) {
-  //printk("*");
+  // printk("*");
   extern struct TIMER *mt_timer1, *mt_timer2, *mt_timer3;
   extern int tasknum;
   struct TIMER* timer;
@@ -137,6 +137,8 @@ void inthandler20(int* esp) {
 
   // ClearExpFlag();
   // disableExp();
+  extern int st_task;
+
   if (ts == 3) {
     mt_taskswitch3();
   }
@@ -146,6 +148,16 @@ void inthandler20(int* esp) {
   if (ts == 1) {
     mt_taskswitch1();
   }
+  // if (NowTask()->fpu_use == 1 && NowTask()->app == 1) {
+  //   extern int dflag ;
+  //   dflag = 1;
+  //   // printk("switch %s\n",NowTask()->name);
+  //   asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
+  //   NowTask()->fpu_use = 0;
+  //   dflag = 0;
+  // } else {
+  //   //asm volatile("fninit");
+  // }
   // if(GetExpFlag()) {
   //   printk("Warning: an Error for CPU!\n");
   // }

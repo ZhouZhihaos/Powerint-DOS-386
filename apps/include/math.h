@@ -165,10 +165,11 @@ static __inline unsigned long long __DOUBLE_BITS(double __f)
 float intpower(float a, int n);
 float ln(float x);
 int fact(int n);
-extern __inline__ double sin(double x);
-extern __inline__ double cos(double x);
-extern __inline__ double sqrt(double x);
-extern __inline__ double ABS(double x);
+double sin(double x);
+double cos(double x);
+double sqrt(double x);
+double abs(double x);
+double fabs(double x);
 double Bernoulli(int x);//伯努利数
 double log(double a);
 double nth(double x,int n);
@@ -187,6 +188,7 @@ double	log10(double);
 double	exp(double);
 double  pow(double,double);
 double modf(double x, double *iptr);
+double scalbn(double x, int n);
 #define _E 2.71828182845904523536028747135266249775724709369995
 #define pai 3.1415926535897932
 #ifdef __cplusplus

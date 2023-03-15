@@ -1,13 +1,13 @@
 #define _TASK_C
 #include <dos.h>
-#define	SA_RPL_MASK	0xFFFC
-#define	SA_TI_MASK	0xFFFB
-#define	SA_TIL		4 // 设置此项，将从LDT中寻找
-#define	SA_RPL0		0
-#define	SA_RPL1		1
-#define	SA_RPL2		2
-#define	SA_RPL3		3
-#define GET_SEL(cs,rpl) ((cs & SA_RPL_MASK & SA_TI_MASK) | (rpl))
+#define SA_RPL_MASK 0xFFFC
+#define SA_TI_MASK 0xFFFB
+#define SA_TIL 4  // 设置此项，将从LDT中寻找
+#define SA_RPL0 0
+#define SA_RPL1 1
+#define SA_RPL2 2
+#define SA_RPL3 3
+#define GET_SEL(cs, rpl) ((cs & SA_RPL_MASK & SA_TI_MASK) | (rpl))
 struct TIMER *mt_timer1, *mt_timer2, *mt_timer3;
 int mt_tr1, mt_tr2, mt_tr3;
 int taskctl;
@@ -16,6 +16,7 @@ int cg_flag = 0;
 int cg_flag0 = 0;  // 需不需要调用C_G()
 struct TASK* c_task = NULL;
 #define EFLAGS_VM_MASK 0x00020000
+
 void mt_init(void) {
   extern struct TASK normal;
   // tasknum = 0;
@@ -79,6 +80,7 @@ void mt_taskswitch1() {
     if (task->level == 1 && task->sleep == 0 && task->lock == 0 &&
         task->running) {  // 找到level=1的任务并且没有休眠
       // task->level = task->nl;
+
       if (taskctl == mt_tr1) {
         mt_tr1 += 8;
         timer_settime(mt_timer1, 1);
@@ -251,12 +253,12 @@ AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->tss.ebp = 0;
   task->tss.esi = 0;
   task->tss.edi = 0;
-  task->tss.ds = GET_SEL(ds,SA_RPL0);
-  task->tss.es = GET_SEL(ds,SA_RPL0);
-  task->tss.fs = GET_SEL(ds,SA_RPL0);
-  task->tss.gs = GET_SEL(ds,SA_RPL0);
-  task->tss.ss = GET_SEL(ss,SA_RPL0);
-  task->tss.cs = GET_SEL(cs,SA_RPL0);
+  task->tss.ds = GET_SEL(ds, SA_RPL0);
+  task->tss.es = GET_SEL(ds, SA_RPL0);
+  task->tss.fs = GET_SEL(ds, SA_RPL0);
+  task->tss.gs = GET_SEL(ds, SA_RPL0);
+  task->tss.ss = GET_SEL(ss, SA_RPL0);
+  task->tss.cs = GET_SEL(cs, SA_RPL0);
   task->tss.eip = eip;
   task->tss.ldtr = 0;
   task->tss.iomap = 0x40000000;
@@ -270,7 +272,11 @@ AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->drive = default_drive;
   task->directory = drive_ctl.drives[task->drive_number].root_directory;
   task->change_dict_times = 0;
+  task->fpu_use = 0;
   task->app = 0;
+  for (int i = 0; i < 512; i++) {
+    task->fxsave_region[i] = 0;
+  }
   // 应用程序选填
   task->ds_base = 0;
   task->cs_base = 0;
@@ -336,12 +342,12 @@ AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->tss.ebp = 0;
   task->tss.esi = 0;
   task->tss.edi = 0;
-  task->tss.ds = GET_SEL(ds,SA_RPL3);
-  task->tss.es = GET_SEL(ds,SA_RPL3);
-  task->tss.fs = GET_SEL(ds,SA_RPL3);
-  task->tss.gs = GET_SEL(ds,SA_RPL3);
-  task->tss.ss = GET_SEL(ss,SA_RPL3);
-  task->tss.cs = GET_SEL(cs,SA_RPL3);
+  task->tss.ds = GET_SEL(ds, SA_RPL3);
+  task->tss.es = GET_SEL(ds, SA_RPL3);
+  task->tss.fs = GET_SEL(ds, SA_RPL3);
+  task->tss.gs = GET_SEL(ds, SA_RPL3);
+  task->tss.ss = GET_SEL(ss, SA_RPL3);
+  task->tss.cs = GET_SEL(cs, SA_RPL3);
   task->tss.eip = eip;
   task->tss.ldtr = 0;
   task->tss.iomap = 0x40000000;
@@ -356,6 +362,11 @@ AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->directory = drive_ctl.drives[task->drive_number].root_directory;
   task->change_dict_times = 0;
   task->app = 0;
+  task->fpu_use = 0;
+  // task->fxsave_region = 0;
+  for (int i = 0; i < 512; i++) {
+    task->fxsave_region[i] = 0;
+  }
   // 之后填写
   task->ds_base = 0;
   task->cs_base = 0;
@@ -427,6 +438,7 @@ void SleepTaskFIFO(struct TASK* task) {
     task->thread.father->fifosleep = 1;
   }
 }
+
 struct TASK* GetTask(int taskNum) {
   if (taskNum > tasknum)
     return 0;

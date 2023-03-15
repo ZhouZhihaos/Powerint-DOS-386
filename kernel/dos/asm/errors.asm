@@ -136,7 +136,21 @@ asm_error7:
 	mov	cr0,eax
 	pop	eax
 	sti
-	iretd
+
+	PUSH	ES
+	PUSH	DS
+	PUSHAD
+	MOV		EAX,ESP
+	PUSH	EAX
+	MOV		AX,SS
+	MOV		DS,AX
+	MOV		ES,AX
+	CALL	ERROR7
+	POP		EAX
+	POPAD
+	POP		DS
+	POP		ES
+	IRETD
 	;cli
 	;push	7
 	;mov	ax,fs

@@ -6,6 +6,7 @@ int DisableExpFlag = 0;
 uint32_t CatchEIP = 0;
 char flagOfexp = 0;
 char public_catch = 0;
+int st_task = 0;
 void SwitchPublic() {
   public_catch = 1;
 }
@@ -27,7 +28,7 @@ void EnableExp() {
   }
 }
 char GetExpFlag() {
-  //printk("Get.\n");
+  // printk("Get.\n");
   if (public_catch) {
     return flagOfexp;
   } else {
@@ -42,7 +43,7 @@ void ClearExpFlag() {
   }
 }
 void SetCatchEip(uint32_t eip) {
- // printk("eip = %08x\n",eip);
+  // printk("eip = %08x\n",eip);
   if (public_catch) {
     CatchEIP = eip;
   } else {
@@ -142,16 +143,36 @@ void ERROR6(uint32_t eip) {
   }
   loadregisters();  // 恢复寄存器状态
 }
+int dflag = 0;
 void ERROR7(uint32_t eip) {
-  uint32_t* esp = &eip;
-  saveregisters();
-  ERROR(7, "#NM");
-  if (public_catch) {
-    *esp = CatchEIP;
-  } else {
-    *esp = NowTask()->CatchEIP;
+  if (dflag) {
+    printk("1\n");
+    return;
   }
-  loadregisters();  // 恢复寄存器状态
+  if (NowTask()->fpu_use == 1) {
+    // Maskirq(0);
+    // dflag = 1;
+    // if (NowTask()->fpu_use == 1 && NowTask()->app == 1) {
+    //  // printk("switch %s\n", NowTask()->name);
+    //   asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
+    //   NowTask()->fpu_use = 0;
+    // }
+    // dflag = 0;
+    // ClearMaskIrq(0);
+    extern int dflag;
+    dflag = 1;
+    // printk("switch %s\n",NowTask()->name);
+    asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
+    NowTask()->fpu_use = 0;
+    dflag = 0;
+    return;
+  }
+  st_task = Get_Tid(NowTask());
+  if (st_task) {
+    asm volatile("fnsave %0" ::"m"(GetTask(st_task)->fxsave_region));
+    st_task = 0;
+    NowTask()->fpu_use = 1;
+  }
 }
 void ERROR8(uint32_t eip) {
   uint32_t* esp = &eip;
@@ -213,7 +234,7 @@ void ERROR13(uint32_t eip) {
   saveregisters();
   ERROR(13, "#GP");
   if (public_catch) {
-    printk("eip = %08x Catch EIP = %08x\n",eip,CatchEIP );
+    printk("eip = %08x Catch EIP = %08x\n", eip, CatchEIP);
     *esp = CatchEIP;
   } else {
     *esp = NowTask()->CatchEIP;
