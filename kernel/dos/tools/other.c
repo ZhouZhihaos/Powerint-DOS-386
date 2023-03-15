@@ -144,11 +144,23 @@ void ERROR6(uint32_t eip) {
   loadregisters();  // 恢复寄存器状态
 }
 int dflag = 0;
+bool has_fpu_error() {
+  dflag = 0;
+  uint16_t status_word;
+  asm("fnstsw %0" : "=m"(status_word));
+  dflag = 1;
+  return (status_word & 0x1F) != 0;
+}
 void ERROR7(uint32_t eip) {
   if (dflag) {
-    printk("1\n");
+    // printk("1\n");
     return;
   }
+  if (has_fpu_error()) {
+    asm volatile("fnclex");
+    return;
+  }
+
   if (NowTask()->fpu_use == 1) {
     // Maskirq(0);
     // dflag = 1;

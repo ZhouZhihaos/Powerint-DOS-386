@@ -24,7 +24,7 @@ void Main() {
  //  printf("buf = %s\n", buf);
   for (int i = 0; i <= Get_Argc(buf); i++) {
     Get_Arg(argv[i], buf, i);
-    printf("#%d %s\n",i,argv[i]);
+   // printf("#%d %s\n",i,argv[i]);
   }
   init_float();
 //   printf("Get_Argc = %d\n",Get_Argc(buf));
