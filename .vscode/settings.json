@@ -101,7 +101,8 @@
         "time.h": "c",
         "locale.h": "c",
         "math.h": "c",
-        "stb_image.h": "c"
+        "stb_image.h": "c",
+        "stb_image_resize.h": "c"
     },
     "cSpell.words": [],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
