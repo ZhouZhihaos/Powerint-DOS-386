@@ -3008,3 +3008,12 @@ char *strerror(int errno) {
 	}
 	return "errno error.";
 }
+int ungetc(int c,FILE *fp) {
+	if(fp->p-1 < 0) {
+		return EOF;
+	} else {
+		fp->p-=1;
+		fp->buffer[fp->p] = c;
+		return c;
+	}
+}

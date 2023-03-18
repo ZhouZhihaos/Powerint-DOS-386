@@ -162,18 +162,8 @@ void ERROR7(uint32_t eip) {
   }
 
   if (NowTask()->fpu_use == 1) {
-    // Maskirq(0);
-    // dflag = 1;
-    // if (NowTask()->fpu_use == 1 && NowTask()->app == 1) {
-    //  // printk("switch %s\n", NowTask()->name);
-    //   asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
-    //   NowTask()->fpu_use = 0;
-    // }
-    // dflag = 0;
-    // ClearMaskIrq(0);
     extern int dflag;
     dflag = 1;
-    // printk("switch %s\n",NowTask()->name);
     asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
     NowTask()->fpu_use = 0;
     dflag = 0;

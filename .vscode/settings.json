@@ -100,7 +100,8 @@
         "rand.h": "c",
         "time.h": "c",
         "locale.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "stb_image.h": "c"
     },
     "cSpell.words": [],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [

@@ -135,6 +135,7 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
 		copy from:$(RESPATH)font.ttf to:@: \
 		copy from:$(APPSOUTPATH)tedit.bin to:@: \
 		copy from:$(APPSOUTPATH)c4.bin to:@: \
+		copy from:$(APPSOUTPATH)image.bin to:@: \
 		imgout:$(IMGPATH)Disk3.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
