@@ -26,7 +26,7 @@ struct TIMER* timer_alloc(void);
 void timer_free(struct TIMER* timer);
 void timer_init(struct TIMER* timer, struct FIFO8* fifo, unsigned char data);
 void timer_settime(struct TIMER* timer, unsigned int timeout);
-void inthandler20(int* esp);
+void inthandler20(int cs,int* esp);
 // task.c
 void mt_init(void);
 void mt_taskswitch1();

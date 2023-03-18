@@ -152,7 +152,7 @@
 #else		/* }{ */
 /* use defaults */
 
-#define LUA_INT_TYPE	LUA_INT_INT
+#define LUA_INT_TYPE	LUA_INT_DEFAULT
 #define LUA_FLOAT_TYPE	LUA_FLOAT_DEFAULT
 
 #endif				/* } */

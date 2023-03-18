@@ -667,7 +667,10 @@ static int Lmod(lua_State* L) {
     lua_error(L);
     return 1;
   }
-  luaL_loadfile(L, lua_tostring(L,1));
+  int sz = filesize(lua_tostring(L,1));
+  char *buffer = malloc(sz);
+  api_ReadFile(lua_tostring(L,1),buffer);
+  luaL_loadbuffer(L, buffer,sz,lua_tostring(L,1));
   docall(L, 0, LUA_MULTRET);
   return 1;
 }
@@ -886,6 +889,9 @@ static int pmain (lua_State *L) {
   luaL_openlibs(L);  /* open standard libraries */
   createargtable(L, argv, argc, script);  /* create table 'arg' */
   lua_gc(L, LUA_GCGEN, 0, 0);  /* GC in generational mode */
+  // dostring(L,"function require(filename)\n \
+  // return load(pio.ReadFile(filename .. '.lua'))()\n \
+  // end","init");
   if (!(args & has_E)) {  /* no option '-E'? */
   }
   if (!runargs(L, argv, optlim))  /* execute arguments -e and -l */

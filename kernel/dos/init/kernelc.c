@@ -251,8 +251,8 @@ void task_sr2() {
     printk("Recved Command:%s\n", buf);
     if (strcmp("show_all", buf) == 0) {
       for (int i = 1; GetTask(i) != 0; i++) {
-        printk("Task %s,EIP=%08x Sleep=%d,%d lock=%d is_child=%d\n",
-               GetTask(i)->name, GetTask(i)->tss.eip, GetTask(i)->sleep,
+        printk("Task %s,CS:EIP=%04x:%08x Sleep=%d,%d lock=%d is_child=%d\n",
+               GetTask(i)->name, GetTask(i)->last_cs,GetTask(i)->last_eip, GetTask(i)->sleep,
                GetTask(i)->fifosleep, GetTask(i)->lock, GetTask(i)->is_child);
       }
     } else {

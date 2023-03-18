@@ -145,6 +145,8 @@ struct TASK {
   char flagOfexp;
   int mx,my;
   int fpu_use;
+  int last_cs;
+  int last_eip;
   char fxsave_region[512] __attribute__((aligned(16)));
 } __attribute__((packed));
 #define PG_P 1

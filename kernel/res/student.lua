@@ -3,7 +3,7 @@ function show_all(o)
     print(string.format("Student: %s ID:%d",v.name,v.id))
   end
 end
-print("Running.")
+-- print("Running.")
 Json = require('json')
 
 obj_f = io.open("stu.jsn","r")

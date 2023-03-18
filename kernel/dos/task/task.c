@@ -89,6 +89,7 @@ void mt_taskswitch1() {
       taskctl = mt_tr1;
       mt_tr1 += 8;
       timer_settime(mt_timer1, 1);
+      //printk("task->eip = %08x\n",task->tss.eip);
       farjmp(0, taskctl);
       return;
     }

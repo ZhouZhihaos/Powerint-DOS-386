@@ -2,7 +2,7 @@
 #define _INTERRUPTS_H
 #include <define.h>
 // inthandler.c
-void inthandler20(int* esp);
+void inthandler20(int cs,int* esp);
 void inthandler21(int *esp);
 void inthandler2c(int *esp);
 // pic.c

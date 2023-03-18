@@ -127,6 +127,9 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
 		copy from:$(APPSOUTPATH)ps2test.bin to:@: \
 		copy from:$(RESPATH)codeedit.ini to:@: \
 		copy from:$(RESPATH)hanzi.txt to:@: \
+		copy from:$(RESPATH)stu.jsn to:@: \
+		copy from:$(RESPATH)json.lua to:@: \
+		copy from:$(RESPATH)student.lua to:@: \
 		imgout:$(IMGPATH)Disk2.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \

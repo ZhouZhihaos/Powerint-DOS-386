@@ -95,7 +95,9 @@ bool DriveSemaphoreTake(unsigned int drive_code) {
   // printk("FIFO: %d PUT: %d STATUS: %d\n", drive_code, Get_Tid(NowTask()),
   //        fifo8_status(&drive_fifo[drive_code]));
   while (drive_buf[drive_code][drive_fifo[drive_code].q] != Get_Tid(NowTask()))
-    ;
+    {
+      //printk("Waiting....\n");
+    }
   return true;
 }
 void DriveSemaphoreGive(unsigned int drive_code) {

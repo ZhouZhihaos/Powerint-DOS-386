@@ -95,9 +95,12 @@ void sleep(int s) {
 }
 
 uint32_t mt2flag = 0;
+int g = 0;
 static uint32_t count = 0;
-void inthandler20(int* esp) {
+void inthandler20(int cs, int* esp) {
   // printk("*");
+  // printk("CS:EIP=%04x:%08x\n",NowTask()->tss.cs,esp[-10]);
+
   extern struct TIMER *mt_timer1, *mt_timer2, *mt_timer3;
   extern int tasknum;
   struct TIMER* timer;
@@ -137,8 +140,9 @@ void inthandler20(int* esp) {
 
   // ClearExpFlag();
   // disableExp();
-  extern int st_task;
 
+  io_cli();
+  extern int st_task;
   if (ts == 3) {
     mt_taskswitch3();
   }
@@ -148,6 +152,7 @@ void inthandler20(int* esp) {
   if (ts == 1) {
     mt_taskswitch1();
   }
+  io_sti();
   // if (NowTask()->fpu_use == 1 && NowTask()->app == 1) {
   //   extern int dflag ;
   //   dflag = 1;

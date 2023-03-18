@@ -162,6 +162,7 @@ void inthandler21(int *esp) {
     if (running_mode == POWERINTDOS) {
       for (int i = 1; GetTask(i) != 0; i++) {
         if (GetTask(i)->TTY->vram == 0xB8000 && GetTask(i)->app == 1) {
+          //printf("Break EIP:%08x",esp[1]);
           // POWERINTDOS模式下找到现在运行的程序（掌握TTY屏幕主导权 & 是程序）
           KILLAPP0(0xff, i); // 0xff是快捷键结束程序的便条
           break;

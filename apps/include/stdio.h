@@ -42,6 +42,9 @@ int fflush(FILE *stream);
 char *fgets(char *str, int n, FILE *stream);
 int fputs(const char *str, FILE *stream);
 int fprintf (FILE* stream, const char*format, ...);
+int feof(FILE *stream);
+int ferror(FILE *stream);
+int getc(FILE *stream);
 #ifdef __cplusplus
 }
 #endif

@@ -185,11 +185,16 @@ asm_inthandler20:
 		PUSH	DS
 		PUSHAD
 		MOV		EAX,ESP
+		add EAX,32
 		PUSH	EAX
 		MOV		AX,SS
 		MOV		DS,AX
 		MOV		ES,AX
+		MOV EAX,0
+		MOV   AX,CS
+		PUSH  EAX
 		CALL	inthandler20
+		pop eax
 		POP		EAX
 		POPAD
 		POP		DS
