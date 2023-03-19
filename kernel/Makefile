@@ -130,8 +130,11 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
 		imgout:$(IMGPATH)Disk2.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
+		copy from:$(APPSOUTPATH)ttf.bin to:@: \
+		copy from:$(RESPATH)font.ttf to:@: \
+		copy from:$(APPSOUTPATH)tedit.bin to:@: \
 		copy from:$(APPSOUTPATH)image.bin to:@: \
-		copy from:$(RESPATH)shot1.png to:@: \
+		copy from:$(APPSOUTPATH)c4.bin to:@: \
 		imgout:$(IMGPATH)Disk3.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
@@ -144,6 +147,7 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
 		copy from:$(RESPATH)load.jpg to:@: \
 		copy from:$(RESPATH)io.bas to:@: \
 		copy from:$(RESPATH)shot.png to:@: \
+		copy from:$(RESPATH)shot1.png to:@: \
 		copy from:$(RESPATH)test.htm to:@: \
 		copy from:$(RESPATH)test1.htm to:@: \
 		copy from:$(RESPATH)yee.bmp to:@: \

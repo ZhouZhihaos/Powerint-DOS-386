@@ -1,8 +1,8 @@
 #include <string.h>
 #include <syscall.h>
 #define All_Kernel_files_count 7
-#define All_App_files_count 36
-#define All_Res_files_count 22
+#define All_App_files_count 37
+#define All_Res_files_count 23
 #define Line_X 205
 #define Line_Y 186
 #define Left_Up 201
@@ -427,6 +427,12 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
+    setState("Copy Apps --- Copy file: bin/image.bin");
+    Copy("A:\\image.bin", "bin/image.bin");
+    CopyFilesCount++;
+    Set_Loading(
+        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
+              100.0));
     if (OKCancelMsg("Apps have installed. Install resources?")) {
       CopyFilesCount = 0;
       Box(0, 0, 80, 24);
@@ -508,6 +514,12 @@ int main() {
                 100.0));
       setState("Copy Apps --- Copy file: res/shot.png");
       Copy("A:\\shot.png", "res/shot.png");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
+      setState("Copy Apps --- Copy file: res/shot1.png");
+      Copy("A:\\shot1.png", "res/shot1.png");
       CopyFilesCount++;
       Set_Loading(
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *

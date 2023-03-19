@@ -6,7 +6,7 @@ GLOBAL print,scan,system,filesize,api_ReadFile
 GLOBAL Draw_Box,Draw_Px,Text_Draw_Box
 GLOBAL input_char_inSM,beep,RAND,GetCmdline,Get_System_Version,Copy,_kbhit
 GLOBAL mkdir,mkfile,Edit_File,SwitchTo320X200X256_BIOS,SwitchToText8025_BIOS
-GLOBAL AddTask,SubTask,TaskForever,SendMessage,GetMessage,MessageLength,NowTaskID
+GLOBAL TaskForever,SendMessage,GetMessage,MessageLength,NowTaskID
 GLOBAL exit
 GLOBAL timer_alloc,timer_settime,timer_out,timer_free,clock
 GLOBAL haveMsg,PhyMemGetByte,GetMessageAll,PhyMemSetByte,format
@@ -415,7 +415,6 @@ Get_System_Version:
     pop edx
     ret
 Copy:
-    push	eax
     push    edx
     push    esi
     mov eax,0x1c
@@ -424,7 +423,6 @@ Copy:
     int 36h
     pop esi
     pop edx
-    pop eax
     ret
 _kbhit:
     mov eax,0x1d
@@ -491,34 +489,6 @@ SwitchToText8025_BIOS:
 	mov	eax,0x21
 	mov	ebx,0x01
 	int	36h
-	pop	ebx
-	pop	eax
-	ret
-
-AddTask:
-	push	ebx
-	push	ecx
-	push	edx
-	mov	eax,0x22
-	mov	ebx,0x01
-	mov	ecx,[ss:esp+20]
-	mov	edx,[ss:esp+16]
-	int	36h
-	mov	eax,ecx
-	pop	edx
-	pop	ecx
-	pop	ebx
-	ret
-
-SubTask:
-	push	eax
-	push	ebx
-	push	ecx
-	mov	eax,0x22
-	mov	ebx,0x02
-	mov	ecx,[ss:esp+16]
-	int	36h
-	pop	ecx
 	pop	ebx
 	pop	eax
 	ret

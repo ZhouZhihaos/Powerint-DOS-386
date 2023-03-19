@@ -34,15 +34,13 @@ void Text_Draw_Box(int x, int y, int w, int h, int color);
 void beep(int point, int notes, int dup);
 void GetCmdline(char *_Str);
 int Get_System_Version();
-void Copy(char *filePath1, char *filePath2);
+int Copy(char *filePath1, char *filePath2);
 int _kbhit();
 void mkfile(char *filename);
 void mkdir(char *filename);
 void Edit_File(char *filename, char *dest, int len, int offset);
 void SwitchTo320X200X256_BIOS();
 void SwitchToText8025_BIOS();
-int AddTask(char *taskname, int eip);
-void SubTask(int id);
 void TaskForever();
 void SendMessage(int to_tid, void *data, unsigned int size);
 void GetMessage(void *data, int from_tid);
@@ -76,9 +74,12 @@ int set_mode(int w, int h); // 设置显示模式（bpp不能设置，只能32�
 void VBEDraw_Px(int x, int y, unsigned int color);
 unsigned int VBEGet_Px(int x, int y);
 void VBEGetBuffer(void *buffer);
-void VBESetBuffer(void *buffer);
+void VBESetBuffer(int x,int y,int w,int h,void *buffer);
+//void VBESetBuffer(int x,int y,int w,int h,void *buffer);
 void VBEDraw_Box(int x, int y, int x1, int y1, int color);
 void roll(int ysize);
+char get_cons_color();
+void set_cons_color(uint8_t c);
 #ifdef __cplusplus
 }
 #endif

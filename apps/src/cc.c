@@ -38,6 +38,5 @@ int main(int argc, char **argv) {
   while (getch() != 0x0a)
     ;
   free(hanzi);
-  free(pinyin);
   return 0;
 }

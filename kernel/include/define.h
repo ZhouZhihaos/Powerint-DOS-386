@@ -217,6 +217,7 @@ typedef struct FILE {
   int p;               // 当前读写位置
   int realloc;         // 内存区域大小
   char* path;          // 文件名
+  bool read_only;      // 只读？
 } FILE;
 struct DLL_STRPICENV {
   int work[16384];

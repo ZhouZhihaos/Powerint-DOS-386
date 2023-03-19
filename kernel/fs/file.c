@@ -4,8 +4,7 @@ FILE *fopen(char *path, char *mode) {
   struct FILEINFO *finfo;
   finfo = Get_File_Address(path);
   if (finfo == 0) {
-      printf("File Not found\n");
-      return 0;
+    return 0;
   } else {
     FILE *fp = (FILE *)page_malloc(sizeof(FILE));
     int drive_number;
@@ -27,11 +26,18 @@ FILE *fopen(char *path, char *mode) {
     fp->p = 0; //指向文件的开头
     fp->path = (char *)malloc(strlen(path));
     strcpy(fp->path, path);
+    fp->read_only = false;
+    if (finfo->type == 0x01 || finfo->type == 0x04 || strcmp(mode, "r") == 0) {
+      fp->read_only = true;
+    }
     return fp;
   }
 }
 // fputc
 int fputc(int c, FILE *fp) {
+  if (fp->read_only) {
+    return 0;
+  }
   if (fp->p >= fp->realloc) {
     void *p = page_kmalloc(fp->realloc + 4096);
     memcpy(p, (void *)fp->buf, fp->realloc);
@@ -87,8 +93,14 @@ int fseek(FILE *fp, int offset, int whence) {
   return 0;
 }
 int fclose(FILE *fp) {
-  if(fp == NULL) {
+  if (fp == NULL) {
     return -1;
+  }
+  if (fp->read_only) {
+    free((void *)fp->path);
+    page_kfree((void *)fp->buf, fp->realloc);
+    page_free((void *)fp, sizeof(FILE));
+    return;
   }
   struct TASK *task = NowTask();
   struct FILEINFO *finfo = Get_File_Address(fp->path);

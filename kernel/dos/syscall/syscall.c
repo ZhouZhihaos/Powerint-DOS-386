@@ -1,82 +1,66 @@
 #include <dos.h>
-int buf[32] = {0};
-int s[32] = {0};
-int keybuf[32] = {0};
-int mousebuf[32] = {0};
-int keyfifo[32] = {0};
-int mousefifo[32] = {0};
+static unsigned char *stack;
+void *aligned_malloc(size_t size, int alignment) {
+  // 分配足够的内存, 这里的算法很经典, 早期的STL中使用的就是这个算法
 
-int format(char drive);
-static unsigned char* stack;
-void* aligned_malloc(size_t size, int alignment)
-{
-	// 分配足够的内存, 这里的算法很经典, 早期的STL中使用的就是这个算法  
- 
-	// 首先是维护FreeBlock指针占用的内存大小  
-	const int pointerSize = sizeof(void*);
- 
-	// alignment - 1 + pointerSize这个是FreeBlock内存对齐需要的内存大小  
-	// 前面的例子sizeof(T) = 20, __alignof(T) = 16,  
-	// g_MaxNumberOfObjectsInPool = 1000  
-	// 那么调用本函数就是alignedMalloc(1000 * 20, 16)  
-	// 那么alignment - 1 + pointSize = 19  
-	const int requestedSize = size + alignment - 1 + pointerSize;
- 
-	// 分配的实际大小就是20000 + 19 = 20019  
-	void* raw = malloc(requestedSize);
- 
-	// 这里实Pool真正为对象实例分配的内存地址  
-	uint32_t* start = (uint32_t)raw + pointerSize;
-	// 向上舍入操作  
-	// 解释一下, __ALIGN - 1指明的是实际内存对齐的粒度  
-	// 例如__ALIGN = 8时, 我们只需要7就可以实际表示8个数(0~7)  
-	// 那么~(__ALIGN - 1)就是进行舍入的粒度  
-	// 我们将(bytes) + __ALIGN-1)就是先进行进位, 然后截断  
-	// 这就保证了我是向上舍入的  
-	// 例如byte = 100, __ALIGN = 8的情况  
-	// ~(__ALIGN - 1) = (1 000)B  
-	// ((bytes) + __ALIGN-1) = (1 101 011)B  
-	// (((bytes) + __ALIGN-1) & ~(__ALIGN - 1)) = (1 101 000 )B = (104)D  
-	// 104 / 8 = 13, 这就实现了向上舍入  
-	// 对于byte刚好满足内存对齐的情况下, 结果保持byte大小不变  
-	// 记得《Hacker's Delight》上面有相关的计算  
-	// 这个表达式与下面给出的等价  
-	// ((((bytes) + _ALIGN - 1) * _ALIGN) / _ALIGN)  
-	// 但是SGI STL使用的方法效率非常高   
-	void* aligned = (void*)(((uint32_t)start + alignment - 1) & ~(alignment - 1));
- 
-	// 这里维护一个指向malloc()真正分配的内存  
-	*(void**)((uint32_t *)aligned - pointerSize) = raw;
- 
-	// 返回实例对象真正的地址  
-	return aligned;
+  // 首先是维护FreeBlock指针占用的内存大小
+  const int pointerSize = sizeof(void *);
+
+  // alignment - 1 + pointerSize这个是FreeBlock内存对齐需要的内存大小
+  // 前面的例子sizeof(T) = 20, __alignof(T) = 16,
+  // g_MaxNumberOfObjectsInPool = 1000
+  // 那么调用本函数就是alignedMalloc(1000 * 20, 16)
+  // 那么alignment - 1 + pointSize = 19
+  const int requestedSize = size + alignment - 1 + pointerSize;
+
+  // 分配的实际大小就是20000 + 19 = 20019
+  void *raw = malloc(requestedSize);
+
+  // 这里实Pool真正为对象实例分配的内存地址
+  uint32_t *start = (uint32_t)raw + pointerSize;
+  // 向上舍入操作
+  // 解释一下, __ALIGN - 1指明的是实际内存对齐的粒度
+  // 例如__ALIGN = 8时, 我们只需要7就可以实际表示8个数(0~7)
+  // 那么~(__ALIGN - 1)就是进行舍入的粒度
+  // 我们将(bytes) + __ALIGN-1)就是先进行进位, 然后截断
+  // 这就保证了我是向上舍入的
+  // 例如byte = 100, __ALIGN = 8的情况
+  // ~(__ALIGN - 1) = (1 000)B
+  // ((bytes) + __ALIGN-1) = (1 101 011)B
+  // (((bytes) + __ALIGN-1) & ~(__ALIGN - 1)) = (1 101 000 )B = (104)D
+  // 104 / 8 = 13, 这就实现了向上舍入
+  // 对于byte刚好满足内存对齐的情况下, 结果保持byte大小不变
+  // 记得《Hacker's Delight》上面有相关的计算
+  // 这个表达式与下面给出的等价
+  // ((((bytes) + _ALIGN - 1) * _ALIGN) / _ALIGN)
+  // 但是SGI STL使用的方法效率非常高
+  void *aligned =
+      (void *)(((uint32_t)start + alignment - 1) & ~(alignment - 1));
+
+  // 这里维护一个指向malloc()真正分配的内存
+  *(void **)((uint32_t *)aligned - pointerSize) = raw;
+
+  // 返回实例对象真正的地址
+  return aligned;
 }
 
-void aligned_free(void * aligned_ptr)
-{
-	if (aligned_ptr)
-	{
-		free(((uint32_t *)aligned_ptr)[-1]);
-	}
+void aligned_free(void *aligned_ptr) {
+  if (aligned_ptr) {
+    free(((uint32_t *)aligned_ptr)[-1]);
+  }
 }
-void inthandler36(int edi,
-                  int esi,
-                  int ebp,
-                  int esp,
-                  int ebx,
-                  int edx,
-                  int ecx,
+void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
                   int eax) {
   // PowerintDOS API
-  struct TASK* task = NowTask();
+  struct TASK *task = NowTask();
   int cs_base = task->cs_base;
   int ds_base = task->ds_base;
-  int alloc_addr = task->alloc_addr;  // malloc地址
+  int alloc_addr = task->alloc_addr; // malloc地址
   int alloc_size = task->alloc_size;
-  char* memman = task->memman;
+  char *memman = task->memman;
   (void)(cs_base);
   if (eax == 0x01) {
-    intreturn(eax, ebx, ecx, 0x302e3761, esi, edi, ebp);  // 0.7a
+    intreturn(eax, ebx, ecx, 0x302e3761, esi, edi, ebp); // 0.7a
   } else if (eax == 0x02) {
     printchar((edx & 0x000000ff));
   } else if (eax == 0x03) {
@@ -94,15 +78,15 @@ void inthandler36(int edi,
       } else if (ebx == 0x06) {
         Draw_Px(ecx, edx, esi);
       } else if (ebx == 0x07) {
-        Draw_Str(ecx, edx, (char*)esi + ds_base, edi);
+        Draw_Str(ecx, edx, (char *)esi + ds_base, edi);
       } else if (ebx == 0x08) {
-        PrintChineseStr(ecx, edx, edi, (unsigned char*)esi + ds_base);
+        PrintChineseStr(ecx, edx, edi, (unsigned char *)esi + ds_base);
       }
     }
   } else if (eax == 0x04) {
     gotoxy(edx, ecx);
   } else if (eax == 0x05) {
-    print((char*)edx + ds_base);
+    print((char *)edx + ds_base);
   } else if (eax == 0x06) {
     sleep(edx);
   } else if (eax == 0x08) {
@@ -145,7 +129,7 @@ void inthandler36(int edi,
     //  printk("%02x ", c);
     // }
     // printk("\n");
-    clean((char*)(ad + alloc_addr), ecx * 128);
+    clean((char *)(ad + alloc_addr), ecx * 128);
   } else if (eax == 0x0c) {
     Text_Draw_Box(ecx, ebx, esi, edx, (unsigned char)edi);
   } else if (eax == 0x0e) {
@@ -155,7 +139,7 @@ void inthandler36(int edi,
   } else if (eax == 0x0f) {
     if (running_mode == POWERDESKTOP) {
       extern int gmx, gmy;
-      struct SHEET* sht_win = (struct SHEET*)task->TTY->reserved[1];
+      struct SHEET *sht_win = (struct SHEET *)task->TTY->reserved[1];
       for (;;) {
         if ((mdec.btn & 0x01) != 0) {
           intreturn(eax, ebx, (gmx - sht_win->vx0 - 5) / 8,
@@ -177,13 +161,13 @@ void inthandler36(int edi,
         }
       }
     } else if (running_mode == POWERINTDOS) {
-      struct TASK* task = NowTask();
+      struct TASK *task = NowTask();
       int i, mx1 = task->mx, my1 = task->my, bufx = task->mx * 8,
              bufy = task->my * 16;
       int bx = mx1;
       int by = my1;
       int bmp =
-          *(char*)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
+          *(char *)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
       mouse_ready(&mdec);
       for (;;) {
         if (fifo8_status(TaskGetMousefifo(task)) == 0) {
@@ -226,12 +210,12 @@ void inthandler36(int edi,
             } else if (bufy < 0) {
               bufy = 0;
             }
-            *(char*)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
-                     1) = bmp;
-            bmp = *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                           task->mx * 2 + 1);
-            *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                     task->mx * 2 + 1) = ~bmp;
+            *(char *)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
+                      1) = bmp;
+            bmp = *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                            task->mx * 2 + 1);
+            *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                      task->mx * 2 + 1) = ~bmp;
             mouse_sleep(&mdec);
             sleep(50);
             mouse_ready(&mdec);
@@ -239,8 +223,8 @@ void inthandler36(int edi,
         }
       }
       mouse_sleep(&mdec);
-      *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-               task->mx * 2 + 1) = bmp;
+      *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                task->mx * 2 + 1) = bmp;
       task->mx = mx1;
       task->my = my1;
     }
@@ -250,14 +234,14 @@ void inthandler36(int edi,
     } else if (ebx == 0x02) {
       intreturn(eax, ebx, ecx, input_char_inSM(), esi, edi, ebp);
     } else if (ebx == 0x03) {
-      input((char*)(edx + ds_base), ecx);
+      input((char *)(edx + ds_base), ecx);
     }
   } else if (eax == 0x19) {
-    command_run((char*)(edx + ds_base));
+    command_run((char *)(edx + ds_base));
   } else if (eax == 0x1a) {
     if (ebx == 0x01) {
-      struct FILEINFO* finfo;
-      finfo = Get_File_Address((char*)(edx + ds_base));
+      struct FILEINFO *finfo;
+      finfo = Get_File_Address((char *)(edx + ds_base));
       if (finfo != 0) {
         intreturn(eax, ebx, ecx, finfo->size, esi, edi, ebp);
       } else {
@@ -265,11 +249,11 @@ void inthandler36(int edi,
       }
       // intreturn(eax, ebx, ecx, finfo->size, esi, edi, ebp);
     } else if (ebx == 0x02) {
-      struct FILEINFO* finfo;
-      finfo = Get_File_Address((char*)(ds_base + edx));
-      FILE* fp = fopen((char*)(ds_base + edx), "r");
-      char* p = (char*)fp->buf;
-      char* q = (char*)ds_base + esi;
+      struct FILEINFO *finfo;
+      finfo = Get_File_Address((char *)(ds_base + edx));
+      FILE *fp = fopen((char *)(ds_base + edx), "r");
+      char *p = (char *)fp->buf;
+      char *q = (char *)ds_base + esi;
       int i;
       if (fp != 0) {
         for (i = 0; i != finfo->size; i++) {
@@ -281,48 +265,49 @@ void inthandler36(int edi,
         intreturn(0, ebx, ecx, edx, esi, edi, ebp);
       }
     } else if (ebx == 0x03) {
-      char* FilePath = (char*)(ds_base + edx);
+      char *FilePath = (char *)(ds_base + edx);
       mkfile(FilePath);
     } else if (ebx == 0x04) {
-      char* FilePath = (char*)(ds_base + edx);
+      char *FilePath = (char *)(ds_base + edx);
       if (task->change_dict_times == 0) {
         mkdir(FilePath, 0);
       } else {
-        struct FILEINFO* finfo =
+        struct FILEINFO *finfo =
             dict_search(".", task->directory,
                         drive_ctl.drives[task->drive_number].RootMaxFiles);
         mkdir(FilePath, finfo->clustno);
       }
     } else if (ebx == 0x05) {
-      char* FilePath = (char*)(ds_base + edx);
-      char* Ptr = (char*)ds_base + esi;
+      char *FilePath = (char *)(ds_base + edx);
+      char *Ptr = (char *)ds_base + esi;
       int length = ecx;
       int offset = edi;
       EDIT_FILE(FilePath, Ptr, length, offset);
     }
   } else if (eax == 0x1b) {
     int i;
-    char* bes = (char*)(edx + ds_base);
+    char *bes = (char *)(edx + ds_base);
     for (i = 0; i < strlen(task->line); i++) {
       bes[i] = task->line[i];
     }
     bes[i] = 0;
   } else if (eax == 0x1c) {
-    Copy((char*)(edx + ds_base), (char*)(esi + ds_base));
+    intreturn(Copy((char *)(edx + ds_base), (char *)(esi + ds_base)), ebx, ecx,
+              edx, esi, edi, ebp);
   } else if (eax == 0x1d) {
     intreturn(kbhit(), ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x1e) {
     extern uint32_t app_num;
     app_num--;
     task->running = 0;
-    WakeUp(GetTask(1));  // 别睡了，起来干活
+    WakeUp(GetTask(1)); // 别睡了，起来干活
   } else if (eax == 0x20) {
     // VBE驱动API
     if (running_mode == POWERINTDOS) {
       if (ebx == 0x01) {
         intreturn(SwitchVBEMode(ecx), ebx, ecx, edx, esi, edi, ebp);
       } else if (ebx == 0x02) {
-        intreturn(check_vbe_mode(ecx, (struct VBEINFO*)VBEINFO_ADDRESS), ebx,
+        intreturn(check_vbe_mode(ecx, (struct VBEINFO *)VBEINFO_ADDRESS), ebx,
                   ecx, edx, esi, edi, ebp);
       } else if (ebx == 0x05) {
         intreturn(set_mode(ecx, edx, 32), ebx, ecx, edx, esi, edi, ebp);
@@ -339,97 +324,12 @@ void inthandler36(int edi,
     }
   } else if (eax == 0x22) {
     //任务API
-    if (ebx == 0x01) {
-      io_cli();
-      Maskirq(0);
-      int bp = 0;
-      for (; bp != 32;) {
-        if (buf[bp] == 0 && s[bp] == 0 && keyfifo[bp] == 0 &&
-            mousefifo[bp] == 0)
-          break;
-        else
-          bp++;
-      }
-      if (bp == 31) {
-        intreturn(eax, ebx, -1, edx, esi, edi, ebp);
-        ClearMaskIrq(0);
-        io_sti();
-        return;
-      }
-      s[bp] = (int)page_malloc(1024);
-      if (s[bp] >= alloc_addr + 512 * 1024 || s[bp] < alloc_addr) {  // 内存不够
-        page_free((void*)s[bp], 1024);
-        intreturn(eax, ebx, -1, edx, esi, edi, ebp);
-        ClearMaskIrq(0);
-        io_sti();
-        return;
-      }
-      s[bp] -= ds_base;
-      s[bp] += 1024;
-      buf[bp] = (int)AddTask((char*)(edx + ds_base), task->level, task->ss1 - 8,
-                             ecx, task->ss1, task->ss1, s[bp]);
-      Maskirq(0);
-      keybuf[bp] = (int)page_malloc(128);
-      mousebuf[bp] = (int)page_malloc(128);
-      keyfifo[bp] = (int)page_malloc(sizeof(struct FIFO8));
-      mousefifo[bp] = (int)page_malloc(sizeof(struct FIFO8));
-      if (mousefifo[bp] >= alloc_addr + 512 * 1024 ||
-          mousefifo[bp] < alloc_addr) {  // 内存不够（只判断最后一个）
-        page_free((void*)buf[bp], sizeof(struct TASK));
-        page_free((void*)(s[bp] + ds_base - 1024), 1024);
-        page_free((void*)keybuf[bp], 128);
-        page_free((void*)mousebuf[bp], 128);
-        page_free((void*)keyfifo[bp], sizeof(struct FIFO8));
-        page_free((void*)mousefifo[bp], sizeof(struct FIFO8));
-        intreturn(eax, ebx, -1, edx, esi, edi, ebp);
-        ClearMaskIrq(0);
-        io_sti();
-        return;
-      }
-      fifo8_init((struct FIFO8*)keyfifo[bp], 128, (unsigned char*)keybuf[bp]);
-      fifo8_init((struct FIFO8*)mousefifo[bp], 128,
-                 (unsigned char*)mousebuf[bp]);
-      TaskSetFIFO((struct TASK*)buf[bp], (struct FIFO8*)keyfifo[bp],
-                  (struct FIFO8*)mousefifo[bp]);
-      struct TASK* ttask = (struct TASK*)(buf[bp]);
-      ttask->ds_base = task->ds_base;
-      ttask->cs_base = task->cs_base;
-      ttask->alloc_addr = task->alloc_addr;
-      ttask->alloc_size = task->alloc_size;
-      ttask->memman = task->memman;
-      stack = page_kmalloc(4 * 1024);
-      ttask->tss.esp0 = (int)((uint32_t)stack + 4 * 1024);
-      ttask->tss.ss0 = 1 * 8;
-
-      intreturn(eax, ebx, (ttask->sel / 8) - (task->sel / 8), edx, esi, edi,
-                ebp);  // 返回子进程（线程）ID号
-      ClearMaskIrq(0);
-      io_sti();
-    } else if (ebx == 0x02) {
-      Maskirq(0);
-      if (ecx > 31 || ecx < 1)
-        return;
-      struct TASK* ttask = (struct TASK*)buf[ecx - 1];
-      page_free((void*)buf[ecx - 1], sizeof(struct TASK));
-      page_free((void*)s[ecx - 1] + ds_base - 1024, 1024);
-      page_free((void*)keybuf[ecx - 1], 32);
-      page_free((void*)mousebuf[ecx - 1], 128);
-      page_free((void*)keyfifo[ecx - 1], sizeof(struct FIFO8));
-      page_free((void*)mousefifo[ecx - 1], sizeof(struct FIFO8));
-      page_free((void*)stack, 4 * 1024);
-      buf[ecx - 1] = 0;
-      s[ecx - 1] = 0;
-      keyfifo[ecx - 1] = 0;
-      mousefifo[ecx - 1] = 0;
-      ClearMaskIrq(0);
-      SleepTask(ttask);
-      ttask->running = 0;
-    } else if (ebx == 0x03) {
+    if (ebx == 0x03) {
       task->forever = 1;
     } else if (ebx == 0x04) {
-      SendIPCMessage(ecx, (void*)(ds_base + edx), esi, asynchronous);
+      SendIPCMessage(ecx, (void *)(ds_base + edx), esi, asynchronous);
     } else if (ebx == 0x05) {
-      GetIPCMessage((void*)(ds_base + edx), ecx);
+      GetIPCMessage((void *)(ds_base + edx), ecx);
     } else if (ebx == 0x06) {
       intreturn(IPCMessageLength(ecx), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x07) {
@@ -437,11 +337,11 @@ void inthandler36(int edi,
     } else if (ebx == 0x08) {
       intreturn(haveMsg(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x09) {
-      getMsgAll((void*)(ds_base + edx));
+      getMsgAll((void *)(ds_base + edx));
     } else if (ebx == 0x0a) {
-      io_cli();  // 防止任务提前运行
-      struct TASK* t =
-          AddUserTask((char*)(ecx + ds_base), task->level, task->ss1 - 8, edx,
+      io_cli(); // 防止任务提前运行
+      struct TASK *t =
+          AddUserTask((char *)(ecx + ds_base), task->level, task->ss1 - 8, edx,
                       task->ss1, task->ss1, esi);
       // printk("task->ss1=%d\n",task->ss1);
       t->alloc_addr = task->alloc_addr;
@@ -453,25 +353,25 @@ void inthandler36(int edi,
       t->tss.ss0 = 1 * 8;
       t->cs_base = task->cs_base;
       t->ds_base = task->ds_base;
-      char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* kbuf = (char*)page_kmalloc(4096);
-      char* mbuf = (char*)page_kmalloc(4096);
-      fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
-      fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
-      TaskSetFIFO(t, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
+      char *kfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
+      char *mfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
+      char *kbuf = (char *)page_kmalloc(4096);
+      char *mbuf = (char *)page_kmalloc(4096);
+      fifo8_init((struct FIFO8 *)kfifo, 4096, (unsigned char *)kbuf);
+      fifo8_init((struct FIFO8 *)mfifo, 4096, (unsigned char *)mbuf);
+      TaskSetFIFO(t, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
       t->is_child = 1;
       t->TTY = task->TTY;
       t->thread.father = task;
       // command_run("tl");
       // intreturn(t,ebx,ecx,edx,esi,edi,ebp);
-      io_sti();  // 让任务运行
+      io_sti(); // 让任务运行
     } else if (ebx == 0x0b) {
       TaskLock();
     } else if (ebx == 0x0c) {
       TaskUnLock();
     } else if (ebx == 0x0d) {
-      SubTask((struct TASK*)ecx);
+      SubTask((struct TASK *)ecx);
     }
   } else if (eax == 0x23) {
     if (ebx == 0x01) {
@@ -485,9 +385,9 @@ void inthandler36(int edi,
       // printf("Task:%s timer init\n",task->name);
       io_cli();
       task->timer = timer_alloc();
-      task->timer->fifo = (struct FIFO8*)page_malloc(sizeof(struct FIFO8));
+      task->timer->fifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
       task->timer->fifo->buf =
-          (unsigned char*)page_malloc(50 * sizeof(unsigned char));
+          (unsigned char *)page_malloc(50 * sizeof(unsigned char));
       fifo8_init(task->timer->fifo, 50, task->timer->fifo->buf);
       timer_init(task->timer, task->timer->fifo, 1);
       io_sti();
@@ -500,8 +400,8 @@ void inthandler36(int edi,
         intreturn(0, ebx, ecx, edx, esi, edi, ebp);
       }
     } else if (ebx == 0x03) {
-      page_free((void*)task->timer->fifo->buf, 50 * sizeof(unsigned char));
-      page_free((void*)task->timer->fifo, sizeof(struct FIFO8));
+      page_free((void *)task->timer->fifo->buf, 50 * sizeof(unsigned char));
+      page_free((void *)task->timer->fifo, sizeof(struct FIFO8));
       timer_free(task->timer);
     }
   } else if (eax == 0x25) {
@@ -525,31 +425,31 @@ void inthandler36(int edi,
     }
   } else if (eax == 0x27) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
       // printk("x =%d y=%d color =%08x\n", ebx, ecx, edx);
-      SDraw_Px((vram_t*)vbe->vram, ebx, ecx, edx, vbe->xsize);
+      SDraw_Px((vram_t *)vbe->vram, ebx, ecx, edx, vbe->xsize);
     }
   } else if (eax == 0x28) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* r = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *r = (vram_t *)vbe->vram;
       intreturn(r[ebx * vbe->xsize + ecx], ebx, ecx, edx, esi, edi, ebp);
     }
   } else if (eax == 0x29) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* r = (vram_t*)vbe->vram;
-      memcpy((void*)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *r = (vram_t *)vbe->vram;
+      memcpy((void *)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
     }
   } else if (eax == 0x2a) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* r = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *r = (vram_t *)vbe->vram;
       int x = ebx;
       int y = ecx;
       int w = edx;
       int h = esi;
-      unsigned int* buffer = (unsigned int*)(edi + ds_base);
+      unsigned int *buffer = (unsigned int *)(edi + ds_base);
       for (int i = x; i < x + w; i++) {
         for (int j = y; j < y + h; j++) {
           r[j * vbe->xsize + i] = buffer[(j - y) * w + (i - x)];
@@ -561,8 +461,8 @@ void inthandler36(int edi,
       int a, c;
       a = 0;
       c = ebx;
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* vram_buffer = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *vram_buffer = (vram_t *)vbe->vram;
       for (; c <= vbe->ysize; c++, a++) {
         for (int i = 0; i < vbe->xsize; i++) {
           // VBEDraw_Px(i,a,VBEGet_Px(i,c));
@@ -573,10 +473,10 @@ void inthandler36(int edi,
     }
   } else if (eax == 0x2c) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* vram_buffer = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *vram_buffer = (vram_t *)vbe->vram;
       (void)(vram_buffer);
-      SDraw_Box((vram_t*)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
+      SDraw_Box((vram_t *)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
     }
   } else if (eax == 0x2d) {
     intreturn(NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
@@ -585,92 +485,11 @@ void inthandler36(int edi,
   } else if (eax == 0x2e) {
     intreturn(timerctl.count, ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x2f) {
-    //Maskirq(0);
-    //NowTask()->fpu_use =1;
+    // Maskirq(0);
+    // NowTask()->fpu_use =1;
     extern int st_task;
     st_task = Get_Tid(task);
     asm("fninit");
   }
   return;
-}
-int format(char drive) {
-  // A,B盘——软盘
-  // C盘——IDE/SATA硬盘主分区
-  // D,E,F...盘——IDE/USB/SATA存储介质/分区/虚拟磁盘
-  FILE* fp = fopen("tskdrv:\\boot.bin", "r");
-  void* read_in = page_malloc(fp->size);
-  fread(read_in, fp->size, 1, fp);
-  if (!(drive - 'A')) {
-    // printf("3K FloppyDisk: %d bytes\n", 2880 * 512);
-    // printf("INT 13H DriveNumber: 0\n");
-    // printf("RootDictFiles: 224\n");
-    // printf("drive_ctl.drives[%d].ClustnoBytes: 512 "
-    //        "bytes\n",
-    //        NowTask()->drive_number);
-    *(unsigned char*)(&((unsigned char*)read_in)[BPB_SecPerClus]) = 1;
-    *(unsigned short*)(&((unsigned char*)read_in)[BPB_RootEntCnt]) = 224;
-    *(unsigned short*)(&((unsigned char*)read_in)[BPB_TotSec16]) = 2880;
-    *(unsigned int*)(&((unsigned char*)read_in)[BPB_TotSec32]) = 2880;
-    *(unsigned char*)(&((unsigned char*)read_in)[BS_DrvNum]) = 0;
-    write_floppy_for_ths(0, 0, 1, read_in, 1);
-    unsigned int* fat = (unsigned int*)page_malloc(9 * 512);
-    fat[0] = 0x00fffff0;
-    write_floppy_for_ths(0, 0, 2, (unsigned char*)fat, 9);
-    write_floppy_for_ths(0, 0, 11, (unsigned char*)fat, 9);
-    page_free((void*)fat, 9 * 512);
-    void* null_sec = page_malloc(512);
-    for (int i = 0; i < 224 * 32 / 512; i++) {
-      write_floppy_for_ths(0, 0, 20 + i, null_sec, 1);
-    }
-    page_free(null_sec, 512);
-  } else if (drive != 'B') {
-    // struct IDEHardDiskInfomationBlock* info = drivers_idehdd_info();
-    // printk("drive=%c %d\n", drive, have_vdisk(drive));
-    if (!have_vdisk(drive) && !DiskReady(drive)) {
-      // printf("Couldn't find Disk.\n");
-      return 1;
-    }
-    if (DiskReady(drive)) {
-      // printf("IDE HardDisk ID:%s\n", ide_devices[drive - 'C'].Model);
-    }
-
-    // printf("Disk: %d bytes\n", disk_Size(drive));
-    // printf("RootDictFiles: %d\n",
-    //        14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32);
-    // printf("ClustnoBytes: %d bytes\n",
-    //        ((disk_Size(drive) / 4096) / 512 + 1) * 512);
-    *(unsigned char*)(&((unsigned char*)read_in)[BPB_SecPerClus]) =
-        ((disk_Size(drive) / 4096) / 512 + 1);
-    *(unsigned short*)(&((unsigned char*)read_in)[BPB_RootEntCnt]) =
-        14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32;
-    // printk("Sectors:%d\n", ide_devices[drive - 'C'].Size /power
-    if (disk_Size(drive) / 512 > 65535) {
-      *(unsigned short*)(&((unsigned char*)read_in)[BPB_TotSec16]) = 0;
-    } else {
-      *(unsigned short*)(&((unsigned char*)read_in)[BPB_TotSec16]) =
-          disk_Size(drive) / 512;
-    }
-    *(unsigned int*)(&((unsigned char*)read_in)[BPB_TotSec32]) =
-        disk_Size(drive) / 512;
-    *(unsigned char*)(&((unsigned char*)read_in)[BS_DrvNum]) =
-        drive - 'C' + 0x80;
-    Disk_Write(0, 1, (unsigned short*)read_in, drive);
-    unsigned int* fat = (unsigned int*)page_malloc(9 * 512);
-    fat[0] = 0x00fffff0;
-    Disk_Write(1, 9, (unsigned short*)fat, drive);
-    Disk_Write(10, 9, (unsigned short*)fat, drive);
-    page_free((void*)fat, 9 * 512);
-    void* null_sec = page_malloc(512);
-    clean((char*)null_sec, 512);
-    for (int i = 0;
-         i < 14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32 * 32 / 512;
-         i++) {
-      Disk_Write(19, 1, (unsigned short*)null_sec, drive);
-    }
-    page_free(null_sec, 512);
-    // page_free((void*)info, 256 * sizeof(short));
-  }
-  page_free(read_in, fp->size);
-  fclose(fp);
-  return 0;
 }

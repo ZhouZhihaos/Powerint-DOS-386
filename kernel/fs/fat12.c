@@ -655,11 +655,11 @@ void mkdir(char *dictname, int last_clust) {
   AddVal(directory_alloc, drive_ctl.drives[drive_number].directory_list);
   return;
 }
-void Copy(char *path, char *path1) {
+int Copy(char *path, char *path1) {
   unsigned char *path1_file_buffer;
   if (fsz(path) == -1) {
     // printf("file not found\n");
-    return;
+    return -1;
   }
   // printf("-----------------------------\n");
   mkfile(path1);
@@ -675,6 +675,7 @@ void Copy(char *path, char *path1) {
   }
   fclose(fp);
   free(path1_file_buffer);
+  return 0;
 }
 struct FILEINFO *clust_sech(int clustno, struct FILEINFO *finfo, int max) {
   //通过簇号找到文件信息
@@ -687,7 +688,7 @@ struct FILEINFO *clust_sech(int clustno, struct FILEINFO *finfo, int max) {
   }
   return 0; /*没找到*/
 }
-void del(char *cmdline) {
+int del(char *cmdline) {
   //删除某个文件
   struct TASK *task = NowTask();
   char name[30];
@@ -697,10 +698,8 @@ void del(char *cmdline) {
     name[i] = cmdline[i + 4];
   }
   finfo = Get_File_Address(name);
-  if (finfo == 0) {
-    print(name);
-    print(" not found!\n\n");
-    return;
+  if (finfo == 0 || finfo->type == 0x01 || finfo->type == 0x04) {
+    return -1;
   }
   FILE *fp = fopen(name, "wb");
   for (i = 0; i != fp->size; i++) {
@@ -719,11 +718,14 @@ void del(char *cmdline) {
   drive_ctl.drives[drive_number].FatClustnoFlags[finfo->clustno] = false;
   file_saveinfo(Get_dictaddr(name), drive_number);
   file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
-  return;
+  return 0;
 }
-void deldir(char *path) {
+int deldir(char *path) {
   struct TASK *task = NowTask();
   struct FILEINFO *finfo = Get_dictaddr(path);
+  if (finfo == Get_dictaddr(".")) {
+    return -1;
+  }
   struct FILEINFO *f = task->directory;
   task->directory = finfo;
   for (int i = 2; finfo[i].name[0] != '\0'; i++) {
@@ -735,7 +737,9 @@ void deldir(char *path) {
       }
       s[j] = '\0';
       // printf("(CALL)DEL DIR:%s\n", s);
-      deldir(s);
+      if (deldir(s) == -1) {
+        return -1;
+      }
       // return -1;
     }
   }
@@ -754,7 +758,9 @@ void deldir(char *path) {
       }
       s[p] = '\0';
       // printf("(IN)DEL FILE:%s\n", s);
-      del(s);
+      if (del(s) == -1) {
+        return -1;
+      }
     }
   }
   task->directory = f;
@@ -795,7 +801,7 @@ void deldir(char *path) {
   drive_ctl.drives[drive_number].FatClustnoFlags[finfo->clustno] = false;
   file_saveinfo(Get_dictaddr(path), drive_number);
   file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
-  return;
+  return 0;
 }
 void mkfile(char *name) {
   struct TASK *task = NowTask();
@@ -866,7 +872,7 @@ void mkfile(char *name) {
   file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
   return;
 }
-void changedict(char *dictname) {
+int changedict(char *dictname) {
   // cd命令的依赖函数
   strtoupper(dictname);
   struct TASK *task = NowTask();
@@ -876,15 +882,14 @@ void changedict(char *dictname) {
   //找文件夹
   if (finfo == 0) {
     //没找到
-    print("Invalid directory.\n");
-    return;
+    return -1;
   }
   if (finfo->clustno == 0) {
     //根目录
     strcpy(task->path, "");
     task->change_dict_times = 0;
     task->directory = drive_ctl.drives[task->drive_number].root_directory;
-    return;
+    return 0;
   }
   //..进行特殊的处理
   //.不进行处理
@@ -924,9 +929,11 @@ void changedict(char *dictname) {
     }
   }
   task->change_dict_times++;
-  return;
+  return 0;
 }
-void rename(char *src_name, char *dst_name) {
+int rename(char *src_name, char *dst_name) {
+  strtoupper(src_name);
+  strtoupper(dst_name);
   struct TASK *task = NowTask();
   char name[9], ext[4];
   int i;
@@ -940,6 +947,15 @@ void rename(char *src_name, char *dst_name) {
     ext[j] = dst_name[i];
   }
   struct FILEINFO *finfo = Get_File_Address(src_name);
+  if (finfo == 0 || finfo->type == 0x01 || finfo->type == 0x04) {
+    return -1;
+  }
+  int drive_number;
+  if (strncmp(src_name + 1, ":\\", 2) == 0 || strncmp(src_name + 1, ":/", 2) == 0) {
+    drive_number = *src_name - 0x41;
+  } else {
+    drive_number = task->drive_number;
+  }
   memset((void *)finfo->name, ' ', 11);
   for (i = 0; i != strlen(name); i++) {
     finfo->name[i] = name[i];
@@ -947,6 +963,105 @@ void rename(char *src_name, char *dst_name) {
   for (i = 0; i != strlen(ext); i++) {
     finfo->ext[i] = ext[i];
   }
-  file_saveinfo(task->directory, task->drive_number);
-  return;
+  file_saveinfo(Get_dictaddr(src_name), drive_number);
+  return 0;
+}
+int format(char drive) {
+  // A,B盘——软盘
+  // C盘——IDE/SATA硬盘主分区
+  // D,E,F...盘——IDE/USB/SATA存储介质/分区/虚拟磁盘
+  FILE *fp = fopen("tskdrv:\\boot.bin", "r");
+  if (fp == 0) {
+    return -1;
+  }
+  void *read_in = page_malloc(fp->size);
+  fread(read_in, fp->size, 1, fp);
+  if (!(drive - 'A')) {
+    // printf("3K FloppyDisk: %d bytes\n", 2880 * 512);
+    // printf("INT 13H DriveNumber: 0\n");
+    // printf("RootDictFiles: 224\n");
+    // printf("drive_ctl.drives[%d].ClustnoBytes: 512 "
+    //        "bytes\n",
+    //        NowTask()->drive_number);
+    *(unsigned char *)(&((unsigned char *)read_in)[BPB_SecPerClus]) = 1;
+    *(unsigned short *)(&((unsigned char *)read_in)[BPB_RootEntCnt]) = 224;
+    *(unsigned short *)(&((unsigned char *)read_in)[BPB_TotSec16]) = 2880;
+    *(unsigned int *)(&((unsigned char *)read_in)[BPB_TotSec32]) = 2880;
+    *(unsigned char *)(&((unsigned char *)read_in)[BS_DrvNum]) = 0;
+    write_floppy_for_ths(0, 0, 1, read_in, 1);
+    unsigned int *fat = (unsigned int *)page_malloc(9 * 512);
+    fat[0] = 0x00fffff0;
+    write_floppy_for_ths(0, 0, 2, (unsigned char *)fat, 9);
+    write_floppy_for_ths(0, 0, 11, (unsigned char *)fat, 9);
+    page_free((void *)fat, 9 * 512);
+    void *null_sec = page_malloc(512);
+    for (int i = 0; i < 224 * 32 / 512; i++) {
+      write_floppy_for_ths(0, 0, 20 + i, null_sec, 1);
+    }
+    page_free(null_sec, 512);
+  } else if (drive != 'B') {
+    // struct IDEHardDiskInfomationBlock* info = drivers_idehdd_info();
+    // printk("drive=%c %d\n", drive, have_vdisk(drive));
+    if (!have_vdisk(drive) && !DiskReady(drive)) {
+      // printf("Couldn't find Disk.\n");
+      return 1;
+    }
+    if (DiskReady(drive)) {
+      // printf("IDE HardDisk ID:%s\n", ide_devices[drive - 'C'].Model);
+    }
+
+    // printf("Disk: %d bytes\n", disk_Size(drive));
+    // printf("RootDictFiles: %d\n",
+    //        14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32);
+    // printf("ClustnoBytes: %d bytes\n",
+    //        ((disk_Size(drive) / 4096) / 512 + 1) * 512);
+    *(unsigned char *)(&((unsigned char *)read_in)[BPB_SecPerClus]) =
+        ((disk_Size(drive) / 4096) / 512 + 1);
+    *(unsigned short *)(&((unsigned char *)read_in)[BPB_RootEntCnt]) =
+        14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32;
+    // printk("Sectors:%d\n", ide_devices[drive - 'C'].Size /power
+    if (disk_Size(drive) / 512 > 65535) {
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_TotSec16]) = 0;
+    } else {
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_TotSec16]) =
+          disk_Size(drive) / 512;
+    }
+    *(unsigned int *)(&((unsigned char *)read_in)[BPB_TotSec32]) =
+        disk_Size(drive) / 512;
+    *(unsigned char *)(&((unsigned char *)read_in)[BS_DrvNum]) =
+        drive - 'C' + 0x80;
+    Disk_Write(0, 1, (unsigned short *)read_in, drive);
+    unsigned int *fat = (unsigned int *)page_malloc(9 * 512);
+    fat[0] = 0x00fffff0;
+    Disk_Write(1, 9, (unsigned short *)fat, drive);
+    Disk_Write(10, 9, (unsigned short *)fat, drive);
+    page_free((void *)fat, 9 * 512);
+    void *null_sec = page_malloc(512);
+    clean((char *)null_sec, 512);
+    for (int i = 0;
+         i < 14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32 * 32 / 512;
+         i++) {
+      Disk_Write(19, 1, (unsigned short *)null_sec, drive);
+    }
+    page_free(null_sec, 512);
+    // page_free((void*)info, 256 * sizeof(short));
+  }
+  page_free(read_in, fp->size);
+  fclose(fp);
+  return 0;
+}
+int attrib(char *filename, char type) {
+  struct TASK *task = NowTask();
+  struct FILEINFO *finfo = Get_File_Address(filename);
+  int drive_number;
+  if (strncmp(filename + 1, ":\\", 2) == 0 || strncmp(filename + 1, ":/", 2) == 0) {
+    drive_number = *filename - 0x41;
+  } else {
+    drive_number = task->drive_number;
+  }
+  if (finfo == 0) {
+    return -1;
+  }
+  finfo->type = type;
+  file_saveinfo(Get_dictaddr(filename), drive_number);
 }
