@@ -418,8 +418,8 @@ Copy:
     push    edx
     push    esi
     mov eax,0x1c
-    mov edx,[ss:esp+4+8+4]
-    mov esi,[ss:esp+8+8+4]
+    mov edx,[ss:esp+4+8]
+    mov esi,[ss:esp+8+8]
     int 36h
     pop esi
     pop edx
