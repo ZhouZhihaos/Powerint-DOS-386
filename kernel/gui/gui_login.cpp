@@ -29,12 +29,8 @@ void login_button_OnClick() {
   if (fsz("A:\\USER\\USER.INI") != -1 && fsz("A:\\USER\\PASSWORD.INI") != -1) {
     char *right_user = new char[fsz("A:\\USER\\USER.INI") + 1];
     char *right_pass = new char[fsz("A:\\USER\\PASSWORD.INI") + 1];
-    struct FILEINFO *f1 = Get_File_Address("A:\\USER\\USER.INI");
-    struct FILEINFO *f2 = Get_File_Address("A:\\USER\\PASSWORD.INI");
-    file_loadfile(f1->clustno, f1->size, right_user, drive_ctl.drives[0x0].fat,
-                  0x0);
-    file_loadfile(f2->clustno, f2->size, right_pass, drive_ctl.drives[0x0].fat,
-                  0x0);
+
+
     if (strcmp(textbox1->Text(), right_user) == 0 &&
         strcmp(textbox2->Text(), right_pass) == 0) {
       login_flag = 1;
@@ -74,13 +70,13 @@ void register_window_button1_OnClick() {
   }
 
   command_run("mkdir user");
-  mkfile("A:\\USER\\USER.INI");
-  mkfile("A:\\USER\\PASSWORD.INI");
+  // mkfile("A:\\USER\\USER.INI");
+  // mkfile("A:\\USER\\PASSWORD.INI");
 
-  EDIT_FILE("A:\\USER\\USER.INI", reg_textbox1->Text(),
-            strlen(reg_textbox1->Text()), 0);
-  EDIT_FILE("A:\\USER\\PASSWORD.INI", reg_textbox2->Text(),
-            strlen(reg_textbox2->Text()), 0);
+  // EDIT_FILE("A:\\USER\\USER.INI", reg_textbox1->Text(),
+  //           strlen(reg_textbox1->Text()), 0);
+  // EDIT_FILE("A:\\USER\\PASSWORD.INI", reg_textbox2->Text(),
+  //           strlen(reg_textbox2->Text()), 0);
   register_window_close();
 }
 void register_window_button2_OnClick() { register_window_close(); }

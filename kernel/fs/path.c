@@ -2,7 +2,7 @@
 #include <fs.h>
 //首先 我们要解析环境变量的字符串
 //环境变量的字符串是以分号分隔的
-void Path_GetPath(int count, char *ptr, char *PATH_ADDR) {
+void Path_GetPath(int count, char* ptr, char* PATH_ADDR) {
   // count 获取第几个环境变量？
   // ptr   储存在哪里？
   // PATH_ADDR 环境变量的信息在哪里？
@@ -36,7 +36,7 @@ void Path_GetPath(int count, char *ptr, char *PATH_ADDR) {
   }
   ptr[i] = '\0';
 }
-int Path_GetPathCount(char *PATH_ADDR) {
+int Path_GetPathCount(char* PATH_ADDR) {
   int count = 0;
   for (int i = 0; i < strlen(PATH_ADDR); i++) {
     if (PATH_ADDR[i] == ';') {
@@ -45,33 +45,32 @@ int Path_GetPathCount(char *PATH_ADDR) {
   }
   return count;
 }
-static void GetFullPath(char *result, char *name, char *dictpath) {
+static void GetFullPath(char* result, char* name, char* dictpath) {
   strcpy(result, dictpath);
   strcat(result, "\\");
   strcat(result, name);
 }
-struct FILEINFO *Path_Find_File(char *fileName, char *PATH_ADDR) {
+bool Path_Find_File(char* fileName, char* PATH_ADDR) {
   char path_result1[100];
   char path_result2[100];
   for (int i = 0; i < Path_GetPathCount(PATH_ADDR); i++) {
     Path_GetPath(i, path_result1, PATH_ADDR);
     GetFullPath(path_result2, fileName, path_result1);
-    struct FILEINFO *file = Get_File_Address(path_result2);
-    if (file != 0) {
-      return file;
+    int size = vfs_filesize(path_result2);
+    if (size != -1) {
+      return true;
     }
   }
-  return NULL;
+  return false;
 }
-void Path_Find_FileName(char *Result, char *fileName, char *PATH_ADDR) {
+void Path_Find_FileName(char* Result, char* fileName, char* PATH_ADDR) {
   char path_result1[100];
   char path_result2[100];
   for (int i = 0; i < Path_GetPathCount(PATH_ADDR); i++) {
-
     Path_GetPath(i, path_result1, PATH_ADDR);
     GetFullPath(path_result2, fileName, path_result1);
-    struct FILEINFO *file = Get_File_Address(path_result2);
-    if (file != 0) {
+    int size = vfs_filesize(path_result2);
+    if (size != -1) {
       strcpy(Result, path_result2);
     }
   }

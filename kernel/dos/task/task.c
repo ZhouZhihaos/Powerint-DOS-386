@@ -89,7 +89,7 @@ void mt_taskswitch1() {
       taskctl = mt_tr1;
       mt_tr1 += 8;
       timer_settime(mt_timer1, 1);
-      //printk("task->eip = %08x\n",task->tss.eip);
+      // printk("task->eip = %08x\n",task->tss.eip);
       farjmp(0, taskctl);
       return;
     }
@@ -278,6 +278,17 @@ AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   for (int i = 0; i < 512; i++) {
     task->fxsave_region[i] = 0;
   }
+  extern int init_ok_flag;
+  if (init_ok_flag) {
+    vfs_change_disk_for_task(task->drive, task);
+  }
+  // if (!vfs_change_disk_for_task(task->drive, task)) {
+  //   if (!vfs_mount_disk(task->drive, task->drive)) {
+  //     task->nfs = NULL;
+  //   } else {
+  //     vfs_change_disk_for_task(task->drive, task);
+  //   }
+  // }
   // 应用程序选填
   task->ds_base = 0;
   task->cs_base = 0;
@@ -367,6 +378,10 @@ AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   // task->fxsave_region = 0;
   for (int i = 0; i < 512; i++) {
     task->fxsave_region[i] = 0;
+  }
+  extern int init_ok_flag;
+  if (init_ok_flag) {
+    vfs_change_disk_for_task(task->drive, task);
   }
   // 之后填写
   task->ds_base = 0;

@@ -209,7 +209,7 @@ void pra_view_32(unsigned char *path, unsigned char *vram, int scr_xsize) {
   // 1. 检查前12个字节是否为0xFF
   // 2. 检查OEM是否为PRA
   FILE *fp = fopen(path, "r");
-  unsigned char *img = fp->buf;
+  unsigned char *img = fp->buffer;
   for (int i = 0; i < 12; i++) {
     if (img[i] != 0xFF) {
       SwitchToText8025_BIOS();

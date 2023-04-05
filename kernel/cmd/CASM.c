@@ -1333,8 +1333,8 @@ void compile_file(FILE *fp_asm, FILE *fp) {
 		var_type[i] = 0;
 	}
   int fsize = 0;
-  fsize = fp_asm->size;
-  char *asm_code_buf = (char *)fp_asm->buf;
+  fsize = fp_asm->fileSize;
+  char *asm_code_buf = (char *)fp_asm->buffer;
   char *line = malloc(1024);
   for (int i = 0, j = 0, cdar = 0; i <= fsize; i++) {
     if (asm_code_buf[i] == '\r' || asm_code_buf[i] == '\n' ||

@@ -123,12 +123,12 @@ void wav_player(char *filename) {
   // 我们假设wav文件是有效的
   struct WAV16_HEADER wav_header;
   FILE *fp = fopen(filename, "r");
-  uint8_t *data = fp->buf;
+  uint8_t *data = fp->buffer;
   if (fp == NULL) {
     printf("open file error");
     return;
   }
-  int fsize = Get_File_Address(filename)->size;
+  int fsize = vfs_filesize(filename);
   memcpy(&wav_header, data, sizeof(wav_header));
   uint8_t *start = (uint8_t *)data + 44; // wav文件头的长度是44字节
   int buffer[2];

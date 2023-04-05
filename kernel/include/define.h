@@ -21,18 +21,22 @@ typedef vram_t color_t;
 #define PIT_CTRL 0x0043
 #define PIT_CNT0 0x0040
 #define AR_TSS32 0x0089
-#define Panic_K Panic_F
-#define WARNING_K WARNING_F
-#define DEBUG_K DEBUG_F
-#define Panic_F(info, ...)                                                     \
-  printf("%s--PANIC: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
-         ##__VA_ARGS__);
-#define WARNING_F(info, ...)                                           \
-  printf("%s--WARNING: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, \
-         __LINE__, ##__VA_ARGS__);
-#define DEBUG_F(info, ...)                                                     \
-  printf("%s--DEBUG: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
-         ##__VA_ARGS__);
+typedef struct List List;
+#define Panic_Print(func, info, ...)                                         \
+  func("%s--PANIC: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
+       ##__VA_ARGS__);
+#define WARNING_Print(func, info, ...)                                         \
+  func("%s--WARNING: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
+       ##__VA_ARGS__);
+#define DEBUG_Print(func, info, ...)                                         \
+  func("%s--DEBUG: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
+       ##__VA_ARGS__);
+#define Panic_K(info,...) Panic_Print(printk,info,##__VA_ARGS__)
+#define WARNING_K(info,...) WARNING_Print(printk,info,##__VA_ARGS__)
+#define DEBUG_K(info,...) DEBUG_Print(printk,info,##__VA_ARGS__)
+#define Panic_F(info,...) Panic_Print(printf,info,##__VA_ARGS__)
+#define WARNING_F(info,...) WARNING_Print(printf,info,##__VA_ARGS__)
+#define DEBUG_F(info,...) DEBUG_Print(printf,info,##__VA_ARGS__)
 #define Get_Tid(task) task->sel / 8 - 103
 #define POWERINTDOS 0
 #define POWERDESKTOP 1
@@ -107,6 +111,36 @@ extern struct DRIVE_CTL drive_ctl;
 struct THREAD {
   struct TASK* father;
 };
+typedef enum {
+  FLE,DIR
+} ftype;
+typedef struct {
+  char name[255];
+  ftype type;
+}vfs_dict;
+typedef struct vfs_t{
+  List* path;
+  void* cache;
+  char FSName[255];
+  int disk_number;
+  uint8_t drive;  // 大写（必须）
+  List* (*ListFile)(struct vfs_t* vfs, char* dictpath);
+  bool (*ReadFile)(struct vfs_t* vfs, char* path, char* buffer);
+  bool (*WriteFile)(struct vfs_t* vfs, char* path, char* buffer,int size);
+  bool (*DelFile)(struct vfs_t* vfs, char* path);
+  bool (*DelDict)(struct vfs_t* vfs, char* path);
+  bool (*CreateFile)(struct vfs_t* vfs, char* filename);
+  bool (*CreateDict)(struct vfs_t* vfs, char* filename);
+  bool (*RenameFile)(struct vfs_t* vfs, char* filename, char* filename_of_new);
+  bool (*Format)(uint8_t disk_number);
+  void (*InitFs)(struct vfs_t* vfs, uint8_t disk_number);
+  void (*DeleteFs)(struct vfs_t* vfs);
+  bool (*Check)(uint8_t disk_number);
+  bool (*cd)(struct vfs_t *vfs,char *dictName);
+  int (*FileSize)(struct vfs_t *vfs,char *filename);
+  void (*CopyCache)(struct vfs_t *dest,struct vfs_t *src);
+  int flag;
+} vfs_t;
 struct TASK {
   int sel, sleep, level;
   struct TSS32 tss;
@@ -143,10 +177,11 @@ struct TASK {
   int DisableExpFlag;
   uint32_t CatchEIP;
   char flagOfexp;
-  int mx,my;
+  int mx, my;
   int fpu_use;
   int last_cs;
   int last_eip;
+  vfs_t* nfs;
   char fxsave_region[512] __attribute__((aligned(16)));
 } __attribute__((packed));
 #define PG_P 1
@@ -212,12 +247,12 @@ struct FILEINFO {
 };
 #define rmfarptr2ptr(x) ((x).seg * 0x10 + (x).offset)
 typedef struct FILE {
-  unsigned char* buf;  // 文件缓冲区
-  int size;            // 文件大小
-  int p;               // 当前读写位置
-  int realloc;         // 内存区域大小
-  char* path;          // 文件名
-  bool read_only;      // 只读？
+  unsigned int mode;
+  unsigned int fileSize;
+  unsigned char *buffer;
+  unsigned int bufferSize;
+  unsigned int p;
+  char *name;
 } FILE;
 struct DLL_STRPICENV {
   int work[16384];

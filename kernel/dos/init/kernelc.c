@@ -6,137 +6,46 @@ uint32_t Path_Addr;
 struct DRIVE_CTL drive_ctl;
 unsigned char *font, *ascfont, *hzkfont;
 unsigned char* IVT;
+#define vfs_now NowTask()->nfs
+int init_ok_flag = 0;
 void shell(void) {
   ide_initialize(0x1F0, 0x3F6, 0x170, 0x376, 0x000);
   init_networkCTL();
   init_network();
   init_card();
   init_palette();
-  struct TASK* task = NowTask();
-  drive_ctl.drives[task->drive_number].SectorBytes =
-      *(unsigned short*)(0x7c00 + BPB_BytsPerSec);
-  drive_ctl.drives[task->drive_number].RootMaxFiles =
-      *(unsigned short*)(0x7c00 + BPB_RootEntCnt);
-  drive_ctl.drives[task->drive_number].ClustnoBytes =
-      drive_ctl.drives[task->drive_number].SectorBytes *
-      *(unsigned char*)(0x7c00 + BPB_SecPerClus);
-  drive_ctl.drives[task->drive_number].RootDictAddress =
-      (*(unsigned char*)(0x7c00 + BPB_NumFATs) *
-           *(unsigned short*)(0x7c00 + BPB_FATSz16) +
-       *(unsigned short*)(0x7c00 + BPB_RsvdSecCnt)) *
-      drive_ctl.drives[task->drive_number].SectorBytes;
-  drive_ctl.drives[task->drive_number].FileDataAddress =
-      drive_ctl.drives[task->drive_number].RootDictAddress +
-      drive_ctl.drives[task->drive_number].RootMaxFiles * 32;
-  if (*(unsigned short*)(0x7c00 + BPB_TotSec16) != 0) {
-    drive_ctl.drives[task->drive_number].imgTotalSize =
-        *(unsigned short*)(0x7c00 + BPB_TotSec16) *
-        drive_ctl.drives[task->drive_number].SectorBytes;
-  } else {
-    drive_ctl.drives[task->drive_number].imgTotalSize =
-        *(unsigned int*)(0x7c00 + BPB_TotSec32) *
-        drive_ctl.drives[task->drive_number].SectorBytes;
-  }
-  drive_ctl.drives[task->drive_number].Fat1Address =
-      *(unsigned short*)(0x7c00 + BPB_RsvdSecCnt) *
-      drive_ctl.drives[task->drive_number].SectorBytes;
-  drive_ctl.drives[task->drive_number].Fat2Address =
-      drive_ctl.drives[task->drive_number].Fat1Address +
-      *(unsigned short*)(0x7c00 + BPB_FATSz16) *
-          drive_ctl.drives[task->drive_number].SectorBytes;
-  uint32_t sec = drive_ctl.drives[task->drive_number].FileDataAddress /
-                 drive_ctl.drives[task->drive_number].SectorBytes;
-  drive_ctl.drives[task->drive_number].ADR_DISKIMG = (unsigned int)malloc(
-      drive_ctl.drives[task->drive_number].FileDataAddress);
-  Disk_Read(0, sec, (void*)drive_ctl.drives[task->drive_number].ADR_DISKIMG,
-            task->drive);
-  drive_ctl.drives[task->drive_number].fat = malloc(3072 * sizeof(int));
-  drive_ctl.drives[task->drive_number].FatClustnoFlags =
-      malloc(3072 * sizeof(char));
-  read_fat((unsigned char*)(drive_ctl.drives[task->drive_number].ADR_DISKIMG +
-                            drive_ctl.drives[task->drive_number].Fat1Address),
-           drive_ctl.drives[task->drive_number].fat,
-           drive_ctl.drives[task->drive_number].FatClustnoFlags);
-  drive_ctl.drives[task->drive_number].root_directory =
-      (struct FILEINFO*)malloc(
-          drive_ctl.drives[task->drive_number].RootMaxFiles * 32);
-  memcpy((void*)drive_ctl.drives[task->drive_number].root_directory,
-         (void*)drive_ctl.drives[task->drive_number].ADR_DISKIMG +
-             drive_ctl.drives[task->drive_number].RootDictAddress,
-         drive_ctl.drives[task->drive_number].RootMaxFiles * 32);
-  task->directory = drive_ctl.drives[task->drive_number].root_directory;
-  drive_ctl.drives[task->drive_number].directory_list = (struct LIST*)NewList();
-  drive_ctl.drives[task->drive_number].directory_clustno_list =
-      (struct LIST*)NewList();
-  struct FILEINFO* finfo = task->directory;
-  for (int i = 0; i != drive_ctl.drives[task->drive_number].RootMaxFiles; i++) {
-    if (finfo[i].type == 0x10 && finfo[i].name[0] != 0xe5) {
-      AddVal(finfo[i].clustno,
-             (struct List*)drive_ctl.drives[task->drive_number]
-                 .directory_clustno_list);
-      void* directory_alloc =
-          page_malloc(drive_ctl.drives[task->drive_number].ClustnoBytes);
-      uint32_t sec1 = (drive_ctl.drives[task->drive_number].FileDataAddress +
-                       (finfo[i].clustno - 2) *
-                           drive_ctl.drives[task->drive_number].ClustnoBytes) /
-                      drive_ctl.drives[task->drive_number].SectorBytes;
-      Disk_Read(sec1,
-                drive_ctl.drives[task->drive_number].ClustnoBytes /
-                    drive_ctl.drives[task->drive_number].SectorBytes,
-                directory_alloc, task->drive);
-      AddVal(
-          (int)directory_alloc,
-          (struct List*)(drive_ctl.drives[task->drive_number].directory_list));
-    }
-    if (finfo[i].name[0] == 0) {
-      break;
-    }
-  }
-  for (int i = 1;
-       FindForCount(
-           i,
-           (struct List*)drive_ctl.drives[task->drive_number].directory_list) !=
-       NULL;
-       i++) {
-    struct List* list = FindForCount(
-        i, (struct List*)drive_ctl.drives[task->drive_number].directory_list);
-    finfo = (struct FILEINFO*)list->val;
-    for (int j = 0; j != drive_ctl.drives[task->drive_number].ClustnoBytes / 32;
-         j++) {
-      if (finfo[j].type == 0x10 && finfo[j].name[0] != 0xe5 &&
-          strncmp(".", (char*)finfo[j].name, 1) != 0 &&
-          strncmp("..", (char*)finfo[j].name, 2) != 0) {
-        AddVal(finfo[j].clustno,
-               (struct List*)drive_ctl.drives[task->drive_number]
-                   .directory_clustno_list);
-        void* directory_alloc =
-            page_malloc(drive_ctl.drives[task->drive_number].ClustnoBytes);
-        uint32_t sec1 =
-            (drive_ctl.drives[task->drive_number].FileDataAddress +
-             (finfo[j].clustno - 2) *
-                 drive_ctl.drives[task->drive_number].ClustnoBytes) /
-            drive_ctl.drives[task->drive_number].SectorBytes;
-        Disk_Read(sec1,
-                  drive_ctl.drives[task->drive_number].ClustnoBytes /
-                      drive_ctl.drives[task->drive_number].SectorBytes,
-                  directory_alloc, task->drive);
-        AddVal(
-            (int)directory_alloc,
-            (struct List*)drive_ctl.drives[task->drive_number].directory_list);
-      }
-      if (finfo[j].name[0] == 0) {
-        break;
-      }
-    }
-  }
+  vfs_mount_disk(NowTask()->drive,NowTask()->drive);
+  vfs_change_disk(NowTask()->drive);
+  init_ok_flag = 1;
+  // vfs_change_disk('A');
+  // command_run("cd other");
+  // char path[255];
+  // vfs_getPath(path);
+  // printf("The path is %s now\n", path);
+  // command_run("mem");
+  // command_run("dir");
+  // command_run("mem");
+  // vfs_mount_disk('C', 'B');
+  // // vfs_change_disk('B');
+  // vfs_writefile("B:\\hanzi.txt", "fuck", 4);
+  // char buf[500];
+  // vfs_readfile("B:\\hanzi.txt", buf);
+  // printf("%s\n", buf);
+  // vfs_change_disk('B');
+  // command_run("dir");
+  // vfs_readfile("A:\\path.sys", buf);
+  // printf("%s\n", buf);
+  // vfs_change_disk('A');
+  // command_run("dir");
+  // printf("Shell Task done.\n");
   /*到这里 系统的初始化才真正结束*/
   font = (unsigned char*)"other\\font.bin";
   FILE* fp = fopen("other\\font.bin", "r");
-  ascfont = fp->buf;
+  ascfont = fp->buffer;
   fp = fopen("other\\hzk16", "r");
-  hzkfont = fp->buf;
+  hzkfont = fp->buffer;
   fp = fopen("path.sys", "r");
-  Path_Addr = (uint32_t)fp->buf;
+  Path_Addr = (uint32_t)fp->buffer;
   clear();
   printf("Please choose your boot mode:\n");
   printf("1. TextMode 80 * 25\n");
@@ -160,23 +69,22 @@ void shell(void) {
     }
   }
   if (fsz("AUTOEXEC.BAT") == -1) {
-    printf("Boot Warning:No AUTOEXEC.BAT in Drive %c\n", task->drive);
+    printf("Boot Warning:No AUTOEXEC.BAT in Drive %c\n", NowTask()->drive);
   } else {
     run_bat("AUTOEXEC.BAT");
   }
   extern struct tty* tty_default;
-  tty_set(task, tty_default);
+  tty_set(NowTask(), tty_default);
   shell_handler();
 }
 void shell_handler() {
   struct TASK* task = NowTask();
   task->line = (char*)page_kmalloc(1024);
   strcpy(task->path, "");
+  char buf[255];
   while (1) {
-    printchar(task->drive);
-    print(":\\");
-    print(task->path);
-    print(">");
+    vfs_getPath(buf);
+    printf("%s>",buf);
     clean(task->line, 1024);
     input(task->line, 1024);
     command_run(task->line);
@@ -252,8 +160,9 @@ void task_sr2() {
     if (strcmp("show_all", buf) == 0) {
       for (int i = 1; GetTask(i) != 0; i++) {
         printk("Task %s,CS:EIP=%04x:%08x Sleep=%d,%d lock=%d is_child=%d\n",
-               GetTask(i)->name, GetTask(i)->last_cs,GetTask(i)->last_eip, GetTask(i)->sleep,
-               GetTask(i)->fifosleep, GetTask(i)->lock, GetTask(i)->is_child);
+               GetTask(i)->name, GetTask(i)->last_cs, GetTask(i)->last_eip,
+               GetTask(i)->sleep, GetTask(i)->fifosleep, GetTask(i)->lock,
+               GetTask(i)->is_child);
       }
     } else {
       printk("Bad Command\n");

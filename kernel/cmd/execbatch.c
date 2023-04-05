@@ -5,7 +5,6 @@
 int app_task_num = -1;  // 应用程序的任务号（-1代表没在运行应用程序）
 int run_bat(char* cmdline) {
   // 运行批处理文件
-  struct FILEINFO* finfo;
   char* file;
   int i, j = 0;
   char* name = page_malloc(300);
@@ -18,32 +17,35 @@ int run_bat(char* cmdline) {
     name[i] = cmdline[i];
   }
   name[i] = 0;
-  finfo = Get_File_Address(
-      name);  //获取文件所在的地址，保存为FILEINFO数据结构，以便我们获取信息
-  if (finfo == 0) {
-    finfo = Path_Find_File(name, (char*)Path_Addr);
-    Path_Find_FileName(name, name, (char*)Path_Addr);
+  int fsize = vfs_filesize(name);
+  if (fsize == -1) {
+    if (Path_Find_File(name, (char*)Path_Addr)) {
+      Path_Find_FileName(name, name, (char*)Path_Addr);
+      fsize = vfs_filesize(name);
+    }
   }
-  if (finfo == 0)  //没找到这个文件
+  if (fsize == -1)  //没找到这个文件
   {
     //加上后缀再试一遍
     name = strcat(name, ".BAT");
-    finfo = Get_File_Address(name);
+    fsize = vfs_filesize(name);
   }
-  if (finfo == 0) {
-    finfo = Path_Find_File(name, (char*)Path_Addr);
-    Path_Find_FileName(name, name, (char*)Path_Addr);
+  if (fsize == -1) {
+    if (Path_Find_File(name, (char*)Path_Addr)) {
+      Path_Find_FileName(name, name, (char*)Path_Addr);
+      fsize = vfs_filesize(name);
+    }
   }
-  if (finfo != 0) {
+  if (fsize != -1) {
     if (stricmp(".BAT", &name[strlen(name) - 4]) != 0) {
       page_free(file1, 1024);
       page_free(name, 300);
       return 0;
     }
     FILE* fp = fopen(name, "r");
-    file = (char*)fp->buf;
+    file = (char*)fp->buffer;
     //读取每行的内容，然后调用命令解析函数（command_run）
-    for (i = 0; i != finfo->size; i++) {
+    for (i = 0; i != fsize; i++) {
       if (file[i] == 0x0a || file[i] == 0x0d) {
         if (file[i] == '\r') {
           i++;
@@ -73,6 +75,7 @@ int run_bat(char* cmdline) {
 }
 uint32_t app_num = 0;
 struct TASK* start_drv(char* cmdline) {
+#ifdef BIN_DRV
   struct TASK* result;
   struct FILEINFO* finfo;
   struct SEGMENT_DESCRIPTOR* gdt = (struct SEGMENT_DESCRIPTOR*)ADR_GDT;
@@ -118,7 +121,7 @@ struct TASK* start_drv(char* cmdline) {
     }
     // 代码段的物理内存必须是连续的
     FILE* fp = fopen(name, "r");
-    if (fp->buf[0] ==
+    if (fp->buffer[0] ==
         'A')  // A=ASM,这是汇编语言编写的程序（不分代码段和数据段，所以我们将他们两个分开，以便我们编写代码）
     {
       p = (char*)page_malloc(
@@ -126,7 +129,7 @@ struct TASK* start_drv(char* cmdline) {
           512 *
               1024);  //分配程序的代码段（由于这里是汇编语言的程序，所以在代码段后面要加上512KB的待分配内存）
       memcpy(
-          p, fp->buf,
+          p, fp->buffer,
           finfo
               ->size);  // 将文件拷贝到代码段中（由于是只有一个段的程序，所以直接无脑拷贝即可）
       fclose(fp);
@@ -199,7 +202,8 @@ struct TASK* start_drv(char* cmdline) {
       page_free(stack, 64 * 1024);
       page_free(p, finfo->size + 64 * 1024 + 512 * 1024);
       print("\n");
-    } else if (finfo->size >= 36 && strncmp((char*)fp->buf + 4, "Hari", 4) == 0)
+    } else if (finfo->size >= 36 &&
+               strncmp((char*)fp->buffer + 4, "Hari", 4) == 0)
     // Hari=C, C程序 代码拥有两个段的程序（代码段和数据段）
     {
       /*
@@ -207,7 +211,7 @@ struct TASK* start_drv(char* cmdline) {
               这里只注释新的代码
       */
       p = (char*)page_malloc(finfo->size);
-      memcpy(p, fp->buf, finfo->size);
+      memcpy(p, fp->buffer, finfo->size);
       fclose(fp);
       // hrb文件头（是的，就是那个《30天》的文件头，挺简单的）
       // hrb文件头的结构是：
@@ -306,10 +310,10 @@ struct TASK* start_drv(char* cmdline) {
       page_free(p, finfo->size);
       page_free(q, segsiz + 512 * 1024 * 4 * 2 * 2 * 2);
       print("\n");
-    } else if (elf32Validate((Elf32_Ehdr*)fp->buf)) {
+    } else if (elf32Validate((Elf32_Ehdr*)fp->buffer)) {
       // printk("----------ProGram Running Malloc Info-----------");
       p = (char*)page_malloc(finfo->size);
-      memcpy(p, fp->buf, finfo->size);
+      memcpy(p, fp->buffer, finfo->size);
       fclose(fp);
       Elf32_Ehdr* ehdr = (Elf32_Ehdr*)p;
       segsiz = finfo->size;
@@ -410,10 +414,10 @@ struct TASK* start_drv(char* cmdline) {
   }
   page_free(name, 300);  //将name字符指针所占用的内存释放
   return NULL;           //找不到文件
+#endif
 }
 
 int cmd_app(char* cmdline) {
-  struct FILEINFO* finfo;
   struct SEGMENT_DESCRIPTOR* gdt = (struct SEGMENT_DESCRIPTOR*)ADR_GDT;
   char *name, *p, *q,
       *alloc;  // name:文件名，p:代码段，q:数据段，alloc:分配的内存
@@ -434,54 +438,61 @@ int cmd_app(char* cmdline) {
   name[i] =
       0;  //置字符串结束符0
           //虽然前面已经全部填充为0了，这里为了保险，还是重新加上字符串结束符（'\0'）
-  finfo = Get_File_Address(
+  int fsize;
+  fsize = vfs_filesize(
       name);  //获取文件所在的地址，保存为FILEINFO数据结构，以便我们获取信息
-  if (finfo == 0) {
-    finfo = Path_Find_File(name, (char*)Path_Addr);
-    Path_Find_FileName(name, name, (char*)Path_Addr);
+  if (fsize == -1) {
+    if (Path_Find_File(name, (char*)Path_Addr)) {
+      Path_Find_FileName(name, name, (char*)Path_Addr);
+      fsize = vfs_filesize(name);
+    }
   }
-  if (finfo == 0)  //没找到这个文件
+  if (fsize == -1)  //没找到这个文件
   {
     //加上后缀再试一遍
     name = strcat(name, ".BIN");
-    finfo = Get_File_Address(name);
+    fsize = vfs_filesize(name);
   }
-  if (finfo == 0) {
-    finfo = Path_Find_File(name, (char*)Path_Addr);
-    Path_Find_FileName(name, name, (char*)Path_Addr);
+  if (fsize == -1) {
+    if (Path_Find_File(name, (char*)Path_Addr)) {
+      Path_Find_FileName(name, name, (char*)Path_Addr);
+      fsize = vfs_filesize(name);
+    }
   }
-  if (finfo != 0) {
+  if (fsize != -1) {
     if (stricmp(".BIN", &name[strlen(name) - 4]) != 0) {
       page_free((void*)name, 300);
       return 0;
     }
     // 代码段的物理内存必须是连续的
     FILE* fp = fopen(name, "r");
-    if (fp->buf[0] ==
+    extern int init_ok_flag;
+    if (fp->buffer[0] ==
         'A')  // A=ASM,这是汇编语言编写的程序（不分代码段和数据段，所以我们将他们两个分开，以便我们编写代码）
     {
       p = (char*)page_malloc(
-          finfo->size + 64 * 1024 +
+          fsize + 64 * 1024 +
           512 *
               1024);  //分配程序的代码段（由于这里是汇编语言的程序，所以在代码段后面要加上512KB的待分配内存）
       memcpy(
-          p, fp->buf,
-          finfo
-              ->size);  // 将文件拷贝到代码段中（由于是只有一个段的程序，所以直接无脑拷贝即可）
+          p, fp->buffer,
+          fsize);  // 将文件拷贝到代码段中（由于是只有一个段的程序，所以直接无脑拷贝即可）
       fclose(fp);
-      set_segmdesc(gdt + 3 + app_num * 2, finfo->size - 1, (int)p,
+      set_segmdesc(gdt + 3 + app_num * 2, fsize - 1, (int)p,
                    AR_CODE32_ER | 3 << 5);  //设置他们的段描述符
       set_segmdesc(gdt + 4 + app_num * 2,
-                   finfo->size - 1 + 64 * 1024 + 512 * 1024, (int)p,
+                   fsize - 1 + 64 * 1024 + 512 * 1024, (int)p,
                    AR_DATA32_RW | 3 << 5);
       io_cli();
       int n = NowTask()->level;
+      init_ok_flag = 0;
       struct TASK* this_task = AddUserTask(
           name, 1, ((3 + app_num * 2) * 8), 1, ((4 + app_num * 2) * 8),
-          ((4 + app_num * 2) * 8), finfo->size + 64 * 1024);
+          ((4 + app_num * 2) * 8), fsize + 64 * 1024);
+      init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)p;
-      this_task->alloc_addr = (int)((uint32_t)p + finfo->size + 64 * 1024);
+      this_task->alloc_addr = (int)((uint32_t)p + fsize + 64 * 1024);
       this_task->alloc_size = 512 * 1024;
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((unsigned int)stack + 64 * 1024);
@@ -489,6 +500,7 @@ int cmd_app(char* cmdline) {
       this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
+      this_task->nfs = NowTask()->nfs;
       this_task->line = NowTask()->line;
       strcpy(this_task->path, NowTask()->path);
       this_task->drive = NowTask()->drive;
@@ -515,7 +527,7 @@ int cmd_app(char* cmdline) {
         if (this_task->forever == 1) {
           io_cli();
           change_page_task_id(this_task->sel / 8 - 103, p,
-                              finfo->size + 64 * 1024 + 512 * 1024);
+                              fsize + 64 * 1024 + 512 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, memman, 4 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, kfifo,
@@ -545,9 +557,10 @@ int cmd_app(char* cmdline) {
       page_kfree((int)mbuf, 4096);
       page_free(memman, 4 * 1024);
       page_free(stack, 64 * 1024);
-      page_free(p, finfo->size + 64 * 1024 + 512 * 1024);
+      page_free(p, fsize + 64 * 1024 + 512 * 1024);
       print("\n");
-    } else if (finfo->size >= 36 && strncmp((char*)fp->buf + 4, "Hari", 4) == 0)
+    } else if (fsize >= 36 &&
+               strncmp((char*)fp->buffer + 4, "Hari", 4) == 0)
     // Hari=C, C程序 代码拥有两个段的程序（代码段和数据段）
     {
       /*
@@ -556,8 +569,8 @@ int cmd_app(char* cmdline) {
       */
 
       int now = NowTask()->level;
-      p = (char*)page_malloc(finfo->size);
-      memcpy(p, fp->buf, finfo->size);
+      p = (char*)page_malloc(fsize);
+      memcpy(p, fp->buffer, fsize);
       fclose(fp);
       // hrb文件头（是的，就是那个《30天》的文件头，挺简单的）
       // hrb文件头的结构是：
@@ -574,7 +587,7 @@ int cmd_app(char* cmdline) {
       dathrb = *((int*)(p + 0x0014));
       q = (char*)page_malloc(segsiz +
                              512 * 1024 * 4 * 2 * 2 * 2);  //分配数据段的内存
-      set_segmdesc(gdt + 3 + app_num * 2, finfo->size - 1, (int)p,
+      set_segmdesc(gdt + 3 + app_num * 2, fsize - 1, (int)p,
                    AR_CODE32_ER | 3 << 5);
       set_segmdesc(gdt + 4 + app_num * 2,
                    segsiz - 1 + 512 * 1024 * 4 * 2 * 2 * 2, (int)q,
@@ -592,9 +605,11 @@ int cmd_app(char* cmdline) {
       char* kbuf = (char*)page_kmalloc(4096);
       char* mbuf = (char*)page_kmalloc(4096);
       char* memman = (char*)page_malloc(4 * 1024 * 4 * 2 * 2 * 2);
+      init_ok_flag = 0;
       struct TASK* this_task =
           AddUserTask(name, 1, ((3 + app_num * 2) * 8), 0x1b,
                       ((4 + app_num * 2) * 8), ((4 + app_num * 2) * 8), esp);
+      init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
       this_task->alloc_addr = (int)((uint32_t)q + segsiz);
@@ -607,6 +622,7 @@ int cmd_app(char* cmdline) {
       this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
+      this_task->nfs = NowTask()->nfs;
       this_task->line = NowTask()->line;
       strcpy(this_task->path, NowTask()->path);
       this_task->drive = NowTask()->drive;
@@ -626,7 +642,7 @@ int cmd_app(char* cmdline) {
         // printk("App(%s):Run. --> %08x\n",name,GetTaskForName(name));
         if (this_task->forever == 1) {
           io_cli();
-          change_page_task_id(this_task->sel / 8 - 103, p, finfo->size);
+          change_page_task_id(this_task->sel / 8 - 103, p, fsize);
           change_page_task_id(this_task->sel / 8 - 103, q,
                               segsiz + 512 * 1024 * 4 * 2 * 2 * 2);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
@@ -663,19 +679,19 @@ int cmd_app(char* cmdline) {
       page_kfree((int)mbuf, 4096);
       page_free(memman, 4 * 1024 * 4 * 2 * 2 * 2);
       page_free(stack, 64 * 1024);
-      page_free(p, finfo->size);
+      page_free(p, fsize);
       page_free(q, segsiz + 512 * 1024 * 4 * 2 * 2 * 2);
       print("\n");
-    } else if (elf32Validate((Elf32_Ehdr*)fp->buf)) {
+    } else if (elf32Validate((Elf32_Ehdr*)fp->buffer)) {
       // printk("----------ProGram Running Malloc Info-----------");
-      p = (char*)page_malloc(finfo->size);
-      memcpy(p, fp->buf, finfo->size);
+      p = (char*)page_malloc(fsize);
+      memcpy(p, fp->buffer, fsize);
       fclose(fp);
       Elf32_Ehdr* ehdr = (Elf32_Ehdr*)p;
-      segsiz = finfo->size;
+      segsiz = fsize;
       q = (char*)page_malloc(segsiz + 512 * 1024 * 4 +
                              512 * 1024);  //分配数据段的内存
-      set_segmdesc(gdt + 3 + app_num * 2, finfo->size - 1, (int)p,
+      set_segmdesc(gdt + 3 + app_num * 2, fsize - 1, (int)p,
                    AR_CODE32_ER | 3 << 5);
       set_segmdesc(gdt + 4 + app_num * 2,
                    segsiz - 1 + 512 * 1024 * 4 + 512 * 1024, (int)q,
@@ -695,10 +711,12 @@ int cmd_app(char* cmdline) {
       // printk("p:%08x\n",p);
       // printk("q:%08x\n",q);
       // printf("%08x\n", memman);
+      init_ok_flag = 0;
       struct TASK* this_task =
           AddUserTask(name, 2, ((3 + app_num * 2) * 8), ehdr->e_entry,
                       ((4 + app_num * 2) * 8), ((4 + app_num * 2) * 8),
                       segsiz + 512 * 1024 * 4 + 512 * 1024);
+      init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
       this_task->alloc_addr = (int)((uint32_t)q + segsiz);
@@ -711,6 +729,7 @@ int cmd_app(char* cmdline) {
       this_task->ss1 = this_task->tss.ss;
       this_task->esp0 = this_task->tss.esp0;
       this_task->directory = NowTask()->directory;
+      this_task->nfs = NowTask()->nfs;
       strcpy(this_task->path, NowTask()->path);
       this_task->drive = NowTask()->drive;
       this_task->drive_number = NowTask()->drive_number;
@@ -727,7 +746,7 @@ int cmd_app(char* cmdline) {
       while (GetTaskForName(name) != 0) {
         if (this_task->forever == 1) {
           io_cli();
-          change_page_task_id(this_task->sel / 8 - 103, p, finfo->size);
+          change_page_task_id(this_task->sel / 8 - 103, p, fsize);
           change_page_task_id(this_task->sel / 8 - 103, q, segsiz + 512 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, memman, 4 * 1024);
@@ -757,7 +776,7 @@ int cmd_app(char* cmdline) {
       page_kfree((int)mbuf, 4096);
       page_free(memman, 4 * 1024);
       page_free(stack, 64 * 1024);
-      page_free(p, finfo->size);
+      page_free(p, fsize);
       page_free(q, segsiz + 512 * 1024 + 512 * 1024);
       print("\n");
       // printk("----------ProGram Running Malloc Info End-----------\n");

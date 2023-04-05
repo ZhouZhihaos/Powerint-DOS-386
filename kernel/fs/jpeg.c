@@ -736,7 +736,7 @@ void jpeg_decode(JPEG* jpeg, unsigned char* rgb, int b_type) {
 void jpgview32(char* path, unsigned char* vram, int xsize) {
   struct FILEINFO* fileinfo = Get_File_Address(path);
   FILE *fp = fopen(path, "r");
-  char* buf = fp->buf;
+  char* buf = fp->buffer;
   int info[8];
   struct DLL_STRPICENV *env = (struct DLL_STRPICENV *)page_malloc(sizeof(struct DLL_STRPICENV));
   struct RGB *picbuf, *q;
@@ -774,7 +774,7 @@ void jpgview32(char* path, unsigned char* vram, int xsize) {
 void show_photo(char *path,vram_t *vr, int xsize) {
   struct FILEINFO* fileinfo = Get_File_Address(path);
   FILE *fp = fopen(path, "r");
-  char* buf = fp->buf;
+  char* buf = fp->buffer;
   int info[8];
   struct DLL_STRPICENV *env = (struct DLL_STRPICENV *)page_malloc(sizeof(struct DLL_STRPICENV));
   struct RGB *picbuf, *q;

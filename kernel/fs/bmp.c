@@ -3,7 +3,7 @@
 void bmpview(char *filename) {
   int i, j;
   FILE *fp = fopen(filename, "r");
-  char *p = fp->buf;
+  char *p = fp->buffer;
   unsigned short pxsize, pysize, start;
   unsigned int length;
   if (fp == 0) {
@@ -43,7 +43,7 @@ void bmpview(char *filename) {
 }
 void BMPVIEW32(char *path, unsigned char *vram, int xsize) {
   FILE *fp = fopen(path, "r");
-  unsigned char *buf = fp->buf;
+  unsigned char *buf = fp->buffer;
   int i, j;
   int offset;
   int width, height;

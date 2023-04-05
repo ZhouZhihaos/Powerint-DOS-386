@@ -66,7 +66,7 @@ VESAModeInfo* GetVESAModeInfo(int mode) {
     return NULL;
   return (VESAModeInfo*)(0x7000);
 }
-void _get_all_mode(jmp_buf env) {
+void _get_all_mode() {
   // 获取所有支持的模式
   // 在屏幕上打印，模式号，分辨率，色深
   regs16_t regs;
@@ -83,19 +83,16 @@ void _get_all_mode(jmp_buf env) {
     printf("Mode: %04x ", mode[c]);
     VESAModeInfo* info = GetVESAModeInfo(mode[c]);
     printf("%d x %d x %d\n", info->width, info->height, info->bitsPerPixel);
-    sleep(500);
+    // sleep(500);
   }
-  longjmp(env, 2);
+  // longjmp(env, 2);
 }
 void get_all_mode() {
   // 获取所有支持的模式
   // 在屏幕上打印，模式号，分辨率，色深
-  jmp_buf env;
-  if (setjmp(env)) {
-    return;
-  } else {
-    _get_all_mode(env);
-  }
+
+  _get_all_mode();
+  //
 }
 int set_mode(int width, int height, int bpp) {
   regs16_t regs;

@@ -207,6 +207,6 @@ void md5s(char *hexbuf, int read_len, char *result) {
 }
 void md5f(char *filename, unsigned char *result) {
   FILE *fp = fopen(filename, "r");
-  md5s((char *)fp->buf, fsz(filename), (char *)result);
+  md5s((char *)fp->buffer, fsz(filename), (char *)result);
   fclose(fp);
 }

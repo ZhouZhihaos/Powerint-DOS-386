@@ -188,7 +188,7 @@ void set_palette(int start, int end, unsigned char *rgb) {
 void Set_Font(char *file) {
   unsigned rows, cols, ht, i;
   FILE *fp = fopen(file, "r");
-  char *g_8x16_font = fp->buf;
+  char *g_8x16_font = fp->buffer;
   cols = 80;
   rows = 25;
   ht = 16;

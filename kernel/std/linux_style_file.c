@@ -28,12 +28,12 @@ int open(const char* pathname, int flags, unsigned int mode) {
   fp = malloc(sizeof(OPEN));
   FILE* fp1;
   fp1 = fopen(pathname, "wb");
-  fp->size = fp1->size;
+  fp->size = fp1->fileSize;
   fp->buf = malloc(fp->size);
-  fp->path = malloc(strlen(fp1->path) + 1);
+  fp->path = malloc(strlen(fp1->name) + 1);
   fp->arrsz = fp->size;
   strcpy(fp->path, pathname);
-  memcpy(fp->buf, fp1->buf, fp->size);
+  memcpy(fp->buf, fp1->buffer , fp->size);
   fclose(fp1);
   fp->p = 0;
   fp->wg = 0;

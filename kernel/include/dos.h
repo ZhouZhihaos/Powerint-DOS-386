@@ -209,6 +209,7 @@ void DeleteVal(int count, struct List* Obj);
 struct List* NewList();
 void Change(int count, struct List* Obj, int val);
 int GetLastCount(struct List* Obj);
+void DeleteList(struct List* Obj);
 // init.c
 void sysinit();
 bool SetDrive(unsigned char* name);

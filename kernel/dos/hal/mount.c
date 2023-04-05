@@ -23,7 +23,7 @@ int mount(char *fileName) {
       md[i].vd.flag = 1;
       md[i].vd.Read = MountDiskRead;
       md[i].vd.Write = MountDiskWrite;
-      md[i].vd.size = fp->size;
+      md[i].vd.size = fp->fileSize;
       md[i].flag = 1;
       md[i].fp = fp;
       strcpy(md[i].vd.DriveName,fileName);
@@ -48,7 +48,7 @@ static void MountDiskRead(char drive, unsigned char *buffer,
                           unsigned int number, unsigned int lba) {
   for (int i = 0; i < 255; i++) {
     if (md[i].flag && md[i].drive == drive) {
-      memcpy(buffer, md[i].fp->buf + lba * 512, number * 512);
+      memcpy(buffer, md[i].fp->buffer + lba * 512, number * 512);
       return;
     }
   }
@@ -57,7 +57,7 @@ static void MountDiskWrite(char drive, unsigned char *buffer,
                            unsigned int number, unsigned int lba) {
   for (int i = 0; i < 255; i++) {
     if (md[i].flag && md[i].drive == drive) {
-      memcpy(md[i].fp->buf + lba * 512, buffer, number * 512);
+      memcpy(md[i].fp->buffer + lba * 512, buffer, number * 512);
       return;
     }
   }
