@@ -56,4 +56,5 @@ bool vfs_mount_disk(uint8_t disk_number, uint8_t drive);
 uint32_t vfs_filesize(char* filename);
 bool vfs_readfile(char* path, char* buffer);
 bool vfs_change_disk_for_task(uint8_t drive,struct TASK *task);
+bool vfs_format(uint8_t disk_number, char* FSName);
 #endif

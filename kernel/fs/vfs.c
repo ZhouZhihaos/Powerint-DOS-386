@@ -226,8 +226,7 @@ bool vfs_renamefile(char* filename, char* filename_of_new) {
 bool vfs_format(uint8_t disk_number, char* FSName) {
   for (int i = 0; i < 255; i++) {
     if (strcmp(vfsstl[i].FSName, FSName) == 0 && vfsstl[i].flag == 1) {
-      vfsstl[i].Format(disk_number);
-      return true;
+      return vfsstl[i].Format(disk_number);
     }
   }
   return false;

@@ -67,11 +67,11 @@ void file_loadfile(int clustno, int size, char* buf, int* fat, vfs_t* vfs) {
               img + i * get_dm(vfs).ClustnoBytes, vfs->disk_number);
     clustno = fat[clustno];
   }
- // printk("done 1 %d\n", size);
+  // printk("done 1 %d\n", size);
   memcpy((void*)buf, img, size);
   page_free(img, ((size - 1) / get_dm(vfs).SectorBytes + 1) *
                      get_dm(vfs).SectorBytes);
- // printk("done 2\n");
+  // printk("done 2\n");
   return;
 }
 FILE* f_t;
@@ -259,7 +259,7 @@ struct FILEINFO* Get_File_Address(char* path1, vfs_t* vfs) {
   // TODO: Modifly it
   struct FILEINFO* bmpDict = get_now_dir(vfs);
   int drive_number = vfs->disk_number;
- // printk("Get_File_Address :%s\n", path1);
+  // printk("Get_File_Address :%s\n", path1);
   char* path = (char*)page_malloc(strlen(path1) + 1);
   strcpy(path, path1);
   strtoupper(path);
@@ -284,7 +284,7 @@ struct FILEINFO* Get_File_Address(char* path1, vfs_t* vfs) {
     for (j = 0; i < strlen(path); i++, j++) {
       if (path[i] == '\\' || path[i] == '/') {
         temp_name[j] = '\0';
-       // printk("Got It:%s,ALL:%s\n", temp_name, path);
+        // printk("Got It:%s,ALL:%s\n", temp_name, path);
         i++;
         break;
       }
@@ -630,9 +630,9 @@ int del(char* cmdline, vfs_t* vfs) {
   // }
   // fp->size = 0;
   // fclose(fp);
-  char *buf = malloc(finfo->size);
-  memset(buf,0,finfo->size);
-  Fat12_WriteFile(vfs,name,buf,finfo->size);
+  char* buf = malloc(finfo->size);
+  memset(buf, 0, finfo->size);
+  Fat12_WriteFile(vfs, name, buf, finfo->size);
   finfo->name[0] = 0xe5;
   get_dm(vfs).fat[finfo->clustno] = 0;
   get_dm(vfs).FatClustnoFlags[finfo->clustno] = false;
@@ -893,7 +893,7 @@ int format(char drive) {
   } else if (drive != 'B') {
     // struct IDEHardDiskInfomationBlock* info = drivers_idehdd_info();
     // printk("drive=%c %d\n", drive, have_vdisk(drive));
-    if (DiskReady(drive)) {
+    if (!DiskReady(drive)) {
       // printf("Couldn't find Disk.\n");
       return 0;
     }
@@ -1056,7 +1056,7 @@ bool Fat12_ReadFile(struct vfs_t* vfs, char* path, char* buffer) {
   // printf("Fat12 Read ---- %s\n",path);
   struct FILEINFO* finfo;
   finfo = Get_File_Address(path, vfs);
-//  printk("finfo = %08x\n", finfo);
+  //  printk("finfo = %08x\n", finfo);
   if (finfo == 0) {
     return 0;
   } else {
@@ -1116,7 +1116,7 @@ List* Fat12_ListFile(struct vfs_t* vfs, char* dictpath) {
             }
           }
           d->name[i] = 0;
-         // printk("d->name = %s\n", d->name);
+          // printk("d->name = %s\n", d->name);
           AddVal(d, result);
         }
       }

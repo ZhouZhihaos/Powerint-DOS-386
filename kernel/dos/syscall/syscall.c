@@ -406,7 +406,7 @@ void inthandler36(int edi,
       timer_free(task->timer);
     }
   } else if (eax == 0x25) {
-    intreturn(format(ebx), ebx, ecx, edx, esi, edi, ebp);
+    intreturn(vfs_format(ebx,"FAT12"), ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x26) {
     // CMOS时间
     if (ebx == 0x00) {

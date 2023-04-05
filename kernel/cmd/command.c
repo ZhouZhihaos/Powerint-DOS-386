@@ -214,13 +214,11 @@ CHECK_OK:
     strcpy(NowTask()->line, cmdline);
   }
   if (strincmp("FORMAT ", cmdline, 7) == 0) {
-    int res = format(cmdline[7]);
-    if (res == -1) {
-      printf("Couldn't find tskdrv:\\boot.bin to format disk.\n\n");
-    } else if (res == 0) {
-      printf("Format OK.\n\n");
+    int res = vfs_format(cmdline[7], "FAT12");
+    if (res == 0) {
+      printf("fatal error\n\n");
     } else if (res == 1) {
-      printf("Couldn't find Disk.\n");
+      printf("Format OK\n");
     }
   } else if (stricmp("FAT", cmdline) == 0) {
     struct TASK* task = NowTask();
@@ -1175,7 +1173,7 @@ void type_deal(char* cmdline) {
   // type命令的实现
   char* name = cmdline + 5;
 
-  int size = vfs_filesize(cmdline+5);
+  int size = vfs_filesize(cmdline + 5);
   if (size == -1) {
     print(name);
     print(" not found!\n\n");
