@@ -223,7 +223,7 @@ CHECK_OK:
   } else if (stricmp("FAT", cmdline) == 0) {
     struct TASK* task = NowTask();
     for (int i = 0; i != 3072; i++) {
-      printf("%03x ", drive_ctl.drives[task->drive_number].fat[i]);
+      printf("%03x ", get_dm(task->nfs).fat[i]);
       if (!((i + 1) % (24 * 20))) {
         printf("Press any key to continue...");
         getch();
@@ -446,7 +446,7 @@ CHECK_OK:
       char* save_file_name = (char*)malloc(100);
       Get_Arg(save_file_name, cmdline, 1);
       if (fsz(save_file_name) == -1) {
-        mkfile(save_file_name);
+        vfs_createfile(save_file_name);
       }
       FILE* fp = fopen(save_file_name, "wb");
       fseek(fp, 0, 0);
@@ -861,7 +861,7 @@ CHECK_OK:
       return;
     }
     if (fsz(out) == -1) {
-      mkfile(out);
+      vfs_createfile(out);
     }
     FILE* fp_asm = fopen(asm1, "wb");
     FILE* fp_out = fopen(out, "wb");
@@ -947,7 +947,14 @@ CHECK_OK:
     Get_Arg(buf, cmdline, 1);
     EDIT_FILE("tskdrv:\\path.sys", buf, strlen(buf), 0);
   } else if (cmdline[1] == ':' && cmdline[2] == '\0') {
-    if (!vfs_change_disk(cmdline[0])) {
+    if (!vfs_check_mount(cmdline[0])) {
+      if (!vfs_mount_disk(cmdline[0], cmdline[0])) {
+        printf("Disk not ready!\n");
+      } else {
+        vfs_change_disk(cmdline[0]);
+      }
+    } else {
+      vfs_unmount_disk(cmdline[0]);
       if (!vfs_mount_disk(cmdline[0], cmdline[0])) {
         printf("Disk not ready!\n");
       } else {
@@ -991,7 +998,7 @@ void pci_list() {
   }
 }
 
-static void dir(struct TASK* task, struct FILEINFO* finfo, bool hide) {}
+static void dir(struct TASK* task, struct FAT12_FILEINFO* finfo, bool hide) {}
 void cmd_dir() {
   // DIR命令的实现
   // struct TASK* task = NowTask();
@@ -1013,7 +1020,7 @@ void cmd_dir() {
   //   dir(task, task->directory, hide);
   //   AddVal((int)task->directory, list_dir);
   //   for (int k = 1; FindForCount(k, list_dir) != NULL; k++) {
-  //     struct FILEINFO* finfo = (struct FILEINFO*)FindForCount(k,
+  //     struct FAT12_FILEINFO* finfo = (struct FAT12_FILEINFO*)FindForCount(k,
   //     list_dir)->val; for (int i = 0; i !=
   //     drive_ctl.drives[task->drive_number].RootMaxFiles;
   //          i++) {
@@ -1034,7 +1041,7 @@ void cmd_dir() {
   //             list = FindForCount(
   //                 j, (struct List*)drive_ctl.drives[task->drive_number]
   //                        .directory_list);
-  //             dir(task, (struct FILEINFO*)list->val, hide);
+  //             dir(task, (struct FAT12_FILEINFO*)list->val, hide);
   //             AddVal(list->val, list_dir);
   //             break;
   //           }
@@ -1052,14 +1059,14 @@ void cmd_dir() {
   //   if (list != (struct List*)NULL) {
   //     void* tm = malloc(32 * 256);
   //     for (int i = 1; FindForCount(i, list) != NULL; i++) {
-  //       struct FILEINFO* finfo = (struct FILEINFO*)FindForCount(i,
+  //       struct FAT12_FILEINFO* finfo = (struct FAT12_FILEINFO*)FindForCount(i,
   //       list)->val; memcpy(tm + (i - 1) * 32, (void*)finfo, 32);
   //     }
-  //     dir(task, (struct FILEINFO*)tm, hide);
+  //     dir(task, (struct FAT12_FILEINFO*)tm, hide);
   //     free(tm);
   //     return;
   //   }
-  //   struct FILEINFO* finfo = Get_File_Address(cmp);
+  //   struct FAT12_FILEINFO* finfo = Get_File_Address(cmp);
   //   if (finfo != 0) {
   //     char t = finfo[1].name[0];
   //     finfo[1].name[0] = '\0';
@@ -1082,7 +1089,7 @@ void cmd_dir() {
   //             FindForCount(i, (struct
   //             List*)drive_ctl.drives[task->drive_number]
   //                                 .directory_list);
-  //         dir(task, (struct FILEINFO*)list->val, hide);
+  //         dir(task, (struct FAT12_FILEINFO*)list->val, hide);
   //         return;
   //       }
   //     }
@@ -1096,7 +1103,7 @@ void cmd_dir() {
       int color = now_tty()->color;
       now_tty()->color = 0x0a;
       printf("%s ", d->name);
-      free(d->name);
+      //free(d->name);
       now_tty()->color = color;
     } else {
       printf("%s ", d->name);
@@ -1109,9 +1116,9 @@ void cmd_dir() {
   return;
 }
 
-void tree(struct FILEINFO* directory) {
-  struct TASK* task = NowTask();
-  struct FILEINFO* finfo = directory;
+void tree(struct FAT12_FILEINFO* directory) {
+  /*struct TASK* task = NowTask();
+  struct FAT12_FILEINFO* finfo = directory;
   struct List* list_ = NewList();
   int directory_num = 0;
   int root_file_num = 0;
@@ -1148,7 +1155,7 @@ void tree(struct FILEINFO* directory) {
               }
               printf("\n");
               AddVal((int)(finfo + i), list_);
-              finfo = (struct FILEINFO*)list->val;
+              finfo = (struct FAT12_FILEINFO*)list->val;
               i = 0;
               directory_num++;
               break;
@@ -1160,13 +1167,13 @@ void tree(struct FILEINFO* directory) {
     if (finfo == directory + root_file_num + 1) {
       break;
     }
-    struct FILEINFO* last =
-        (struct FILEINFO*)FindForCount(directory_num, list_)->val;
+    struct FAT12_FILEINFO* last =
+        (struct FAT12_FILEINFO*)FindForCount(directory_num, list_)->val;
     finfo = last + 1;
     DeleteVal(directory_num, list_);
     directory_num--;
   }
-  return;
+  return;*/
 }
 
 void type_deal(char* cmdline) {
@@ -1257,7 +1264,7 @@ int compress_one_file(char* infilename, char* outfilename) {
   (void)(total_wrote);
   (void)(fg);
   (void)(end);
-  mkfile(outfilename);
+  vfs_createfile(outfilename);
   FILE* infile = fopen(infilename, "rb");
   buffer = malloc(infile->fileSize);
   sz = infile->fileSize;
@@ -1305,7 +1312,7 @@ int decompress_one_file(char* infilename, char* outfilename) {
   unsigned char* buffer2;
   unsigned int p = 0;
   int sz = 0;
-  mkfile(outfilename);
+  vfs_createfile(outfilename);
   gzFile infile = gzopen(infilename, "rb");
   // FILE* outfile = fopen(outfilename, "wb");
   while ((num_read = gzread(infile, buffer, sizeof(buffer))) > 0) {
@@ -1331,8 +1338,8 @@ int decompress_one_file(char* infilename, char* outfilename) {
   // fclose(outfile);
   char buffer3[60];
   sprintf(buffer3, "del %s", outfilename);
-  del(buffer3);
-  mkfile(outfilename);
+  vfs_delfile(buffer3);
+  vfs_createfile(outfilename);
   for (int i = 0; i < sz; i++) {
     printk("%02x ", buffer2[i]);
   }

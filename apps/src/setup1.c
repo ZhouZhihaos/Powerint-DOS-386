@@ -133,7 +133,7 @@ int main() {
   }
   Set_Loading(0);
   setState("Install: Format Disk");
-  if (format('C')) {
+  if (!format('C')) {
     OKMsg("Disk Read Error.");
     system("color 07");
     system("cls");

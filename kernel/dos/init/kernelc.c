@@ -1,12 +1,10 @@
 // Powerint DOS 386
 // Copyright (C) 2021-2022 zhouzhihao & min0911
 #include <dos.h>
-uint32_t running_mode = POWERINTDOS;  // 运行模式
+uint32_t running_mode = POWERINTDOS; // 运行模式
 uint32_t Path_Addr;
-struct DRIVE_CTL drive_ctl;
 unsigned char *font, *ascfont, *hzkfont;
-unsigned char* IVT;
-#define vfs_now NowTask()->nfs
+unsigned char *IVT;
 int init_ok_flag = 0;
 void shell(void) {
   ide_initialize(0x1F0, 0x3F6, 0x170, 0x376, 0x000);
@@ -14,37 +12,16 @@ void shell(void) {
   init_network();
   init_card();
   init_palette();
-  vfs_mount_disk(NowTask()->drive,NowTask()->drive);
+  vfs_mount_disk(NowTask()->drive, NowTask()->drive);
   vfs_change_disk(NowTask()->drive);
   init_ok_flag = 1;
-  // vfs_change_disk('A');
-  // command_run("cd other");
-  // char path[255];
-  // vfs_getPath(path);
-  // printf("The path is %s now\n", path);
-  // command_run("mem");
-  // command_run("dir");
-  // command_run("mem");
-  // vfs_mount_disk('C', 'B');
-  // // vfs_change_disk('B');
-  // vfs_writefile("B:\\hanzi.txt", "fuck", 4);
-  // char buf[500];
-  // vfs_readfile("B:\\hanzi.txt", buf);
-  // printf("%s\n", buf);
-  // vfs_change_disk('B');
-  // command_run("dir");
-  // vfs_readfile("A:\\path.sys", buf);
-  // printf("%s\n", buf);
-  // vfs_change_disk('A');
-  // command_run("dir");
-  // printf("Shell Task done.\n");
   /*到这里 系统的初始化才真正结束*/
-  font = (unsigned char*)"other\\font.bin";
-  FILE* fp = fopen("other\\font.bin", "r");
+  font = (unsigned char *)"/other/font.bin";
+  FILE *fp = fopen("/other/font.bin", "r");
   ascfont = fp->buffer;
-  fp = fopen("other\\hzk16", "r");
+  fp = fopen("/other/hzk16", "r");
   hzkfont = fp->buffer;
-  fp = fopen("path.sys", "r");
+  fp = fopen("/path.sys", "r");
   Path_Addr = (uint32_t)fp->buffer;
   clear();
   printf("Please choose your boot mode:\n");
@@ -73,28 +50,28 @@ void shell(void) {
   } else {
     run_bat("AUTOEXEC.BAT");
   }
-  extern struct tty* tty_default;
+  extern struct tty *tty_default;
   tty_set(NowTask(), tty_default);
   shell_handler();
 }
 void shell_handler() {
-  struct TASK* task = NowTask();
-  task->line = (char*)page_kmalloc(1024);
+  struct TASK *task = NowTask();
+  task->line = (char *)page_kmalloc(1024);
   strcpy(task->path, "");
   char buf[255];
   while (1) {
     vfs_getPath(buf);
-    printf("%s>",buf);
+    printf("%s>", buf);
     clean(task->line, 1024);
     input(task->line, 1024);
     command_run(task->line);
   }
 }
-struct tty* now_tty() {
-  extern struct List* tty_list;
-  struct tty* n;
+struct tty *now_tty() {
+  extern struct List *tty_list;
+  struct tty *n;
   for (int j = 1; FindForCount(j, tty_list) != 0; j++) {
-    n = (struct tty*)FindForCount(j, tty_list)->val;
+    n = (struct tty *)FindForCount(j, tty_list)->val;
     if ((now_tty_TextMode(n) && running_mode == POWERINTDOS) ||
         (now_tty_HighTextMode(n) && running_mode == HIGHTEXTMODE) ||
         (now_tty_GraphicMode(n) && running_mode == POWERDESKTOP)) {
@@ -117,8 +94,8 @@ void task_sr1() {
       }
     }
     for (int i = 1; i != tasknum + 1; i++) {
-      struct TASK* task = GetTask(i);
-      if (task->running == 0) {  // 进程没有运行
+      struct TASK *task = GetTask(i);
+      if (task->running == 0) { // 进程没有运行
         __SubTask(task);
         goto re;
       }
@@ -126,7 +103,7 @@ void task_sr1() {
     SleepTask(NowTask());
   }
 }
-void com_input(char* ptr, int len) {
+void com_input(char *ptr, int len) {
   int i;
   for (i = 0; i != len; i++) {
     char in = read_serial();

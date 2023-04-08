@@ -47,17 +47,12 @@ FILE* fopen(char* filename, char* mode) {
     mode++;
   }
   if (vfs_filesize(filename) == -1) {
-    if (flag & READ) {
-      free(fp);
-      return NULL;  // 找不到
-    }
-    if (flag & WRITE || flag & APPEND) {
-      vfs_createfile(filename);
-    }
+    free(fp);
+    return NULL;  // 找不到
   } else if (flag & WRITE) {
     char buffe2[100];
-    vfs_delfile(filename);
-    vfs_createfile(filename);
+    // vfs_delfile(filename);
+    // vfs_createfile(filename);
   }
   if (flag & WRITE) {
     fp->fileSize = 0;
@@ -228,17 +223,16 @@ int ferror(FILE* stream) {
 int getc(FILE* stream) {
   return fgetc(stream);
 }
-int fsz(char *filename) {
+int fsz(char* filename) {
   return vfs_filesize(filename);
 }
 
-void EDIT_FILE(char *name, char *dest, int length, int offset) {
-
-  FILE *fp = fopen(name, "wb");
+void EDIT_FILE(char* name, char* dest, int length, int offset) {
+  FILE* fp = fopen(name, "wb");
   if (fp == 0) {
     //没有找到文件，创建一个，然后再编辑
     printk("no file.\n");
-    //command_run("dir");
+    // command_run("dir");
     vfs_createfile(name);
     EDIT_FILE(name, dest, length, offset);
     return;
@@ -250,8 +244,8 @@ void EDIT_FILE(char *name, char *dest, int length, int offset) {
   fclose(fp);
   return;
 }
-int Copy(char *path, char *path1, vfs_t *vfs) {
-  unsigned char *path1_file_buffer;
+int Copy(char* path, char* path1) {
+  unsigned char* path1_file_buffer;
   if (fsz(path) == -1) {
     // printf("file not found\n");
     return -1;
@@ -261,7 +255,7 @@ int Copy(char *path, char *path1, vfs_t *vfs) {
 
   path1_file_buffer = malloc(fsz(path) + 1);
   int sz = fsz(path);
-  FILE *fp = fopen(path, "rb");
+  FILE* fp = fopen(path, "rb");
   fread(path1_file_buffer, sz, 1, fp);
   fclose(fp);
   fp = fopen(path1, "wb");

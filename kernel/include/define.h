@@ -6,7 +6,7 @@ typedef unsigned int vram_t;
 typedef vram_t color_t;
 
 /* dos.h */
-#define VERSION "0.7a"  // Version of the program
+#define VERSION "0.7a" // Version of the program
 #define ADR_IDT 0x0026f800
 #define LIMIT_IDT 0x000007ff
 #define ADR_GDT 0x00270000
@@ -22,21 +22,21 @@ typedef vram_t color_t;
 #define PIT_CNT0 0x0040
 #define AR_TSS32 0x0089
 typedef struct List List;
-#define Panic_Print(func, info, ...)                                         \
-  func("%s--PANIC: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
+#define Panic_Print(func, info, ...)                                           \
+  func("%s--PANIC: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__,   \
        ##__VA_ARGS__);
 #define WARNING_Print(func, info, ...)                                         \
   func("%s--WARNING: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
        ##__VA_ARGS__);
-#define DEBUG_Print(func, info, ...)                                         \
-  func("%s--DEBUG: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__, \
+#define DEBUG_Print(func, info, ...)                                           \
+  func("%s--DEBUG: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__,   \
        ##__VA_ARGS__);
-#define Panic_K(info,...) Panic_Print(printk,info,##__VA_ARGS__)
-#define WARNING_K(info,...) WARNING_Print(printk,info,##__VA_ARGS__)
-#define DEBUG_K(info,...) DEBUG_Print(printk,info,##__VA_ARGS__)
-#define Panic_F(info,...) Panic_Print(printf,info,##__VA_ARGS__)
-#define WARNING_F(info,...) WARNING_Print(printf,info,##__VA_ARGS__)
-#define DEBUG_F(info,...) DEBUG_Print(printf,info,##__VA_ARGS__)
+#define Panic_K(info, ...) Panic_Print(printk, info, ##__VA_ARGS__)
+#define WARNING_K(info, ...) WARNING_Print(printk, info, ##__VA_ARGS__)
+#define DEBUG_K(info, ...) DEBUG_Print(printk, info, ##__VA_ARGS__)
+#define Panic_F(info, ...) Panic_Print(printf, info, ##__VA_ARGS__)
+#define WARNING_F(info, ...) WARNING_Print(printf, info, ##__VA_ARGS__)
+#define DEBUG_F(info, ...) DEBUG_Print(printf, info, ##__VA_ARGS__)
 #define Get_Tid(task) task->sel / 8 - 103
 #define POWERINTDOS 0
 #define POWERDESKTOP 1
@@ -63,14 +63,14 @@ struct GATE_DESCRIPTOR {
 };
 #define MAX_TIMER 500
 struct TIMER {
-  struct TIMER* next;
+  struct TIMER *next;
   unsigned int timeout, flags;
-  struct FIFO8* fifo;
+  struct FIFO8 *fifo;
   unsigned char data;
 };
 struct TIMERCTL {
   unsigned int count, next;
-  struct TIMER* t0;
+  struct TIMER *t0;
   struct TIMER timers0[MAX_TIMER];
 };
 struct TSS32 {
@@ -79,21 +79,21 @@ struct TSS32 {
   int es, cs, ss, ds, fs, gs;
   int ldtr, iomap;
 };
-#define MAX_IPC_MESSAGE 5  // 一次最多存放5个IPC_MESSAGE
+#define MAX_IPC_MESSAGE 5 // 一次最多存放5个IPC_MESSAGE
 #define synchronous 1
 #define asynchronous 2
-struct IPC_Header {  // IPC头（在TASK结构体中的头）
+struct IPC_Header { // IPC头（在TASK结构体中的头）
   int now;
-  void* data[MAX_IPC_MESSAGE];
+  void *data[MAX_IPC_MESSAGE];
   unsigned int size[MAX_IPC_MESSAGE];
   int from_tid[MAX_IPC_MESSAGE];
 };
-struct DRIVE_MEMBER {
+struct FAT12_CACHE {
   unsigned int ADR_DISKIMG;
-  struct FILEINFO* root_directory;
-  struct LIST* directory_list;
-  struct LIST* directory_clustno_list;
-  int* fat;
+  struct FAT12_FILEINFO *root_directory;
+  struct LIST *directory_list;
+  struct LIST *directory_clustno_list;
+  int *fat;
   unsigned int ClustnoBytes;
   unsigned short RootMaxFiles;
   unsigned int RootDictAddress;
@@ -101,44 +101,43 @@ struct DRIVE_MEMBER {
   unsigned int imgTotalSize;
   unsigned short SectorBytes;
   unsigned int Fat1Address, Fat2Address;
-  unsigned char* FatClustnoFlags;
+  unsigned char *FatClustnoFlags;
 };
-#define MAX_DRIVE_NUM 26
-struct DRIVE_CTL {
-  struct DRIVE_MEMBER drives[MAX_DRIVE_NUM];
-};
-extern struct DRIVE_CTL drive_ctl;
+typedef struct {
+  struct FAT12_CACHE dm;
+  struct FAT12_FILEINFO *dir;
+} fat12_cache;
+#define get_dm(vfs) ((fat12_cache *)(vfs->cache))->dm
+#define get_now_dir(vfs) ((fat12_cache *)(vfs->cache))->dir
 struct THREAD {
-  struct TASK* father;
+  struct TASK *father;
 };
-typedef enum {
-  FLE,DIR
-} ftype;
+typedef enum { FLE, DIR } ftype;
 typedef struct {
   char name[255];
   ftype type;
-}vfs_dict;
-typedef struct vfs_t{
-  List* path;
-  void* cache;
+} vfs_dict;
+typedef struct vfs_t {
+  List *path;
+  void *cache;
   char FSName[255];
   int disk_number;
-  uint8_t drive;  // 大写（必须）
-  List* (*ListFile)(struct vfs_t* vfs, char* dictpath);
-  bool (*ReadFile)(struct vfs_t* vfs, char* path, char* buffer);
-  bool (*WriteFile)(struct vfs_t* vfs, char* path, char* buffer,int size);
-  bool (*DelFile)(struct vfs_t* vfs, char* path);
-  bool (*DelDict)(struct vfs_t* vfs, char* path);
-  bool (*CreateFile)(struct vfs_t* vfs, char* filename);
-  bool (*CreateDict)(struct vfs_t* vfs, char* filename);
-  bool (*RenameFile)(struct vfs_t* vfs, char* filename, char* filename_of_new);
+  uint8_t drive; // 大写（必须）
+  List *(*ListFile)(struct vfs_t *vfs, char *dictpath);
+  bool (*ReadFile)(struct vfs_t *vfs, char *path, char *buffer);
+  bool (*WriteFile)(struct vfs_t *vfs, char *path, char *buffer, int size);
+  bool (*DelFile)(struct vfs_t *vfs, char *path);
+  bool (*DelDict)(struct vfs_t *vfs, char *path);
+  bool (*CreateFile)(struct vfs_t *vfs, char *filename);
+  bool (*CreateDict)(struct vfs_t *vfs, char *filename);
+  bool (*RenameFile)(struct vfs_t *vfs, char *filename, char *filename_of_new);
   bool (*Format)(uint8_t disk_number);
-  void (*InitFs)(struct vfs_t* vfs, uint8_t disk_number);
-  void (*DeleteFs)(struct vfs_t* vfs);
+  void (*InitFs)(struct vfs_t *vfs, uint8_t disk_number);
+  void (*DeleteFs)(struct vfs_t *vfs);
   bool (*Check)(uint8_t disk_number);
-  bool (*cd)(struct vfs_t *vfs,char *dictName);
-  int (*FileSize)(struct vfs_t *vfs,char *filename);
-  void (*CopyCache)(struct vfs_t *dest,struct vfs_t *src);
+  bool (*cd)(struct vfs_t *vfs, char *dictName);
+  int (*FileSize)(struct vfs_t *vfs, char *filename);
+  void (*CopyCache)(struct vfs_t *dest, struct vfs_t *src);
   int flag;
 } vfs_t;
 struct TASK {
@@ -146,32 +145,31 @@ struct TASK {
   struct TSS32 tss;
   char name[32];
   char running;
-  struct tty* TTY;
-  struct FIFO8 *keyfifo, *mousefifo;  // 基本输入设备的缓冲区
+  struct tty *TTY;
+  struct FIFO8 *keyfifo, *mousefifo; // 基本输入设备的缓冲区
   int fifosleep;
   int cs_base, ds_base;
   int alloc_addr;
   int esp0, esp1;
   short ss1;
-  char* memman;
+  char *memman;
   int alloc_size;
   struct IPC_Header IPC_header;
-  struct TIMER* timer;
-  int esp_start;  // 开始的esp
-  int eip_start;  // 开始的eip
-  int is_child;   // 是子线程吗
+  struct TIMER *timer;
+  int esp_start; // 开始的esp
+  int eip_start; // 开始的eip
+  int is_child;  // 是子线程吗
   int app;
   struct THREAD thread;
   int drive_number;
   char drive;
-  struct FILEINFO* directory;
   unsigned int change_dict_times;
   char path[256];
-  char* line;
+  char *line;
   void (*keyboard_press)(unsigned char data);
   void (*keyboard_release)(unsigned char data);
   int nl;
-  int lock;  // 被锁住了？
+  int lock; // 被锁住了？
   char forever;
   int eax0, ebx0, ecx0, edx0, esi0, edi0, ebp0;
   int DisableExpFlag;
@@ -181,9 +179,10 @@ struct TASK {
   int fpu_use;
   int last_cs;
   int last_eip;
-  vfs_t* nfs;
+  vfs_t *nfs;
   char fxsave_region[512] __attribute__((aligned(16)));
 } __attribute__((packed));
+#define vfs_now NowTask()->nfs
 #define PG_P 1
 #define PG_USU 4
 #define PG_RWW 2
@@ -192,19 +191,19 @@ struct TASK {
 #define PAGE_END 0x801000
 #define PAGE_MANNAGER 0x801000
 struct FIFO8 {
-  unsigned char* buf;
+  unsigned char *buf;
   int p, q, size, free, flags;
 };
 struct ListCtl {
-  struct List* start;
-  struct List* end;
+  struct List *start;
+  struct List *end;
   int all;
 };
 struct List {
-  struct ListCtl* ctl;
-  struct List* prev;
+  struct ListCtl *ctl;
+  struct List *prev;
   int val;
-  struct List* next;
+  struct List *next;
 };
 typedef struct List List;
 
@@ -239,7 +238,7 @@ extern uint32_t Path_Addr;
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
-struct FILEINFO {
+struct FAT12_FILEINFO {
   unsigned char name[8], ext[3], type;
   char reserve[10];
   unsigned short time, date, clustno;
@@ -261,10 +260,10 @@ struct RGB {
   unsigned char b, g, r, t;
 };
 struct paw_info {
-  unsigned char reserved[12];  // 12 bytes reserved(0xFF)
-  char oem[3];                 // PRA
-  int xsize;                   // xsize
-  int ysize;                   // ysize
+  unsigned char reserved[12]; // 12 bytes reserved(0xFF)
+  char oem[3];                // PRA
+  int xsize;                  // xsize
+  int ysize;                  // ysize
 };
 
 /* interrupts.h */
@@ -287,28 +286,24 @@ typedef struct {
 
 /* io.h */
 struct tty {
-  int using1;                               // 使用标志
-  void* vram;                               // 显存（也可以当做图层）
-  int x, y;                                 // 目前的 x y 坐标
-  int xsize, ysize;                         // x 坐标大小 y 坐标大小
-  int Raw_y;                                // 换行次数
-  unsigned char color;                      // 颜色
-  void (*putchar)(struct tty* res, int c);  // putchar函数
-  void (*MoveCursor)(struct tty* res, int x, int y);   // MoveCursor函数
-  void (*clear)(struct tty* res);                      // clear函数
-  void (*screen_ne)(struct tty* res);                  // screen_ne函数
-  void (*gotoxy)(struct tty* res, int x, int y);       // gotoxy函数
-  void (*print)(struct tty* res, const char* string);  // print函数
-  void (*Draw_Box)(struct tty* res,
-                   int x,
-                   int y,
-                   int x1,
-                   int y1,
-                   unsigned char color);  // Draw_Box函数
-  unsigned int reserved[4];               // 保留项
+  int using1;                              // 使用标志
+  void *vram;                              // 显存（也可以当做图层）
+  int x, y;                                // 目前的 x y 坐标
+  int xsize, ysize;                        // x 坐标大小 y 坐标大小
+  int Raw_y;                               // 换行次数
+  unsigned char color;                     // 颜色
+  void (*putchar)(struct tty *res, int c); // putchar函数
+  void (*MoveCursor)(struct tty *res, int x, int y);  // MoveCursor函数
+  void (*clear)(struct tty *res);                     // clear函数
+  void (*screen_ne)(struct tty *res);                 // screen_ne函数
+  void (*gotoxy)(struct tty *res, int x, int y);      // gotoxy函数
+  void (*print)(struct tty *res, const char *string); // print函数
+  void (*Draw_Box)(struct tty *res, int x, int y, int x1, int y1,
+                   unsigned char color); // Draw_Box函数
+  unsigned int reserved[4];              // 保留项
 };
 struct Input_StacK {
-  char** Stack;
+  char **Stack;
   unsigned int Stack_Size;
   unsigned int free;
   unsigned int Now;
@@ -316,17 +311,17 @@ struct Input_StacK {
 };
 #define MAX_SHEETS 256
 struct SHEET {
-  vram_t* buf;
+  vram_t *buf;
   int bxsize, bysize, vx0, vy0, col_inv, height, flags;
-  struct SHTCTL* ctl;
-  struct TASK* task;
-  void (*Close)();  // 为NULL表示没有关闭函数
+  struct SHTCTL *ctl;
+  struct TASK *task;
+  void (*Close)(); // 为NULL表示没有关闭函数
 };
 struct SHTCTL {
-  vram_t* vram;
-  unsigned char* map;
+  vram_t *vram;
+  unsigned char *map;
   int xsize, ysize, top;
-  struct SHEET* sheets[MAX_SHEETS];
+  struct SHEET *sheets[MAX_SHEETS];
   struct SHEET sheets0[MAX_SHEETS];
 };
 
@@ -458,7 +453,7 @@ struct MOUSE_DEC {
   int sleep;
   char roll;
 };
-struct PCI_CONFIG_SPACE_PUCLIC {  //用64个字节描述
+struct PCI_CONFIG_SPACE_PUCLIC { //用64个字节描述
   unsigned short VendorID;
   unsigned short DeviceID;
   unsigned short Command;
@@ -509,7 +504,7 @@ typedef struct {
   unsigned char blue_mask, blue_position;
   unsigned char rsv_mask, rsv_position;
   unsigned char directcolor_attributes;
-  unsigned int physbase;  // your LFB (Linear Framebuffer) address ;)
+  unsigned int physbase; // your LFB (Linear Framebuffer) address ;)
   unsigned int offscreen;
   unsigned short offsize;
 
@@ -559,9 +554,9 @@ struct VBEINFO {
 #define VGA_NUM_CRTC_REGS 25
 #define VGA_NUM_GC_REGS 9
 #define VGA_NUM_AC_REGS 21
-#define VGA_NUM_REGS \
+#define VGA_NUM_REGS                                                           \
   (1 + VGA_NUM_SEQ_REGS + VGA_NUM_CRTC_REGS + VGA_NUM_GC_REGS + VGA_NUM_AC_REGS)
-#define _vmemwr(DS, DO, S, N) memcpy((char*)((DS)*16 + (DO)), S, N)
+#define _vmemwr(DS, DO, S, N) memcpy((char *)((DS)*16 + (DO)), S, N)
 #define SB16_IRQ 5
 #define SB16_FAKE_TID -3
 #define SB16_PORT_MIXER 0x224
@@ -586,20 +581,20 @@ struct VBEINFO {
 #define MAX_DRIVERS 256
 #define DRIVER_USE 1
 #define DRIVER_FREE 0
-typedef struct driver* drv_t;
+typedef struct driver *drv_t;
 typedef int drv_type_t;
 struct driver {
-  struct TASK* drv_task;  // 驱动程序的任务
-  drv_type_t drv_type;    // 驱动程序类型
-  int flags;              // 驱动程序的状态
+  struct TASK *drv_task; // 驱动程序的任务
+  drv_type_t drv_type;   // 驱动程序类型
+  int flags;             // 驱动程序的状态
 };
 struct driver_ctl {
-  struct driver drivers[MAX_DRIVERS];  // 驱动程序数组
-  int driver_num;                      // 驱动程序数量
+  struct driver drivers[MAX_DRIVERS]; // 驱动程序数组
+  int driver_num;                     // 驱动程序数量
 };
 struct arg_struct {
   int func_num;
-  void* arg;  // 参数(base=0x00)
+  void *arg; // 参数(base=0x00)
   int tid;
 };
 struct InitializationBlock {
@@ -640,13 +635,13 @@ struct IDEHardDiskInfomationBlock {
 
 /* gui.h */
 struct Button {
-  int x, y, w, h;     // 16
-  struct SHEET* buf;  // 20
-  char* text;         // 24
-  int cont;           // 28
-  bool is_clicking;   // 32
-  void (*OnClick)();  // 36
-  struct TASK* task;  // 40
+  int x, y, w, h;    // 16
+  struct SHEET *buf; // 20
+  char *text;        // 24
+  int cont;          // 28
+  bool is_clicking;  // 32
+  void (*OnClick)(); // 36
+  struct TASK *task; // 40
   // NoFrameButton专有
   color_t bc;
   bool hide;
@@ -656,8 +651,8 @@ typedef struct Button Button;
 struct TextBox {
   int x, y, w, h;
   int Write_Pos_X;
-  struct SHEET* buf;
-  char* text;
+  struct SHEET *buf;
+  char *text;
   int len;
   bool is_clicking;
   int cont;
@@ -693,16 +688,16 @@ typedef struct listBox_t {
   int width;
   int height;
   int view_max;
-  struct SHEET* sheet;
+  struct SHEET *sheet;
   int item_num;
   int now_min;
   int now_max;
   int cont;
-  char** item;
-  Button** btns;
+  char **item;
+  Button **btns;
   int itm_arr_sz;
-  Button* button1;  // 上
-  Button* button2;  // 下
+  Button *button1; // 上
+  Button *button2; // 下
 } listBox_t;
 
 typedef struct GUI_Position {
@@ -715,14 +710,14 @@ typedef struct loadBox {
   GuiPosition position;
   // load进度
   uint8_t load_progress;
-  uint32_t count;  // 在链表中的位置
+  uint32_t count; // 在链表中的位置
 
-  struct SHEET* sheet;
+  struct SHEET *sheet;
 } loadBox;
 
 /* net */
-#define swap32(x)                                       \
-  ((((x)&0xff000000) >> 24) | (((x)&0x00ff0000) >> 8) | \
+#define swap32(x)                                                              \
+  ((((x)&0xff000000) >> 24) | (((x)&0x00ff0000) >> 8) |                        \
    (((x)&0x0000ff00) << 8) | (((x)&0x000000ff) << 24))
 #define swap16(x) ((((x)&0xff00) >> 8) | (((x)&0x00ff) << 8))
 // 以太网帧
@@ -733,7 +728,7 @@ struct EthernetFrame_head {
 } __attribute__((packed));
 // 以太网帧--尾部
 struct EthernetFrame_tail {
-  uint32_t CRC;  // 这里可以填写为0，网卡会自动计算
+  uint32_t CRC; // 这里可以填写为0，网卡会自动计算
 };
 // ARP
 #define ARP_PROTOCOL 0x0806
@@ -928,11 +923,11 @@ struct TCPMessage {
 #define MAX_SOCKET_NUM 256
 struct Socket {
   // 函数格式
-  int (*Connect)(struct Socket* socket);                              // TCP
-  void (*Disconnect)(struct Socket* socket);                          // TCP
-  void (*Listen)(struct Socket* socket);                              // TCP
-  void (*Send)(struct Socket* socket, uint8_t* data, uint32_t size);  // TCP/UDP
-  void (*Handler)(struct Socket* socket, void* base);                 // TCP/UDP
+  int (*Connect)(struct Socket *socket);                             // TCP
+  void (*Disconnect)(struct Socket *socket);                         // TCP
+  void (*Listen)(struct Socket *socket);                             // TCP
+  void (*Send)(struct Socket *socket, uint8_t *data, uint32_t size); // TCP/UDP
+  void (*Handler)(struct Socket *socket, void *base);                // TCP/UDP
   // TCP/UDP
   uint32_t remoteIP;
   uint16_t remotePort;
@@ -964,10 +959,9 @@ struct Socket {
 // Socket Server
 #define SOCKET_SERVER_MAX_CONNECT 32
 struct SocketServer {
-  struct Socket* socket[SOCKET_SERVER_MAX_CONNECT];
-  void (*Send)(struct SocketServer* server,
-               uint8_t* data,
-               uint32_t size);  // TCP/UDP
+  struct Socket *socket[SOCKET_SERVER_MAX_CONNECT];
+  void (*Send)(struct SocketServer *server, uint8_t *data,
+               uint32_t size); // TCP/UDP
 };
 // Http
 typedef struct HTTPGetHeader {
@@ -998,41 +992,33 @@ struct NTPMessage {
 #define FTP_SERVER_DATA_PORT 20
 #define FTP_SERVER_COMMAND_PORT 21
 struct FTP_Client {
-  int (*Login)(struct FTP_Client* ftp_c_, uint8_t* user, uint8_t* pass);
-  int (*TransModeChoose)(struct FTP_Client* ftp_c_, int mode);
-  void (*Logout)(struct FTP_Client* ftp_c_);
-  int (*Download)(struct FTP_Client* ftp_c_,
-                  uint8_t* path_pdos,
-                  uint8_t* path_ftp,
-                  int mode);
-  int (*Upload)(struct FTP_Client* ftp_c_,
-                uint8_t* path_pdos,
-                uint8_t* path_ftp,
-                int mode);
-  int (*Delete)(struct FTP_Client* ftp_c_, uint8_t* path_ftp);
-  uint8_t* (*Getlist)(struct FTP_Client* ftp_c_);
-  struct Socket* socket_cmd;
-  struct Socket* socket_dat;
+  int (*Login)(struct FTP_Client *ftp_c_, uint8_t *user, uint8_t *pass);
+  int (*TransModeChoose)(struct FTP_Client *ftp_c_, int mode);
+  void (*Logout)(struct FTP_Client *ftp_c_);
+  int (*Download)(struct FTP_Client *ftp_c_, uint8_t *path_pdos,
+                  uint8_t *path_ftp, int mode);
+  int (*Upload)(struct FTP_Client *ftp_c_, uint8_t *path_pdos,
+                uint8_t *path_ftp, int mode);
+  int (*Delete)(struct FTP_Client *ftp_c_, uint8_t *path_ftp);
+  uint8_t *(*Getlist)(struct FTP_Client *ftp_c_);
+  struct Socket *socket_cmd;
+  struct Socket *socket_dat;
   bool using1;
   bool is_login;
-  uint8_t* recv_buf_cmd;
+  uint8_t *recv_buf_cmd;
   bool recv_flag_cmd;
   uint32_t reply_code;
-  uint8_t* recv_buf_dat;
+  uint8_t *recv_buf_dat;
   bool recv_flag_dat;
   uint32_t recv_dat_size;
 };
 typedef struct {
-  void (*Read)(char drive,
-               unsigned char* buffer,
-               unsigned int number,
+  void (*Read)(char drive, unsigned char *buffer, unsigned int number,
                unsigned int lba);
-  void (*Write)(char drive,
-                unsigned char* buffer,
-                unsigned int number,
+  void (*Write)(char drive, unsigned char *buffer, unsigned int number,
                 unsigned int lba);
   int flag;
-  unsigned int size;  // 大小
+  unsigned int size; // 大小
   char DriveName[50];
 } vdisk;
 #endif

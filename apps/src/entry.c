@@ -3,7 +3,6 @@
 #include <syscall.h>
 int main(int argc, char** argv);
 void Main() {
-  init_float();
   // 初始化stdio stderr
   stdout = malloc(sizeof(FILE));
   stdin = malloc(sizeof(FILE));
@@ -27,7 +26,7 @@ void Main() {
     Get_Arg(argv[i], buf, i);
    // printf("#%d %s\n",i,argv[i]);
   }
-  
+  init_float();
 //   printf("Get_Argc = %d\n",Get_Argc(buf));
 //   printf("buf = %s\n", buf);
   main(Get_Argc(buf) + 1, argv);

@@ -70,8 +70,8 @@ void register_window_button1_OnClick() {
   }
 
   command_run("mkdir user");
-  // mkfile("A:\\USER\\USER.INI");
-  // mkfile("A:\\USER\\PASSWORD.INI");
+  // vfs_createfile("A:\\USER\\USER.INI");
+  // vfs_createfile("A:\\USER\\PASSWORD.INI");
 
   // EDIT_FILE("A:\\USER\\USER.INI", reg_textbox1->Text(),
   //           strlen(reg_textbox1->Text()), 0);

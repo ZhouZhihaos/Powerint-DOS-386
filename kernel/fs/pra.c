@@ -3,7 +3,7 @@ void MakePraFile(char *PraFileName, uint8_t *imgBuffer, uint32_t xsize,
                  uint32_t ysize) {
   struct paw_info header;                                        // 图像头
   int PraFileSize = sizeof(struct paw_info) + xsize * ysize * 3; // 图像大小
-  mkfile(PraFileName);
+  vfs_createfile(PraFileName);
   for (int i = 0; i < 12; i++)
     header.reserved[i] = 0xff; // 填充
   memcpy(header.oem, "PRA", 3);
@@ -42,7 +42,7 @@ void PraShell() {
     input(cmd, 128); // define in input.c
     if (strncmp("file ", cmd, 5) == 0) {
       make_file_flag = 1;
-      // mkfile(cmd + 5);
+      // vfs_createfile(cmd + 5);
       strncpy(prafileName, cmd + 5, 20);
       printf("The Image file xsize:");
       input(cmd, 128);

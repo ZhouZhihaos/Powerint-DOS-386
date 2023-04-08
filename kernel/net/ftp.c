@@ -150,7 +150,7 @@ static int Download(struct FTP_Client *ftp_c_, uint8_t *path_pdos,
     return -1;
   }
   if (fsz(path_pdos) == -1) {
-    mkfile(path_pdos);
+    vfs_createfile(path_pdos);
   }
   FILE *fp = fopen(path_pdos, "wb");
   sprintf(s, "RETR %s\r\n", path_ftp);

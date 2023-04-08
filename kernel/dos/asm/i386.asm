@@ -195,7 +195,7 @@ mov al,bl
 out dx,al
 ret
 
-%define registers	637 ; registers在TASK结构体中的偏移
+%define registers	633 ; registers在TASK结构体中的偏移
 loadregisters:
 	call NowTask_asm
 	mov ebx,eax

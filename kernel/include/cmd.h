@@ -6,7 +6,7 @@ void command_run(char *cmdline);
 void print_date(unsigned short _date, unsigned short _time);
 void pci_list();
 void cmd_dir();
-void tree(struct FILEINFO *directory);
+void tree(struct FAT12_FILEINFO *directory);
 void type_deal(char *cmdline);
 void pcinfo();
 void mem();

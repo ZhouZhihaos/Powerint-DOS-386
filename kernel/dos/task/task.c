@@ -271,7 +271,6 @@ AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->flagOfexp = 0;
   task->drive_number = default_drive_number;
   task->drive = default_drive;
-  task->directory = drive_ctl.drives[task->drive_number].root_directory;
   task->change_dict_times = 0;
   task->fpu_use = 0;
   task->app = 0;
@@ -371,7 +370,6 @@ AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->flagOfexp = 0;
   task->drive_number = default_drive_number;
   task->drive = default_drive;
-  task->directory = drive_ctl.drives[task->drive_number].root_directory;
   task->change_dict_times = 0;
   task->app = 0;
   task->fpu_use = 0;
@@ -633,7 +631,6 @@ struct TASK* _fork(int b) {
   task->alloc_addr = alloc_addr;
   task->alloc_size = 512 * 1024;
   task->memman = memman;
-  task->directory = NowTask()->directory;
   task->drive = NowTask()->drive;
   task->drive_number = NowTask()->drive_number;
   task->change_dict_times = NowTask()->change_dict_times;

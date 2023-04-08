@@ -68,6 +68,12 @@ static void insert_str(char* str, char* insert_str, int pos) {
 }
 bool vfs_mount_disk(uint8_t disk_number, uint8_t drive) {
   PDEBUG("Mount DISK ---- %02x", disk_number);
+  for(int i = 0;i<255;i++) {
+    if(vfsMount_Stl[i].flag == 1 && (vfsMount_Stl[i].drive == drive || vfsMount_Stl[i].disk_number == disk_number)) {
+      WARNING_K("It mounted");
+      return false;
+    }
+  }
   vfs_t* seat = findSeat(vfsMount_Stl);
   if (!seat) {
     WARNING_K("can not find a seat of vfsMount_Stl(it's full)");
@@ -84,6 +90,7 @@ bool vfs_mount_disk(uint8_t disk_number, uint8_t drive) {
   seat->InitFs(seat, disk_number);
   seat->drive = drive;
   seat->disk_number = disk_number;
+  seat->flag = 1;
   PDEBUG("success");
   return true;
 }
@@ -369,7 +376,9 @@ void F_CopyCache(struct vfs_t* dest, struct vfs_t* src) {
   PDEBUG("Copy cache.");
 }
 #endif
-
+bool vfs_check_mount(uint8_t drive) {
+  return drive2fs(drive) ? true : false;
+}
 void init_vfs() {
   PDEBUG("init vfs..........");
   for (int i = 0; i < 255; i++) {
