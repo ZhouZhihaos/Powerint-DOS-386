@@ -10,15 +10,20 @@ int fgetc(FILE* fp);
 char* fgets(char* s, int size, FILE* fp);
 int fseek(FILE* fp, int offset, int whence);
 int fclose(FILE* fp);
+long ftell(FILE *stream);
 unsigned int fread(void* buffer,
                    unsigned int size,
                    unsigned int count,
                    FILE* stream);
+unsigned int fwrite(const void *ptr, unsigned int size, unsigned int nmemb,
+                    FILE *stream);
+int fputs(const char *str, FILE *stream);
+int fprintf(FILE *stream, const char *format, ...);
+int feof(FILE *stream);
+int getc(FILE *stream);
+int ferror(FILE *stream);
+int fsz(char *filename);
 void EDIT_FILE(char* name, char* dest, int length, int offset);
-void longName28dot3(char* result, char* src_in);
-int fsz(char* filename);
-long ftell(FILE* stream);
-void rewind(FILE* fp);
 int Copy(char* path, char* path1);
 // bmp.c
 void bmpview(char* filename);
@@ -68,4 +73,6 @@ bool vfs_change_disk_for_task(uint8_t drive, struct TASK* task);
 bool vfs_format(uint8_t disk_number, char* FSName);
 bool vfs_check_mount(uint8_t drive);
 bool vfs_unmount_disk(uint8_t drive);
+bool vfs_attrib(char* filename, ftype type);
+vfs_file *vfs_fileinfo(char *filename);
 #endif

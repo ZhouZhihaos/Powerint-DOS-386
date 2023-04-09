@@ -1,6 +1,5 @@
 #include <dosldr.h>
-static inline int get_fat12_date(unsigned short year,
-                                 unsigned short month,
+static inline int get_fat12_date(unsigned short year, unsigned short month,
                                  unsigned short day) {
   year -= 1980;
   unsigned short date = 0;
@@ -15,7 +14,7 @@ static inline int get_fat12_time(unsigned short hour, unsigned short minute) {
   time |= (minute & 0x3f) << 5;
   return time;
 }
-void read_fat(unsigned char* img, int* fat, unsigned char* ff) {
+void read_fat(unsigned char *img, int *fat, unsigned char *ff) {
   int i, j = 0;
   for (i = 0; i < 3072; i += 2) {
     fat[i + 0] = (img[j + 0] | img[j + 1] << 8) & 0xfff;
@@ -34,7 +33,7 @@ void read_fat(unsigned char* img, int* fat, unsigned char* ff) {
   }
   return;
 }
-void write_fat(unsigned char* img, int* fat) {
+void write_fat(unsigned char *img, int *fat) {
   int i, j = 0;
   for (i = 0; i < 3072; i += 2) {
     img[j + 0] = fat[i + 0] & 0xff;
@@ -44,16 +43,13 @@ void write_fat(unsigned char* img, int* fat) {
   }
   return;
 }
-void file_loadfile(int clustno,
-                   int size,
-                   char* buf,
-                   int* fat,
+void file_loadfile(int clustno, int size, char *buf, int *fat,
                    int drive_number) {
   if (!size) {
     return;
   }
-  struct TASK* task = NowTask();
-  void* img = page_malloc(
+  struct TASK *task = NowTask();
+  void *img = page_malloc(
       ((size - 1) / drive_ctl.drives[drive_number].ClustnoBytes + 1) *
       drive_ctl.drives[drive_number].ClustnoBytes);
   for (int i = 0;
@@ -69,33 +65,28 @@ void file_loadfile(int clustno,
               drive_number + 0x41);
     clustno = fat[clustno];
   }
-  memcpy((void*)buf, img, size);
+  memcpy((void *)buf, img, size);
   page_free(img, ((size - 1) / drive_ctl.drives[drive_number].SectorBytes + 1) *
                      drive_ctl.drives[drive_number].SectorBytes);
   return;
 }
-FILE* f_t;
-void file_savefile(int clustno,
-                   int size,
-                   char* buf,
-                   int* fat,
-                   unsigned char* ff,
-                   int drive_number) {
-  struct TASK* task = NowTask();
+FILE *f_t;
+void file_savefile(int clustno, int size, char *buf, int *fat,
+                   unsigned char *ff, int drive_number) {
+  struct TASK *task = NowTask();
   uint32_t clustall = 0;
   int tmp = clustno;
   while (fat[clustno] !=
-         0xfff) {  // 计算文件占多少Fat项 Fat项 = 大小 / 簇大小 + 1
+         0xfff) { // 计算文件占多少Fat项 Fat项 = 大小 / 簇大小 + 1
     clustno = fat[clustno];
     clustall++;
   }
   clustno = tmp;
   int alloc_size;
   int old_clustno = clustno + clustall;
-  if (size >
-      (clustall + 1) *
-          drive_ctl.drives[drive_number]
-              .ClustnoBytes) {  // 新大小 > (旧大小 / 簇大小 + 1) * 簇大小
+  if (size > (clustall + 1) *
+                 drive_ctl.drives[drive_number]
+                     .ClustnoBytes) { // 新大小 > (旧大小 / 簇大小 + 1) * 簇大小
     // 请求内存大小 = (新大小 / 簇大小 + 1) * 簇大小
     alloc_size =
         ((size - 1) / drive_ctl.drives[drive_number].ClustnoBytes + 1) *
@@ -113,19 +104,19 @@ void file_savefile(int clustno,
         }
       }
     }
-    fat[old_clustno] = 0xfff;  // 结尾Fat = 0xfff
+    fat[old_clustno] = 0xfff; // 结尾Fat = 0xfff
     ff[old_clustno] = true;
-  } else if (size <= (clustall + 1) *
-                         drive_ctl.drives[drive_number]
-                             .ClustnoBytes) {  // 新大小 <= (旧大小 / 簇大小
-                                               // + 1) * 簇大小
+  } else if (size <=
+             (clustall + 1) * drive_ctl.drives[drive_number]
+                                  .ClustnoBytes) { // 新大小 <= (旧大小 / 簇大小
+                                                   // + 1) * 簇大小
     // 请求内存大小 = (旧大小 / 簇大小 + 1) * 簇大小
     alloc_size = (clustall + 1) * drive_ctl.drives[drive_number].ClustnoBytes;
     // 这里不分配Fat的原因是要清空更改后多余的数据
   }
-  void* img = page_malloc(alloc_size);
-  clean((char*)img, alloc_size);
-  memcpy(img, (void*)buf, size);  // 把要写入的数据复制到新请求的内存地址
+  void *img = page_malloc(alloc_size);
+  clean((char *)img, alloc_size);
+  memcpy(img, (void *)buf, size); // 把要写入的数据复制到新请求的内存地址
   for (int i = 0; i != alloc_size / drive_ctl.drives[drive_number].SectorBytes;
        i++) {
     // 计算LBA & 写盘
@@ -143,7 +134,7 @@ void file_savefile(int clustno,
   page_free(img, alloc_size);
   if (size <
       clustall * drive_ctl.drives[drive_number]
-                     .ClustnoBytes) {  // 新大小 < (旧大小 / 簇大小) * 簇大小
+                     .ClustnoBytes) { // 新大小 < (旧大小 / 簇大小) * 簇大小
     // 分配Fat（中间情况没必要分配）
     int i;
     for (int size1 = clustall * drive_ctl.drives[drive_number].ClustnoBytes,
@@ -154,24 +145,24 @@ void file_savefile(int clustno,
       ff[i] = false;
     }
     old_clustno = i;
-    fat[old_clustno] = 0xfff;  // 结尾Fat = 0xfff
+    fat[old_clustno] = 0xfff; // 结尾Fat = 0xfff
     ff[old_clustno] = true;
   }
   file_savefat(fat, drive_number);
 }
-void file_saveinfo(struct FILEINFO* directory, int drive_number) {
-  struct TASK* task = NowTask();
+void file_saveinfo(struct FILEINFO *directory, int drive_number) {
+  struct TASK *task = NowTask();
   if (directory == drive_ctl.drives[drive_number].root_directory) {
     Disk_Write(drive_ctl.drives[drive_number].RootDictAddress /
                    drive_ctl.drives[drive_number].SectorBytes,
                14 * drive_ctl.drives[drive_number].ClustnoBytes /
                    drive_ctl.drives[drive_number].SectorBytes,
-               (void*)directory, drive_number + 0x41);
+               (void *)directory, drive_number + 0x41);
   } else {
     for (int i = 1;
          FindForCount(i, drive_ctl.drives[drive_number].directory_list) != NULL;
          i++) {
-      struct List* list =
+      struct List *list =
           FindForCount(i, drive_ctl.drives[drive_number].directory_list);
       if (list->val == directory) {
         list = FindForCount(
@@ -182,13 +173,13 @@ void file_saveinfo(struct FILEINFO* directory, int drive_number) {
                 drive_ctl.drives[drive_number].SectorBytes,
             drive_ctl.drives[drive_number].ClustnoBytes /
                 drive_ctl.drives[drive_number].SectorBytes,
-            (void*)directory, drive_number + 0x41);
+            (void *)directory, drive_number + 0x41);
         break;
       }
     }
   }
 }
-void file_savefat(int* fat, int drive_number) {
+void file_savefat(int *fat, int drive_number) {
   write_fat(drive_ctl.drives[drive_number].ADR_DISKIMG +
                 drive_ctl.drives[drive_number].Fat1Address,
             fat);
@@ -204,7 +195,7 @@ void file_savefat(int* fat, int drive_number) {
                  drive_ctl.drives[drive_number].Fat2Address,
              drive_number + 0x41);
 }
-struct FILEINFO* file_search(char* name, struct FILEINFO* finfo, int max) {
+struct FILEINFO *file_search(char *name, struct FILEINFO *finfo, int max) {
   int i, j;
   char s[12];
   for (j = 0; j < 11; j++) {
@@ -243,7 +234,7 @@ struct FILEINFO* file_search(char* name, struct FILEINFO* finfo, int max) {
   }
   return 0; /*没有找到*/
 }
-struct FILEINFO* dict_search(char* name, struct FILEINFO* finfo, int max) {
+struct FILEINFO *dict_search(char *name, struct FILEINFO *finfo, int max) {
   int i, j;
   char s[12];
   for (j = 0; j < 11; j++) {
@@ -279,18 +270,18 @@ struct FILEINFO* dict_search(char* name, struct FILEINFO* finfo, int max) {
   }
   return 0; /*没有找到*/
 }
-struct FILEINFO* Get_File_Address(char* path1) {
-  // printf("path1=%s\n", path1);
-  struct TASK* task = NowTask();
-  struct FILEINFO* bmpDict = task->directory;
-  int drive_number = task->drive_number;
-  char* path = (char*)page_malloc(strlen(path1) + 1);
-  strcpy(path, path1);
-  strtoupper(path);
-  if (strncmp(":\\", path + 1, 2) == 0 || strncmp(":/", path + 1, 2) == 0) {
-    drive_number = *path - 0x41;
-    path += 3;
-    bmpDict = drive_ctl.drives[drive_number].root_directory;
+struct FILEINFO *Get_File_Address(char *path1) {
+   // printf("path1=%s\n", path1);
+    struct TASK *task = NowTask();
+    struct FILEINFO *bmpDict = task->directory;
+    int drive_number = task->drive_number;
+    char *path = (char *)page_malloc(strlen(path1) + 1);
+    strcpy(path, path1);
+    strtoupper(path);
+    if (strncmp(":\\", path + 1, 2) == 0 || strncmp(":/", path + 1, 2) == 0) {
+        drive_number = *path - 0x41;
+        path += 3;
+        bmpDict = drive_ctl.drives[drive_number].root_directory;
   }
   if (path[0] == '\\' || path[0] == '/') {
     //跳过反斜杠和正斜杠
@@ -301,8 +292,8 @@ struct FILEINFO* Get_File_Address(char* path1) {
       }
     }
   }
-  char* temp_name = (char*)page_malloc(128);
-  struct FILEINFO* finfo;
+  char *temp_name = (char *)page_malloc(128);
+  struct FILEINFO *finfo;
   int i = 0;
   while (1) {
     int j;
@@ -326,7 +317,7 @@ struct FILEINFO* Get_File_Address(char* path1) {
       finfo = file_search(temp_name, bmpDict,
                           drive_ctl.drives[drive_number].RootMaxFiles);
       if (finfo == 0) {
-        // printf("Invalid file:%s\n", temp_name);
+        //printf("Invalid file:%s\n", temp_name);
         page_free((int)temp_name, 128);
         page_free((int)path, strlen(path1) + 1);
         return 0;
@@ -341,12 +332,12 @@ struct FILEINFO* Get_File_Address(char* path1) {
                  count,
                  drive_ctl.drives[drive_number].directory_clustno_list) != NULL;
              count++) {
-          struct List* list = FindForCount(
+          struct List *list = FindForCount(
               count, drive_ctl.drives[drive_number].directory_clustno_list);
           if (list->val == finfo->clustno) {
             list = FindForCount(count,
                                 drive_ctl.drives[drive_number].directory_list);
-            bmpDict = (struct FILEINFO*)list->val;
+            bmpDict = (struct FILEINFO *)list->val;
             // printf("finfo:%08x\n", bmpDict);
             break;
           }
@@ -365,11 +356,11 @@ END:
   page_free((int)path, strlen(path1) + 1);
   return finfo;
 }
-struct FILEINFO* Get_dictaddr(char* path1) {
-  struct TASK* task = NowTask();
-  struct FILEINFO* bmpDict = task->directory;
+struct FILEINFO *Get_dictaddr(char *path1) {
+  struct TASK *task = NowTask();
+  struct FILEINFO *bmpDict = task->directory;
   int drive_number = task->drive_number;
-  char* path = (char*)page_malloc(strlen(path1) + 1);
+  char *path = (char *)page_malloc(strlen(path1) + 1);
   strcpy(path, path1);
   strtoupper(path);
   if (strncmp(":\\", path + 1, 2) == 0 || strncmp(":/", path + 1, 2) == 0) {
@@ -386,8 +377,8 @@ struct FILEINFO* Get_dictaddr(char* path1) {
       }
     }
   }
-  char* temp_name = (char*)page_malloc(128);
-  struct FILEINFO* finfo;
+  char *temp_name = (char *)page_malloc(128);
+  struct FILEINFO *finfo;
   int i = 0;
   while (1) {
     int j;
@@ -412,12 +403,12 @@ struct FILEINFO* Get_dictaddr(char* path1) {
                  count,
                  drive_ctl.drives[drive_number].directory_clustno_list) != NULL;
              count++) {
-          struct List* list = FindForCount(
+          struct List *list = FindForCount(
               count, drive_ctl.drives[drive_number].directory_clustno_list);
           if (list->val == finfo->clustno) {
             list = FindForCount(count,
                                 drive_ctl.drives[drive_number].directory_list);
-            bmpDict = (struct FILEINFO*)list->val;
+            bmpDict = (struct FILEINFO *)list->val;
             break;
           }
         }
@@ -435,21 +426,21 @@ END:
   page_free((int)path, strlen(path1) + 1);
   return bmpDict;
 }
-void mkdir(char* dictname, int last_clust) {
+void mkdir(char *dictname, int last_clust) {
   /*
           dictname:目录名
           last_clust:上一级目录的簇号
   */
-  struct TASK* task = NowTask();
+  struct TASK *task = NowTask();
   mkfile(dictname);
-  struct FILEINFO* finfo = Get_File_Address(dictname);
-  FILE* fp = fopen(dictname, "wb");
+  struct FILEINFO *finfo = Get_File_Address(dictname);
+  FILE *fp = fopen(dictname, "wb");
   // 三个目录项（模板）
-  struct FILEINFO dictmodel1;  // .目录项，指向自己
-  struct FILEINFO dictmodel2;  // ..目录项，指向上一级目录
-  struct FILEINFO null;        //空目录项（为mkfile函数提供指引）
+  struct FILEINFO dictmodel1; // .目录项，指向自己
+  struct FILEINFO dictmodel2; // ..目录项，指向上一级目录
+  struct FILEINFO null;       //空目录项（为mkfile函数提供指引）
   memcpy(null.name, "NULL       ", 11);
-  null.type = 0x20;  // 文件的type属性是0x20
+  null.type = 0x20; // 文件的type属性是0x20
   //将size date time这类属性全部设置为0
   null.size = 0;
   null.date = get_fat12_date(get_year(), get_mon_hex(), get_day_of_month());
@@ -470,7 +461,7 @@ void mkdir(char* dictname, int last_clust) {
     dictmodel1.ext[i] = ' ';
   }
   dictmodel1.type = 0x10;
-  dictmodel1.clustno = finfo->clustno;  // 指向自己
+  dictmodel1.clustno = finfo->clustno; // 指向自己
   dictmodel1.size = 0;
   dictmodel1.date =
       get_fat12_date(get_year(), get_mon_hex(), get_day_of_month());
@@ -489,23 +480,23 @@ void mkdir(char* dictname, int last_clust) {
       get_fat12_date(get_year(), get_mon_hex(), get_day_of_month());
   dictmodel2.time = get_fat12_time(get_hour_hex(), get_min_hex());
   dictmodel2.type = 0x10;
-  unsigned char* ptr = (unsigned char*)&dictmodel1;
+  unsigned char *ptr = (unsigned char *)&dictmodel1;
   fseek(fp, 0, 0);
   for (int i = 0; i != 32; i++) {
     fputc(ptr[i], fp);
   }
-  ptr = (unsigned char*)&dictmodel2;
+  ptr = (unsigned char *)&dictmodel2;
   fseek(fp, 32, 0);
   for (int i = 0; i != 32; i++) {
     fputc(ptr[i], fp);
   }
-  ptr = (unsigned char*)&null;
+  ptr = (unsigned char *)&null;
   fseek(fp, 64, 0);
   for (int i = 0; i != 32; i++) {
     fputc(ptr[i], fp);
   }
   fclose(fp);
-  finfo->type = 0x10;  // 是目录（文件夹的type属性是0x10）
+  finfo->type = 0x10; // 是目录（文件夹的type属性是0x10）
   finfo->size = 0;
   int drive_number;
   if (strncmp(dictname + 1, ":\\", 2) == 0 ||
@@ -517,7 +508,7 @@ void mkdir(char* dictname, int last_clust) {
   file_saveinfo(Get_dictaddr(dictname), drive_number);
   file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
   AddVal(finfo->clustno, drive_ctl.drives[drive_number].directory_clustno_list);
-  void* directory_alloc =
+  void *directory_alloc =
       page_malloc(drive_ctl.drives[drive_number].ClustnoBytes);
   Disk_Read(
       (drive_ctl.drives[drive_number].FileDataAddress +
@@ -529,15 +520,15 @@ void mkdir(char* dictname, int last_clust) {
   AddVal(directory_alloc, drive_ctl.drives[drive_number].directory_list);
   return;
 }
-void Copy(char* path, char* path1) {
-  mkfile(path1);  //创建文件
-  struct FILEINFO* finfo = Get_File_Address(path1);
-  struct FILEINFO* finfo1 = Get_File_Address(path);
+void Copy(char *path, char *path1) {
+  mkfile(path1); //创建文件
+  struct FILEINFO *finfo = Get_File_Address(path1);
+  struct FILEINFO *finfo1 = Get_File_Address(path);
   if (!finfo1) {
     return;
   }
-  FILE* fp = fopen(path, "wb");
-  FILE* fp1 = fopen(path1, "wb");
+  FILE *fp = fopen(path, "wb");
+  FILE *fp1 = fopen(path1, "wb");
   // 拷贝文件内容
   for (int i = 0; i != fp->size; i++) {
     fputc(fp->buf[i], fp1);
@@ -548,8 +539,8 @@ void Copy(char* path, char* path1) {
   finfo->date = finfo1->date;
   finfo->time = finfo1->time;
   finfo->type = finfo1->type;
-  struct FILEINFO* dict = Get_dictaddr(path);
-  struct FILEINFO* dict1 = Get_dictaddr(path1);
+  struct FILEINFO *dict = Get_dictaddr(path);
+  struct FILEINFO *dict1 = Get_dictaddr(path1);
   if (path[1] == path1[1] && path[1] == ':' && path[2] == path1[2] &&
       (path[2] == '\\' || path[2] == '/')) {
     if (*path != *path1 &&
@@ -565,7 +556,7 @@ void Copy(char* path, char* path1) {
   file_saveinfo(dict1, NowTask()->drive_number);
   return;
 }
-struct FILEINFO* clust_sech(int clustno, struct FILEINFO* finfo, int max) {
+struct FILEINFO *clust_sech(int clustno, struct FILEINFO *finfo, int max) {
   //通过簇号找到文件信息
   int i, j;
   j = 0;
@@ -576,12 +567,12 @@ struct FILEINFO* clust_sech(int clustno, struct FILEINFO* finfo, int max) {
   }
   return 0; /*没找到*/
 }
-void del(char* cmdline) {
+void del(char *cmdline) {
   //删除某个文件
-  struct TASK* task = NowTask();
+  struct TASK *task = NowTask();
   char name[30];
   int i;
-  struct FILEINFO* finfo;
+  struct FILEINFO *finfo;
   for (i = 0; i < strlen(cmdline); i++) {
     name[i] = cmdline[i + 4];
   }
@@ -591,7 +582,7 @@ void del(char* cmdline) {
     print(" not found!\n\n");
     return;
   }
-  FILE* fp = fopen(name, "wb");
+  FILE *fp = fopen(name, "wb");
   for (i = 0; i != fp->size; i++) {
     fputc(0, fp);
   }
@@ -610,11 +601,11 @@ void del(char* cmdline) {
   file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
   return;
 }
-void mkfile(char* name) {
-  struct TASK* task = NowTask();
+void mkfile(char *name) {
+  struct TASK *task = NowTask();
   char s[12];
   int i, j;
-  struct FILEINFO* finfo = Get_dictaddr(name);
+  struct FILEINFO *finfo = Get_dictaddr(name);
   int drive_number;
   if (strncmp(name + 1, ":\\", 2) == 0 || strncmp(name + 1, ":/", 2) == 0) {
     drive_number = *name - 0x41;
@@ -622,7 +613,7 @@ void mkfile(char* name) {
     drive_number = task->drive_number;
   }
 
-  char* path = name;
+  char *path = name;
   for (i = strlen(name); i >= 0; i--) {
     if (name[i] == '/' || name[i] == '\\') {
       name += i + 1;
@@ -679,10 +670,10 @@ void mkfile(char* name) {
   file_savefat(drive_ctl.drives[drive_number].fat, drive_number);
   return;
 }
-void changedict(char* dictname) {
+void changedict(char *dictname) {
   // cd命令的依赖函数
-  struct TASK* task = NowTask();
-  struct FILEINFO* finfo =
+  struct TASK *task = NowTask();
+  struct FILEINFO *finfo =
       dict_search(dictname, task->directory,
                   drive_ctl.drives[task->drive_number].RootMaxFiles);
   //找文件夹
@@ -719,27 +710,27 @@ void changedict(char* dictname) {
         break;
       }
     }
-    task->change_dict_times -= 2;  //因为下面又++了,所以这里要减2
+    task->change_dict_times -= 2; //因为下面又++了,所以这里要减2
   }
   for (int count = 1;
        FindForCount(
            count,
            drive_ctl.drives[task->drive_number].directory_clustno_list) != NULL;
        count++) {
-    struct List* list = FindForCount(
+    struct List *list = FindForCount(
         count, drive_ctl.drives[task->drive_number].directory_clustno_list);
     if (list->val == finfo->clustno) {
       list = FindForCount(count,
                           drive_ctl.drives[task->drive_number].directory_list);
-      task->directory = (struct FILEINFO*)list->val;
+      task->directory = (struct FILEINFO *)list->val;
       break;
     }
   }
   task->change_dict_times++;
   return;
 }
-void rename(char* src_name, char* dst_name) {
-  struct TASK* task = NowTask();
+void rename(char *src_name, char *dst_name) {
+  struct TASK *task = NowTask();
   char name[9], ext[4];
   int i;
   clean(name, 9);
@@ -751,8 +742,8 @@ void rename(char* src_name, char* dst_name) {
   for (int j = 0; i != strlen(dst_name); i++, j++) {
     ext[j] = dst_name[i];
   }
-  struct FILEINFO* finfo = Get_File_Address(src_name);
-  memset((void*)finfo->name, ' ', 11);
+  struct FILEINFO *finfo = Get_File_Address(src_name);
+  memset((void *)finfo->name, ' ', 11);
   for (i = 0; i != strlen(name); i++) {
     finfo->name[i] = name[i];
   }

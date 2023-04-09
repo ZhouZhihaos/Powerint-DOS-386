@@ -5,7 +5,7 @@
 #define APPEND 0x8
 #define BIN 0x0
 #define PLUS 0x10
-int fseek(FILE* fp, int offset, int whence) {
+int fseek(FILE *fp, int offset, int whence) {
   if (whence == 0) {
     fp->p = offset;
   } else if (whence == 1) {
@@ -17,38 +17,36 @@ int fseek(FILE* fp, int offset, int whence) {
   }
   return 0;
 }
-long ftell(FILE* stream) {
-  return stream->p;
-}
+long ftell(FILE *stream) { return stream->p; }
 #define CANREAD(flag) ((flag)&READ || (flag)&PLUS)
 #define CANWRITE(flag) ((flag)&WRITE || (flag)&PLUS || (flag)&APPEND)
-FILE* fopen(char* filename, char* mode) {
+FILE *fopen(char *filename, char *mode) {
   unsigned int flag = 0;
-  FILE* fp = (FILE*)malloc(sizeof(FILE));
+  FILE *fp = (FILE *)malloc(sizeof(FILE));
   while (*mode != '\0') {
     switch (*mode) {
-      case 'a':
-        flag |= APPEND;
-        break;
-      case 'b':
-        break;
-      case 'r':
-        flag |= READ;
-        break;
-      case 'w':
-        flag |= WRITE;
-        break;
-      case '+':
-        flag |= PLUS;
-        break;
-      default:
-        break;
+    case 'a':
+      flag |= APPEND;
+      break;
+    case 'b':
+      break;
+    case 'r':
+      flag |= READ;
+      break;
+    case 'w':
+      flag |= WRITE;
+      break;
+    case '+':
+      flag |= PLUS;
+      break;
+    default:
+      break;
     }
     mode++;
   }
   if (vfs_filesize(filename) == -1) {
     free(fp);
-    return NULL;  // 找不到
+    return NULL; // 找不到
   } else if (flag & WRITE) {
     char buffe2[100];
     // vfs_delfile(filename);
@@ -85,7 +83,7 @@ FILE* fopen(char* filename, char* mode) {
   //	printf("[fopen]BufferSize=%d\n",fp->bufferSize);
   return fp;
 }
-int fgetc(FILE* stream) {
+int fgetc(FILE *stream) {
   if (CANREAD(stream->mode)) {
     if (stream->p >= stream->fileSize) {
       return EOF;
@@ -96,7 +94,7 @@ int fgetc(FILE* stream) {
     return EOF;
   }
 }
-int fputc(int ch, FILE* stream) {
+int fputc(int ch, FILE *stream) {
   if (CANWRITE(stream->mode)) {
     //		printf("Current Buffer=%s\n",stream->buffer);
     if (stream->p >= stream->bufferSize) {
@@ -114,12 +112,10 @@ int fputc(int ch, FILE* stream) {
   }
   return EOF;
 }
-unsigned int fwrite(const void* ptr,
-                    unsigned int size,
-                    unsigned int nmemb,
-                    FILE* stream) {
+unsigned int fwrite(const void *ptr, unsigned int size, unsigned int nmemb,
+                    FILE *stream) {
   if (CANWRITE(stream->mode)) {
-    unsigned char* c_ptr = (unsigned char*)ptr;
+    unsigned char *c_ptr = (unsigned char *)ptr;
     for (int i = 0; i < size * nmemb; i++) {
       fputc(c_ptr[i], stream);
     }
@@ -128,12 +124,10 @@ unsigned int fwrite(const void* ptr,
     return 0;
   }
 }
-unsigned int fread(void* buffer,
-                   unsigned int size,
-                   unsigned int count,
-                   FILE* stream) {
+unsigned int fread(void *buffer, unsigned int size, unsigned int count,
+                   FILE *stream) {
   if (CANREAD(stream->mode)) {
-    unsigned char* c_ptr = (unsigned char*)buffer;
+    unsigned char *c_ptr = (unsigned char *)buffer;
     for (int i = 0; i < size * count; i++) {
       unsigned int ch = fgetc(stream);
       if (ch == EOF) {
@@ -147,7 +141,7 @@ unsigned int fread(void* buffer,
     return 0;
   }
 }
-int fclose(FILE* fp) {
+int fclose(FILE *fp) {
   if (fp == NULL) {
     return EOF;
   }
@@ -162,10 +156,7 @@ int fclose(FILE* fp) {
   free(fp);
   return 0;
 }
-int fflush(FILE* stream) {
-  return 0;  // Who needs fflush??????????
-}
-char* fgets(char* str, int n, FILE* stream) {
+char *fgets(char *str, int n, FILE *stream) {
   if (CANREAD(stream->mode)) {
     for (int i = 0; i < n; i++) {
       unsigned int ch = fgetc(stream);
@@ -185,7 +176,7 @@ char* fgets(char* str, int n, FILE* stream) {
   }
   return NULL;
 }
-int fputs(const char* str, FILE* stream) {
+int fputs(const char *str, FILE *stream) {
   if (CANWRITE(stream->mode)) {
     for (int i = 0; i < strlen(str); i++) {
       fputc(str[i], stream);
@@ -194,12 +185,12 @@ int fputs(const char* str, FILE* stream) {
   }
   return EOF;
 }
-int fprintf(FILE* stream, const char* format, ...) {
+int fprintf(FILE *stream, const char *format, ...) {
   if (CANWRITE(stream->mode)) {
     int len;
     va_list ap;
     va_start(ap, format);
-    char* buf = malloc(1024);
+    char *buf = malloc(1024);
     len = vsprintf(buf, format, ap);
     fputs(buf, stream);
     free(buf);
@@ -211,24 +202,18 @@ int fprintf(FILE* stream, const char* format, ...) {
   }
 }
 
-int feof(FILE* stream) {
+int feof(FILE *stream) {
   if (stream->p >= stream->fileSize) {
     return EOF;
   }
   return 0;
 }
-int ferror(FILE* stream) {
-  return 0;
-}
-int getc(FILE* stream) {
-  return fgetc(stream);
-}
-int fsz(char* filename) {
-  return vfs_filesize(filename);
-}
+int ferror(FILE *stream) { return 0; }
+int getc(FILE *stream) { return fgetc(stream); }
+int fsz(char *filename) { return vfs_filesize(filename); }
 
-void EDIT_FILE(char* name, char* dest, int length, int offset) {
-  FILE* fp = fopen(name, "wb");
+void EDIT_FILE(char *name, char *dest, int length, int offset) {
+  FILE *fp = fopen(name, "wb");
   if (fp == 0) {
     //没有找到文件，创建一个，然后再编辑
     printk("no file.\n");
@@ -244,8 +229,8 @@ void EDIT_FILE(char* name, char* dest, int length, int offset) {
   fclose(fp);
   return;
 }
-int Copy(char* path, char* path1) {
-  unsigned char* path1_file_buffer;
+int Copy(char *path, char *path1) {
+  unsigned char *path1_file_buffer;
   if (fsz(path) == -1) {
     // printf("file not found\n");
     return -1;
@@ -255,14 +240,8 @@ int Copy(char* path, char* path1) {
 
   path1_file_buffer = malloc(fsz(path) + 1);
   int sz = fsz(path);
-  FILE* fp = fopen(path, "rb");
-  fread(path1_file_buffer, sz, 1, fp);
-  fclose(fp);
-  fp = fopen(path1, "wb");
-  for (int i = 0; i < sz; i++) {
-    fputc(path1_file_buffer[i], fp);
-  }
-  fclose(fp);
+  vfs_readfile(path, path1_file_buffer);
+  vfs_writefile(path1, path1_file_buffer, sz);
   free(path1_file_buffer);
   return 0;
 }

@@ -3,9 +3,8 @@
 #include <define.h>
 // command.c
 void command_run(char *cmdline);
-void print_date(unsigned short _date, unsigned short _time);
 void pci_list();
-void cmd_dir();
+void cmd_dir(char **args);
 void tree(struct FAT12_FILEINFO *directory);
 void type_deal(char *cmdline);
 void pcinfo();

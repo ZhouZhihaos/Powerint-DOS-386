@@ -168,7 +168,8 @@ void file_savefat(int *fat, vfs_t *vfs) {
   Disk_Write(10, 9, get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat2Address,
              vfs->disk_number);
 }
-struct FAT12_FILEINFO *file_search(char *name, struct FAT12_FILEINFO *finfo, int max) {
+struct FAT12_FILEINFO *file_search(char *name, struct FAT12_FILEINFO *finfo,
+                                   int max) {
   int i, j;
   char s[12];
   for (j = 0; j < 11; j++) {
@@ -207,7 +208,8 @@ struct FAT12_FILEINFO *file_search(char *name, struct FAT12_FILEINFO *finfo, int
   }
   return 0; /*没有找到*/
 }
-struct FAT12_FILEINFO *dict_search(char *name, struct FAT12_FILEINFO *finfo, int max) {
+struct FAT12_FILEINFO *dict_search(char *name, struct FAT12_FILEINFO *finfo,
+                                   int max) {
   int i, j;
   char s[12];
   for (j = 0; j < 11; j++) {
@@ -329,7 +331,7 @@ struct FAT12_FILEINFO *Get_dictaddr(char *path1, vfs_t *vfs) {
   char *path = (char *)page_malloc(strlen(path1) + 1);
   strcpy(path, path1);
   strtoupper(path);
-  if (strncmp("/", path, 11) == 0) {
+  if (strncmp("/", path, 1) == 0) {
     path += 1;
     bmpDict = get_dm(vfs).root_directory;
   }
@@ -406,78 +408,6 @@ END:
   //       get_dm(vfs).root_directory);
   return bmpDict;
 }
-struct List *Get_wildcard_File_Address(char *path) {
-  // struct TASK* task = NowTask();
-  // struct FAT12_FILEINFO* finfo = Get_dictaddr(path);
-  // struct List* list = NewList();
-  // strtoupper(path);
-  // int tmp = 0;
-  // for (int i = 0; i != strlen(path); i++) {
-  //   if (path[i] == '\\' || path[i] == '/') {
-  //     tmp = i + 1;
-  //   }
-  // }
-  // path += tmp;
-  // char s[12];
-  // for (int i = 0; i != 11; i++) {
-  //   s[i] = ' ';
-  // }
-  // for (int i = 0, j = 0; i != 11; i++, j++) {
-  //   if (path[j] == '.') {
-  //     i = 7;
-  //   } else {
-  //     s[i] = path[j];
-  //   }
-  // }
-  // bool name = false, ext = false;
-  // char* p = path;
-  // if (p[0] == '*') {
-  //   name = true;
-  // }
-  // for (; *p != '.'; p++)
-  //   ;
-  // p++;
-  // if (p[0] == '*') {
-  //   ext = true;
-  // }
-  // if (!name && !ext) {
-  //   bool back = true;
-  //   for (int i = 0; i != 12; i++) {
-  //     if (s[i] == '?') {
-  //       back = false;
-  //       break;
-  //     }
-  //   }
-  //   if (back) {
-  //     return (struct List*)NULL;
-  //   }
-  // }
-  // for (int i = 0; i != get_dm(vfs).RootMaxFiles; i++) {
-  //   bool add = true;
-  //   if (!name) {
-  //     for (int j = 0; j != 8; j++) {
-  //       if (finfo[i].name[j] != s[j] && s[j] != '?') {
-  //         add = false;
-  //         break;
-  //       }
-  //     }
-  //   }
-  //   if (!ext) {
-  //     for (int j = 8; j != 11; j++) {
-  //       if (finfo[i].ext[j - 8] != s[j] && s[j] != '?') {
-  //         add = false;
-  //         break;
-  //       }
-  //     }
-  //   }
-  //   if (add) {
-  //     AddVal((int)(finfo + i), list);
-  //   }
-  //   if (finfo[i].name[0] == '\0') {
-  //     return list;
-  //   }
-  // }
-}
 void mkdir(char *dictname, int last_clust, vfs_t *vfs) {
   /*
           dictname:目录名
@@ -519,8 +449,7 @@ void mkdir(char *dictname, int last_clust, vfs_t *vfs) {
   model[0].type = 0x10;
   model[0].clustno = finfo1->clustno; // 指向自己
   model[0].size = 0;
-  model[0].date =
-      get_fat12_date(get_year(), get_mon_hex(), get_day_of_month());
+  model[0].date = get_fat12_date(get_year(), get_mon_hex(), get_day_of_month());
   model[0].time = get_fat12_time(get_hour_hex(), get_min_hex());
   model[1].name[0] = '.';
   model[1].name[1] = '.';
@@ -532,8 +461,7 @@ void mkdir(char *dictname, int last_clust, vfs_t *vfs) {
   }
   model[1].clustno = last_clust;
   model[1].size = 0;
-  model[1].date =
-      get_fat12_date(get_year(), get_mon_hex(), get_day_of_month());
+  model[1].date = get_fat12_date(get_year(), get_mon_hex(), get_day_of_month());
   model[1].time = get_fat12_time(get_hour_hex(), get_min_hex());
   model[1].type = 0x10;
   Fat12_WriteFile(vfs, dictname, (char *)&model[0], 32 * 3);
@@ -580,7 +508,8 @@ void mkdir(char *dictname, int last_clust, vfs_t *vfs) {
   return;
 }
 
-struct FAT12_FILEINFO *clust_sech(int clustno, struct FAT12_FILEINFO *finfo, int max) {
+struct FAT12_FILEINFO *clust_sech(int clustno, struct FAT12_FILEINFO *finfo,
+                                  int max) {
   //通过簇号找到文件信息
   int i, j;
   j = 0;
@@ -672,7 +601,8 @@ int deldir(char *path, vfs_t *vfs) {
       if (FindForCount(i, get_dm(vfs).directory_clustno_list)->val ==
           finfo[1].clustno) {
         root_finfo =
-            (struct FAT12_FILEINFO *)FindForCount(i, get_dm(vfs).directory_list)->val;
+            (struct FAT12_FILEINFO *)FindForCount(i, get_dm(vfs).directory_list)
+                ->val;
         // printf("FIND ROOT %08x\n", root_finfo);
       }
     }
@@ -864,23 +794,13 @@ int format(char drive) {
     }
     page_free(null_sec, 512);
   } else if (drive != 'B') {
-    // struct IDEHardDiskInfomationBlock* info = drivers_idehdd_info();
-    // printk("drive=%c %d\n", drive, have_vdisk(drive));
     if (!DiskReady(drive)) {
-      // printf("Couldn't find Disk.\n");
       return 0;
     }
-
-    // printf("Disk: %d bytes\n", disk_Size(drive));
-    // printf("RootDictFiles: %d\n",
-    //        14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32);
-    // printf("ClustnoBytes: %d bytes\n",
-    //        ((disk_Size(drive) / 4096) / 512 + 1) * 512);
     *(unsigned char *)(&((unsigned char *)read_in)[BPB_SecPerClus]) =
         ((disk_Size(drive) / 4096) / 512 + 1);
     *(unsigned short *)(&((unsigned char *)read_in)[BPB_RootEntCnt]) =
         14 * (((disk_Size(drive) / 4096) / 512 + 1) * 512) / 32;
-    // printk("Sectors:%d\n", ide_devices[drive - 'C'].Size /power
     if (disk_Size(drive) / 512 > 65535) {
       *(unsigned short *)(&((unsigned char *)read_in)[BPB_TotSec16]) = 0;
     } else {
@@ -911,114 +831,117 @@ int format(char drive) {
   fclose(fp);
   return 1;
 }
-int attrib(char *filename, char type, vfs_t *vfs) {
+int attrib(char *filename, ftype type, struct vfs_t *vfs) {
   struct FAT12_FILEINFO *finfo = Get_File_Address(filename, vfs);
-  int drive_number = vfs->disk_number;
   if (finfo == 0) {
-    return -1;
+    return 0;
   }
-  finfo->type = type;
+  if (type == FLE)
+    finfo->type = 0x20;
+  else if (type == RDO)
+    finfo->type = 0x01;
+  else if (type == HID)
+    finfo->type = 0x02;
+  else if (type == SYS)
+    finfo->type = 0x04;
+  else
+    return 0;
   file_saveinfo(Get_dictaddr(filename, vfs), vfs);
+  return 1;
 }
 void fat12_InitFS(struct vfs_t *vfs, uint8_t disk_number) {
   vfs->cache = malloc(sizeof(fat12_cache));
-  if (1) {
-    void *boot_sector = page_malloc(512);
-    Disk_Read(0, 1, boot_sector, disk_number);
+  void *boot_sector = page_malloc(512);
+  Disk_Read(0, 1, boot_sector, disk_number);
 
-    if (!*(unsigned char *)(boot_sector)) {
-      return;
+  if (!*(unsigned char *)(boot_sector)) {
+    return;
+  }
+  get_dm(vfs).SectorBytes = *(unsigned short *)(boot_sector + BPB_BytsPerSec);
+  get_dm(vfs).RootMaxFiles = *(unsigned short *)(boot_sector + BPB_RootEntCnt);
+  get_dm(vfs).ClustnoBytes = get_dm(vfs).SectorBytes *
+                             *(unsigned char *)(boot_sector + BPB_SecPerClus);
+  get_dm(vfs).RootDictAddress =
+      (*(unsigned char *)(boot_sector + BPB_NumFATs) *
+           *(unsigned short *)(boot_sector + BPB_FATSz16) +
+       *(unsigned short *)(boot_sector + BPB_RsvdSecCnt)) *
+      get_dm(vfs).SectorBytes;
+  get_dm(vfs).FileDataAddress =
+      get_dm(vfs).RootDictAddress + get_dm(vfs).RootMaxFiles * 32;
+  if (*(unsigned short *)(boot_sector + BPB_TotSec16) != 0) {
+    get_dm(vfs).imgTotalSize = *(unsigned short *)(boot_sector + BPB_TotSec16) *
+                               get_dm(vfs).SectorBytes;
+  } else {
+    get_dm(vfs).imgTotalSize =
+        *(unsigned int *)(boot_sector + BPB_TotSec32) * get_dm(vfs).SectorBytes;
+  }
+  get_dm(vfs).Fat1Address = *(unsigned short *)(boot_sector + BPB_RsvdSecCnt) *
+                            get_dm(vfs).SectorBytes;
+  get_dm(vfs).Fat2Address =
+      get_dm(vfs).Fat1Address +
+      *(unsigned short *)(boot_sector + BPB_FATSz16) * get_dm(vfs).SectorBytes;
+  uint32_t sec = get_dm(vfs).FileDataAddress / get_dm(vfs).SectorBytes;
+  get_dm(vfs).ADR_DISKIMG = (unsigned int)malloc(get_dm(vfs).FileDataAddress);
+
+  Disk_Read(0, sec, (void *)get_dm(vfs).ADR_DISKIMG, disk_number);
+
+  get_dm(vfs).fat = malloc(3072 * sizeof(int));
+  get_dm(vfs).FatClustnoFlags = malloc(3072 * sizeof(char));
+  read_fat((unsigned char *)(get_dm(vfs).ADR_DISKIMG +
+                             (unsigned int)get_dm(vfs).Fat1Address),
+           get_dm(vfs).fat, get_dm(vfs).FatClustnoFlags);
+  get_dm(vfs).root_directory =
+      (struct FAT12_FILEINFO *)malloc(get_dm(vfs).RootMaxFiles * 32);
+  memcpy((void *)get_dm(vfs).root_directory,
+         (void *)get_dm(vfs).ADR_DISKIMG + get_dm(vfs).RootDictAddress,
+         get_dm(vfs).RootMaxFiles * 32);
+  get_dm(vfs).directory_list = (struct LIST *)NewList();
+  get_dm(vfs).directory_clustno_list = (struct LIST *)NewList();
+  struct FAT12_FILEINFO *finfo = get_dm(vfs).root_directory;
+
+  for (int i = 0; i != get_dm(vfs).RootMaxFiles; i++) {
+    if (finfo[i].type == 0x10 && finfo[i].name[0] != 0xe5) {
+      AddVal(finfo[i].clustno,
+             (struct List *)get_dm(vfs).directory_clustno_list);
+      void *directory_alloc = malloc(get_dm(vfs).ClustnoBytes);
+      uint32_t sec1 = (get_dm(vfs).FileDataAddress +
+                       (finfo[i].clustno - 2) * get_dm(vfs).ClustnoBytes) /
+                      get_dm(vfs).SectorBytes;
+      Disk_Read(sec1, get_dm(vfs).ClustnoBytes / get_dm(vfs).SectorBytes,
+                directory_alloc, disk_number);
+      AddVal((int)directory_alloc, (struct List *)get_dm(vfs).directory_list);
     }
-    get_dm(vfs).SectorBytes = *(unsigned short *)(boot_sector + BPB_BytsPerSec);
-    get_dm(vfs).RootMaxFiles =
-        *(unsigned short *)(boot_sector + BPB_RootEntCnt);
-    get_dm(vfs).ClustnoBytes = get_dm(vfs).SectorBytes *
-                               *(unsigned char *)(boot_sector + BPB_SecPerClus);
-    get_dm(vfs).RootDictAddress =
-        (*(unsigned char *)(boot_sector + BPB_NumFATs) *
-             *(unsigned short *)(boot_sector + BPB_FATSz16) +
-         *(unsigned short *)(boot_sector + BPB_RsvdSecCnt)) *
-        get_dm(vfs).SectorBytes;
-    get_dm(vfs).FileDataAddress =
-        get_dm(vfs).RootDictAddress + get_dm(vfs).RootMaxFiles * 32;
-    if (*(unsigned short *)(boot_sector + BPB_TotSec16) != 0) {
-      get_dm(vfs).imgTotalSize =
-          *(unsigned short *)(boot_sector + BPB_TotSec16) *
-          get_dm(vfs).SectorBytes;
-    } else {
-      get_dm(vfs).imgTotalSize = *(unsigned int *)(boot_sector + BPB_TotSec32) *
-                                 get_dm(vfs).SectorBytes;
+    if (finfo[i].name[0] == 0) {
+      break;
     }
-    get_dm(vfs).Fat1Address =
-        *(unsigned short *)(boot_sector + BPB_RsvdSecCnt) *
-        get_dm(vfs).SectorBytes;
-    get_dm(vfs).Fat2Address = get_dm(vfs).Fat1Address +
-                              *(unsigned short *)(boot_sector + BPB_FATSz16) *
-                                  get_dm(vfs).SectorBytes;
-    uint32_t sec = get_dm(vfs).FileDataAddress / get_dm(vfs).SectorBytes;
-    get_dm(vfs).ADR_DISKIMG = (unsigned int)malloc(get_dm(vfs).FileDataAddress);
+  }
 
-    Disk_Read(0, sec, (void *)get_dm(vfs).ADR_DISKIMG, disk_number);
-
-    get_dm(vfs).fat = malloc(3072 * sizeof(int));
-    get_dm(vfs).FatClustnoFlags = malloc(3072 * sizeof(char));
-    read_fat((unsigned char *)(get_dm(vfs).ADR_DISKIMG +
-                               (unsigned int)get_dm(vfs).Fat1Address),
-             get_dm(vfs).fat, get_dm(vfs).FatClustnoFlags);
-    get_dm(vfs).root_directory =
-        (struct FAT12_FILEINFO *)malloc(get_dm(vfs).RootMaxFiles * 32);
-    memcpy((void *)get_dm(vfs).root_directory,
-           (void *)get_dm(vfs).ADR_DISKIMG + get_dm(vfs).RootDictAddress,
-           get_dm(vfs).RootMaxFiles * 32);
-    get_dm(vfs).directory_list = (struct LIST *)NewList();
-    get_dm(vfs).directory_clustno_list = (struct LIST *)NewList();
-    struct FAT12_FILEINFO *finfo = get_dm(vfs).root_directory;
-
-    for (int i = 0; i != get_dm(vfs).RootMaxFiles; i++) {
-      if (finfo[i].type == 0x10 && finfo[i].name[0] != 0xe5) {
-        AddVal(finfo[i].clustno,
+  for (int i = 1;
+       FindForCount(i, (struct List *)get_dm(vfs).directory_list) != NULL;
+       i++) {
+    struct List *list =
+        FindForCount(i, (struct List *)get_dm(vfs).directory_list);
+    finfo = (struct FAT12_FILEINFO *)list->val;
+    for (int j = 0; j != get_dm(vfs).ClustnoBytes / 32; j++) {
+      if (finfo[j].type == 0x10 && finfo[j].name[0] != 0xe5 &&
+          strncmp(".", (char *)finfo[j].name, 1) != 0 &&
+          strncmp("..", (char *)finfo[j].name, 2) != 0) {
+        AddVal(finfo[j].clustno,
                (struct List *)get_dm(vfs).directory_clustno_list);
-        void *directory_alloc = malloc(get_dm(vfs).ClustnoBytes);
+        void *directory_alloc = page_malloc(get_dm(vfs).ClustnoBytes);
         uint32_t sec1 = (get_dm(vfs).FileDataAddress +
-                         (finfo[i].clustno - 2) * get_dm(vfs).ClustnoBytes) /
+                         (finfo[j].clustno - 2) * get_dm(vfs).ClustnoBytes) /
                         get_dm(vfs).SectorBytes;
         Disk_Read(sec1, get_dm(vfs).ClustnoBytes / get_dm(vfs).SectorBytes,
                   directory_alloc, disk_number);
         AddVal((int)directory_alloc, (struct List *)get_dm(vfs).directory_list);
       }
-      if (finfo[i].name[0] == 0) {
+      if (finfo[j].name[0] == 0) {
         break;
       }
     }
-
-    for (int i = 1;
-         FindForCount(i, (struct List *)get_dm(vfs).directory_list) != NULL;
-         i++) {
-      struct List *list =
-          FindForCount(i, (struct List *)get_dm(vfs).directory_list);
-      finfo = (struct FAT12_FILEINFO *)list->val;
-      for (int j = 0; j != get_dm(vfs).ClustnoBytes / 32; j++) {
-        if (finfo[j].type == 0x10 && finfo[j].name[0] != 0xe5 &&
-            strncmp(".", (char *)finfo[j].name, 1) != 0 &&
-            strncmp("..", (char *)finfo[j].name, 2) != 0) {
-          AddVal(finfo[j].clustno,
-                 (struct List *)get_dm(vfs).directory_clustno_list);
-          void *directory_alloc = page_malloc(get_dm(vfs).ClustnoBytes);
-          uint32_t sec1 = (get_dm(vfs).FileDataAddress +
-                           (finfo[j].clustno - 2) * get_dm(vfs).ClustnoBytes) /
-                          get_dm(vfs).SectorBytes;
-          Disk_Read(sec1, get_dm(vfs).ClustnoBytes / get_dm(vfs).SectorBytes,
-                    directory_alloc, disk_number);
-          AddVal((int)directory_alloc,
-                 (struct List *)get_dm(vfs).directory_list);
-        }
-        if (finfo[j].name[0] == 0) {
-          break;
-        }
-      }
-    }
-    page_free(boot_sector, 512);
   }
+  page_free(boot_sector, 512);
 }
 void Fat12_CopyCache(struct vfs_t *dest, struct vfs_t *src) {
   dest->cache = malloc(sizeof(fat12_cache));
@@ -1035,7 +958,6 @@ bool Fat12_ReadFile(struct vfs_t *vfs, char *path, char *buffer) {
   if (finfo == 0) {
     return 0;
   } else {
-    int drive_number = vfs->disk_number;
     file_loadfile(finfo->clustno, finfo->size, buffer, get_dm(vfs).fat, vfs);
     return 1;
   }
@@ -1051,7 +973,7 @@ bool Fat12_WriteFile(struct vfs_t *vfs, char *path, char *buffer, int size) {
   file_saveinfo(Get_dictaddr(path, vfs), vfs);
 }
 List *Fat12_ListFile(struct vfs_t *vfs, char *dictpath) {
-  struct FAT12_FILEINFO *finfo = get_now_dir(vfs);
+  struct FAT12_FILEINFO *finfo = Get_dictaddr(dictpath, vfs);
   List *result = NewList();
   char s[30];
   for (int i = 0; i != 30; i++) {
@@ -1063,9 +985,6 @@ List *Fat12_ListFile(struct vfs_t *vfs, char *dictpath) {
     }
     if (finfo[i].name[0] != 0xe5) {
       if ((finfo[i].type & 0x18) == 0 || finfo[i].type == 0x10) {
-        if (finfo[i].type == 0x02) {
-          continue;
-        }
         for (int j = 0; j < 8; j++) {
           s[j] = finfo[i].name[j];
         }
@@ -1078,19 +997,32 @@ List *Fat12_ListFile(struct vfs_t *vfs, char *dictpath) {
           s[11] = finfo[i].ext[2];
         }
         if (s[0] != '+') {
-          vfs_dict *d = malloc(sizeof(vfs_dict));
+          vfs_file *d = malloc(sizeof(vfs_file));
           if (finfo[i].type == 0x10) {
             d->type = DIR;
-          } else {
+          } else if (finfo[i].type == 0x20) {
             d->type = FLE;
+          } else if (finfo[i].type == 0x01) {
+            d->type = RDO;
+          } else if (finfo[i].type == 0x02) {
+            d->type = HID;
+          } else if (finfo[i].type == 0x04) {
+            d->type = SYS;
           }
-          int i = 0;
+          d->year = (finfo[i].date & 65024) >> 9;
+          d->year += 1980;
+          d->month = (finfo[i].date & 480) >> 5;
+          d->day = finfo[i].date & 31;
+          d->hour = (finfo[i].time & 63488) >> 11;
+          d->minute = (finfo[i].time & 2016) >> 5;
+          d->size = finfo[i].size;
+          int q = 0;
           for (int k = 0; k < 12 && s[k] != 0; ++k) {
             if (s[k] != ' ') {
-              d->name[i++] = s[k];
+              d->name[q++] = s[k];
             }
           }
-          d->name[i] = 0;
+          d->name[q] = 0;
           // printk("d->name = %s\n", d->name);
           AddVal(d, result);
         }
@@ -1145,6 +1077,57 @@ bool Fat12_CreateDict(struct vfs_t *vfs, char *filename) {
   }
   mkdir(filename, last_clustno, vfs);
 }
+bool Fat12_Attrib(struct vfs_t *vfs, char *filename, ftype type) {
+  return attrib(filename, type, vfs);
+}
+vfs_file *Fat12_FileInfo(struct vfs_t *vfs, char *filename) {
+  struct FAT12_FILEINFO *finfo = Get_File_Address(filename, vfs);
+  if (finfo == NULL) {
+    return (vfs_file *)NULL;
+  }
+  vfs_file *result = (vfs_file *)malloc(sizeof(vfs_file));
+  char s[30];
+  for (int i = 0; i != 30; i++) {
+    s[i] = 0;
+  }
+  for (int i = 0; i < 8; i++) {
+    s[i] = finfo->name[i];
+  }
+  s[8] = '.';
+  if (finfo->ext[0] == ' ') {
+    s[8] = 0;
+  } else {
+    s[9] = finfo->ext[0];
+    s[10] = finfo->ext[1];
+    s[11] = finfo->ext[2];
+  }
+  int i = 0;
+  for (int j = 0; i < 12 && s[i] != 0; i++) {
+    if (s[i] != ' ') {
+      result->name[j++] = s[i];
+    }
+  }
+  s[i] = '\0';
+  if (finfo->type == 0x10) {
+    result->type = DIR;
+  } else if (finfo->type == 0x20) {
+    result->type = FLE;
+  } else if (finfo->type == 0x01) {
+    result->type = RDO;
+  } else if (finfo->type == 0x02) {
+    result->type = HID;
+  } else if (finfo->type == 0x04) {
+    result->type = SYS;
+  }
+  result->year = (finfo->date & 65024) >> 9;
+  result->year += 1980;
+  result->month = (finfo->date & 480) >> 5;
+  result->day = finfo->date & 31;
+  result->hour = (finfo->time & 63488) >> 11;
+  result->minute = (finfo->time & 2016) >> 5;
+  result->size = finfo->size;
+  return result;
+}
 void Register_fat12_fileSys() {
   vfs_t fs;
   fs.flag = 1;
@@ -1165,5 +1148,7 @@ void Register_fat12_fileSys() {
   fs.ListFile = Fat12_ListFile;
   fs.InitFs = fat12_InitFS;
   fs.RenameFile = Fat12_RenameFile;
+  fs.Attrib = Fat12_Attrib;
+  fs.FileInfo = Fat12_FileInfo;
   vfs_register_fs(fs);
 }
