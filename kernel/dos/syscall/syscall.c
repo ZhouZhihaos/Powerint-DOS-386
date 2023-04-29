@@ -1,4 +1,10 @@
 #include <dos.h>
+void kbd_press(uint8_t dat, uint32_t task) {
+  fifo8_put(GetTask(task)->Pkeyfifo, dat);
+}
+void kbd_up(uint8_t dat, uint32_t task) {
+  fifo8_put(GetTask(task)->Ukeyfifo, dat);
+}
 void *aligned_malloc(size_t size, int alignment) {
   // 分配足够的内存, 这里的算法很经典, 早期的STL中使用的就是这个算法
 
@@ -109,7 +115,7 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
         j = 0;
       }
     }
-    printk("malloc error\n");
+    printf("malloc error\n");
     intreturn(eax, ebx, ecx, 0, esi, edi, ebp);
   } else if (eax == 0x09) {
     ecx = ((ecx - 1) + 128) / 128;
@@ -497,6 +503,23 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     asm("fninit");
     asm volatile("fnsave %0" ::"m"(NowTask()->fxsave_region));
     NowTask()->fpu_use = 1;
+  } else if (eax == 0x30) {
+    NowTask()->Pkeyfifo = malloc(sizeof(struct FIFO8));
+    NowTask()->Ukeyfifo = malloc(sizeof(struct FIFO8));
+    unsigned char *kbuf = (unsigned char *)page_kmalloc(4096);
+    unsigned char *mbuf = (unsigned char *)page_kmalloc(4096);
+    fifo8_init(NowTask()->Pkeyfifo, 4096, kbuf);
+    fifo8_init(NowTask()->Ukeyfifo, 4096, mbuf);
+    NowTask()->keyboard_press = kbd_press;
+    NowTask()->keyboard_release = kbd_up;
+  } else if (eax == 0x31) {
+    intreturn(fifo8_status(NowTask()->Pkeyfifo), ebx, ecx, edx, esi, edi, ebp);
+  } else if (eax == 0x32) {
+    intreturn(fifo8_status(NowTask()->Ukeyfifo), ebx, ecx, edx, esi, edi, ebp);
+  } else if (eax == 0x33) {
+    intreturn(fifo8_get(NowTask()->Pkeyfifo), ebx, ecx, edx, esi, edi, ebp);
+  } else if (eax == 0x34) {
+    intreturn(fifo8_get(NowTask()->Ukeyfifo), ebx, ecx, edx, esi, edi, ebp);
   }
   return;
 }

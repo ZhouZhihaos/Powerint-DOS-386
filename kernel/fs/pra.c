@@ -213,7 +213,7 @@ void pra_view_32(unsigned char *path, unsigned char *vram, int scr_xsize) {
   for (int i = 0; i < 12; i++) {
     if (img[i] != 0xFF) {
       SwitchToText8025_BIOS();
-      Set_Font("tskdrv:\\other\\font.bin");
+      Set_Font("\\other\\font.bin");
       printf("format error.\n");
       fclose(fp);
       return;
@@ -221,7 +221,7 @@ void pra_view_32(unsigned char *path, unsigned char *vram, int scr_xsize) {
   }
   if (img[12] != 'P' || img[13] != 'R' || img[14] != 'A') {
     SwitchToText8025_BIOS();
-    Set_Font("tskdrv:\\other\\font.bin");
+    Set_Font("\\other\\font.bin");
     printf("format error.\n");
     fclose(fp);
     return;

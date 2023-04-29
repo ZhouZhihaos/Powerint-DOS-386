@@ -243,11 +243,11 @@ int cmd_app(char* cmdline) {
       datsiz = *((int*)(p + 0x0010));
       dathrb = *((int*)(p + 0x0014));
       q = (char*)page_malloc(segsiz +
-                             512 * 1024 * 4 * 2 * 2 * 2);  //分配数据段的内存
+                             512 * 1024 * 4 * 2 * 2 * 2 * 2);  //分配数据段的内存
       set_segmdesc(gdt + 3 + app_num * 2, fsize - 1, (int)p,
                    AR_CODE32_ER | 3 << 5);
       set_segmdesc(gdt + 4 + app_num * 2,
-                   segsiz - 1 + 512 * 1024 * 4 * 2 * 2 * 2, (int)q,
+                   segsiz - 1 + 512 * 1024 * 4 * 2 * 2 * 2 * 2, (int)q,
                    AR_DATA32_RW | 3 << 5);
       for (i = 0; i < datsiz; i++) {
         // printf("%c",p[dathrb + i]);
@@ -261,7 +261,7 @@ int cmd_app(char* cmdline) {
       char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* kbuf = (char*)page_kmalloc(4096);
       char* mbuf = (char*)page_kmalloc(4096);
-      char* memman = (char*)page_malloc(4 * 1024 * 4 * 2 * 2 * 2);
+      char* memman = (char*)page_malloc(4 * 1024 * 4 * 2 * 2 * 2 * 2);
       init_ok_flag = 0;
       struct TASK* this_task =
           AddUserTask(name, 1, ((3 + app_num * 2) * 8), 0x1b,
@@ -270,7 +270,7 @@ int cmd_app(char* cmdline) {
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
       this_task->alloc_addr = (int)((uint32_t)q + segsiz);
-      this_task->alloc_size = 512 * 1024 * 4 * 2 * 2 * 2;
+      this_task->alloc_size = 512 * 1024 * 4 * 2 * 2 * 2 * 2;
       this_task->memman = memman;
       this_task->app = 1;
       stack = (unsigned char*)page_malloc(64 * 1024);
@@ -307,7 +307,7 @@ int cmd_app(char* cmdline) {
           io_cli();
           change_page_task_id(this_task->sel / 8 - 103, p, fsize);
           change_page_task_id(this_task->sel / 8 - 103, q,
-                              segsiz + 512 * 1024 * 4 * 2 * 2 * 2);
+                              segsiz + 512 * 1024 * 4 * 2 * 2 * 2 * 2);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, memman,
                               4 * 1024 * 4 * 2 * 2 * 2);
@@ -340,10 +340,10 @@ int cmd_app(char* cmdline) {
       page_kfree((int)mfifo, sizeof(struct FIFO8));
       page_kfree((int)kbuf, 4096);
       page_kfree((int)mbuf, 4096);
-      page_free(memman, 4 * 1024 * 4 * 2 * 2 * 2);
+      page_free(memman, 4 * 1024 * 4 * 2 * 2 * 2 * 2);
       page_free(stack, 64 * 1024);
       page_free(p, fsize);
-      page_free(q, segsiz + 512 * 1024 * 4 * 2 * 2 * 2);
+      page_free(q, segsiz + 512 * 1024 * 4 * 2 * 2 * 2 * 2);
       print("\n");
     } else if (elf32Validate((Elf32_Ehdr*)fp->buffer)) {
       // printk("----------ProGram Running Malloc Info-----------");

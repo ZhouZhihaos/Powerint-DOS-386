@@ -158,6 +158,19 @@ int main(int argc,char **argv)
 	//  print("This program is a bad\n");
 	//  return;
 	system("cls");
+	for(int i = 0;i<20;i++) {
+		for(int i = 0;i<20;i++) {
+			printf("-");
+		}
+		printf("\n");
+	}
+	goto_xy(0,0);
+	for(int i = 0;i<19;i++) {
+		for(int i = 0;i<20;i++) {
+			printf("|");
+		}
+		printf("\n");
+	}
 	while (1)
 	{
 		ViewMap();
@@ -2182,29 +2195,147 @@ void who_is_win_for_ai_get_weixie(int *war, int *x, int *y)
 	*y = 0;
 	return;
 }
+#define length 19
+int aibeside(int x, int y)
+{
+	if (map[x + 1][y] == 1 || map[x - 1][y] == 1 || map[x][y + 1] == 1 || map[x][y - 1] == 1)return 2;
+	if (map[x + 1][y + 1] == 1 || map[x - 1][y + 1] == 1 || map[x - 1][y - 1] == 1 || map[x + 1][y - 1] == 1)return 1;
+	return 0;
+}
+ 
+int aibeside2(int x, int y)
+{
+	if (map[x + 1][y] == 1 && map[x + 2][y] == 1)return 10;
+	if (map[x - 1][y] == 1 && map[x - 2][y] == 1)return 10;
+	if (map[x][y + 1] == 1 && map[x][y + 2] == 1)return 10;
+	if (map[x][y - 1] == 1 && map[x][y - 2] == 1)return 10;
+ 
+	if (map[x + 1][y + 1] == 1 && map[x + 2][y + 2] == 1)return 10;
+	if (map[x - 1][y + 1] == 1 && map[x - 2][y + 2] == 1)return 10;
+	if (map[x + 1][y - 1] == 1 && map[x + 2][y - 2] == 1)return 10;
+	if (map[x - 1][y - 1] == 1 && map[x - 2][y - 2] == 1)return 10;
+	return 0;
+}
+ 
+int aibeside3(int x, int y)
+{
+	if (map[x + 1][y] == 1 && map[x + 2][y] == 1 && map[x + 3][y] == 1)return 100;
+	if (map[x - 1][y] == 1 && map[x - 2][y] == 1 && map[x - 3][y] == 1)return 100;
+	if (map[x][y + 1] == 1 && map[x][y + 2] == 1 && map[x][y + 3] == 1)return 100;
+	if (map[x][y - 1] == 1 && map[x][y - 2] == 1 && map[x][y - 3] == 1)return 100;
+ 
+	if (map[x - 1][y - 1] == 1 && map[x - 2][y - 2] == 1 && map[x - 3][y - 3] == 1)return 100;
+	if (map[x - 1][y + 1] == 1 && map[x - 2][y + 2] == 1 && map[x - 3][y + 3] == 1)return 100;
+	if (map[x + 1][y - 1] == 1 && map[x + 2][y - 2] == 1 && map[x + 3][y - 3] == 1)return 100;
+	if (map[x + 1][y + 1] == 1 && map[x + 2][y + 2] == 1 && map[x + 3][y + 3] == 1)return 100;
+	return 0;
+}
+ 
+int aibeside4(int x, int y)
+{
+	if (map[x + 1][y] == 1 && map[x + 2][y] == 1 && map[x + 3][y] == 1 && map[x + 4][y] == 1)return 1000;
+	if (map[x - 1][y] == 1 && map[x - 2][y] == 1 && map[x - 3][y] == 1 && map[x - 4][y] == 1)return 1000;
+	if (map[x][y + 1] == 1 && map[x][y + 2] == 1 && map[x][y + 3] == 1 && map[x][y + 4] == 1)return 1000;
+	if (map[x][y - 1] == 1 && map[x][y - 2] == 1 && map[x][y - 3] == 1 && map[x][y - 4] == 1)return 1000;
+ 
+	if (map[x - 1][y - 1] == 1 && map[x - 2][y - 2] == 1 && map[x - 3][y - 3] == 1 && map[x - 4][y - 4] == 1)return 100;
+	if (map[x - 1][y + 1] == 1 && map[x - 2][y + 2] == 1 && map[x - 3][y + 3] == 1 && map[x - 4][y + 4] == 1)return 100;
+	if (map[x + 1][y - 1] == 1 && map[x + 2][y - 2] == 1 && map[x + 3][y - 3] == 1 && map[x + 4][y - 4] == 1)return 100;
+	if (map[x + 1][y + 1] == 1 && map[x + 2][y + 2] == 1 && map[x + 3][y + 3] == 1 && map[x + 4][y + 4] == 1)return 100;
+	return 0;
+}
+ 
+int corner(int x, int y)
+{
+	if (x == 0 || y == 0 || x == length - 1 || y == length - 1)return -1;
+	return 0;
+}
+ 
+int attack(int x, int y)
+{
+	if (map[x + 1][y] == 2 && map[x + 2][y] == 2 && map[x + 3][y] == 2)return 1000;
+	if (map[x - 1][y] == 2 && map[x - 2][y] == 2 && map[x - 3][y] == 2)return 1000;
+	if (map[x][y + 1] == 2 && map[x][y + 2] == 2 && map[x][y + 3] == 2)return 1000;
+	if (map[x][y - 1] == 2 && map[x][y - 2] == 2 && map[x][y - 3] == 2)return 1000;
+ 
+	if (map[x - 1][y - 1] == 2 && map[x - 2][y - 2] == 2 && map[x - 3][y - 3] == 2)return 1000;
+	if (map[x - 1][y + 1] == 2 && map[x - 2][y + 2] == 2 && map[x - 3][y + 3] == 2)return 1000;
+	if (map[x + 1][y - 1] == 2 && map[x + 2][y - 2] == 2 && map[x + 3][y - 3] == 2)return 1000;
+	if (map[x + 1][y + 1] == 2 && map[x + 2][y + 2] == 2&& map[x + 3][y + 3] == 2)return 1000;
+	return 0;
+}
+ 
+int score[19][19];
+int ai()
+{
+	if (ai3() == 1)return 0;
+	//计分归零
+	for (int i = 0; i < length; i++)
+	{
+		for (int j = 0; j < length; j++)
+		{
+			score[i][j] = 0;
+		}
+	}
+	//每个子计分
+	for (int i = 0; i < length; i++)
+	{
+		for (int j = 0; j < length; j++)
+		{
+			if (map[j][i] == 2)
+			{
+				score[j][i] = -1;
+				continue;
+			}
+ 
+			if (map[j][i] == 1)
+			{
+				score[j][i] = -1;
+				continue;
+			}
+ 
+			score[j][i] += aibeside(j, i);
+			score[j][i] += aibeside2(j, i);
+			score[j][i] += aibeside3(j, i);
+			score[j][i] += aibeside4(j, i);
+			score[j][i] += corner(j, i);
+			score[j][i] += attack(j, i);
+		}
+	}
+ 	int maxx = 0, maxy = 0, maxscore = 0;
+back:
+	maxx = 0;
+	maxy = 0;
+	maxscore = 0;
+	for (int j = 0; j < length; j++)
+	{
+		for (int i = 0; i < length; i++)
+		{
+			if (score[j][i] > maxscore)
+			{
+				maxscore = score[j][i];
+				maxx = j;
+				maxy = i;
+			}
+		}
+	}
+	if (map[maxx][maxy] != 0)
+	{
+		score[maxx][maxy] = 0; goto back;
+	}
+	map[maxx][maxy] = 2;
+	return 0;
+}
+ 
+int ai3()
+{
+	return 0;
+}
 void gobang_ai()
 {
-	/***/
-	/*
-
-	 *                 五子棋ai v 0.1  by min0911_
-	@
-	@
-	@@@@@ date 2021    @@@@水平：菜鸟
-	 */
-
-	static int war = 0;
-	static int x = 0;
-	static int y = 0;
-	who_is_win_for_ai_get_weixie(&war, &x, &y);
-	if (war == 1)
-	{
-		map[x][y] = 2;
-	}
-	else
-	{ /******应对无子可下的情况******/
-		static int x1 = 0, x2 = 0;
-		random_x_y(&x1, &x2);
-		map[x1][x2] = 2;
-	}
+	int x1 = x;
+	int y1 = y;
+	ai();
+	x = x1;
+	y = y1;
 }

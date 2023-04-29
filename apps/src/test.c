@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <syscall.h>
-void t() {
-  while(1) {
-    get_mouse();
-  }
-}
+
 int main() {
-  char *s = malloc(1024*16);
-  AddThread("t",t,s);
+  start_keyboard_message();
   while (1) {
-    
+    if(key_press_status()) {
+      printf("PRESS:%02x\n",get_key_press());
+    }
+    if(key_up_status()) {
+      printf("UP:%02x\n",get_key_up());
+    }
   }
 }

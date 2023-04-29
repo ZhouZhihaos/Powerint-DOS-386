@@ -80,6 +80,12 @@ void VBEDraw_Box(int x, int y, int x1, int y1, int color);
 void roll(int ysize);
 char get_cons_color();
 void set_cons_color(uint8_t c);
+void start_keyboard_message();
+uint8_t key_press_status();
+uint8_t key_up_status();
+uint8_t get_key_press();
+uint8_t get_key_up();
+
 #ifdef __cplusplus
 }
 #endif

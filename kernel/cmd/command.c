@@ -25,12 +25,6 @@ extern struct ide_device {
 } ide_devices[4];
 unsigned char *ramdisk;
 
-void usertasktest() {
-  while (1) {
-    // do nothing
-  }
-}
-
 /* vdisk的RW测试函数 */
 void TestRead(char drive, unsigned char *buffer, unsigned int number,
               unsigned int lba) {
@@ -986,7 +980,8 @@ void pci_list() {
 void cmd_dir(char **args) {
   vfs_file *file = vfs_fileinfo(args[0]);
   if (file != NULL) {
-    printf("%s  %d  %04d-%02d-%02d %02d:%02d  ", file->name, file->size, file->year, file->month, file->day, file->hour, file->minute);
+    printf("%s  %d  %04d-%02d-%02d %02d:%02d  ", file->name, file->size,
+           file->year, file->month, file->day, file->hour, file->minute);
     if (file->type == FLE) {
       printf("FILE");
     } else if (file->type == RDO) {
@@ -1167,99 +1162,107 @@ void cmd_tl() {
 void cmd_vbetest() { get_all_mode(); }
 
 int compress_one_file(char *infilename, char *outfilename) {
-  int num_read = 0;
-  char *buffer;
-  char *end;
-  char inbuffer[128];
-  int fg = 0;
-  int p = 0;
-  int sz;
-  unsigned long total_read = 0, total_wrote = 0;
-  (void)(total_wrote);
-  (void)(fg);
-  (void)(end);
-  vfs_createfile(outfilename);
-  FILE *infile = fopen(infilename, "rb");
-  buffer = malloc(infile->fileSize);
-  sz = infile->fileSize;
-  end = buffer + infile->fileSize;
-  fread(buffer, infile->fileSize, 1, infile);
-  fclose(infile);
-  gzFile outfile = gzopen(outfilename, "wb");
-  if (!infile || !outfile) {
+
+  FILE *file;
+  unsigned flen;
+  unsigned char *fbuf = NULL;
+  unsigned clen;
+  unsigned char *cbuf = NULL;
+
+  /* 通过命令行参数将srcfile文件的数据压缩后存放到dstfile文件中 */
+
+  if ((file = fopen(infilename, "rb")) == NULL) {
+    printf("Can\'t open %s!\n", infilename);
     return -1;
   }
-  printk("OPEN OK.\n");
-  while (1) {
-    if (p >= sz) {
-      break;
-    } else if (sz - p >= 128) {
-      printk("=128\n");
-      memcpy(inbuffer, buffer, 128);
-      buffer += 128;
-      p += 128;
-      num_read = 128;
-    } else {
-      printk("sz-p=%d\n", sz - p);
-      memcpy(inbuffer, buffer, sz - p);
-      num_read = sz - p;
-      buffer += sz - p;
-      p += sz - p;
-    }
-
-    total_read += num_read;
-    gzwrite(outfile, inbuffer, num_read);
-    memset(inbuffer, 0, 128);
-    printk("total_read=%d\n", total_read);
+  /* 装载源文件数据到缓冲区 */
+  fseek(file, 0L, SEEK_END); /* 跳到文件末尾 */
+  flen = ftell(file);        /* 获取文件长度 */
+  fseek(file, 0L, SEEK_SET);
+  if ((fbuf = (unsigned char *)malloc(sizeof(unsigned char) * flen)) == NULL) {
+    printf("No enough memory!\n");
+    fclose(file);
+    return -1;
   }
-  printk("%d\n", total_read);
-  printk("\nfclose(infile)\n");
-  // fclose(infile);
-  printk("gzclose(outfile)\n");
-  gzclose(outfile);
-  printk("ALL DONE\n");
+  fread(fbuf, sizeof(unsigned char), flen, file);
+  /* 压缩数据 */
+  clen = compressBound(flen);
+  if ((cbuf = (unsigned char *)malloc(sizeof(unsigned char) * clen)) == NULL) {
+    printf("No enough memory!\n");
+    fclose(file);
+    return -1;
+  }
+  if (compress(cbuf, (unsigned long *)&clen, fbuf, flen) != Z_OK) {
+    printf("Compress %s failed!\n", infilename);
+    return -1;
+  }
+  fclose(file);
+
+  if (fsz(outfilename) == -1) {
+    vfs_createfile(outfilename);
+  }
+  if ((file = fopen(outfilename, "wb")) == NULL) {
+    printf("Can\'t create %s!\n", outfilename);
+    return -1;
+  }
+  /* 保存压缩后的数据到目标文件 */
+  fwrite(&flen, sizeof(uLong), 1, file); /* 写入源文件长度 */
+  fwrite(&clen, sizeof(uLong), 1, file); /* 写入目标数据长度 */
+  fwrite(cbuf, sizeof(unsigned char), clen, file);
+  fclose(file);
+
+  free(fbuf);
+  free(cbuf);
+
   return 0;
 }
 int decompress_one_file(char *infilename, char *outfilename) {
-  int num_read = 0;
-  static char buffer[128] = {0};
-  unsigned char *buffer2;
-  unsigned int p = 0;
-  int sz = 0;
-  vfs_createfile(outfilename);
-  gzFile infile = gzopen(infilename, "rb");
-  // FILE* outfile = fopen(outfilename, "wb");
-  while ((num_read = gzread(infile, buffer, sizeof(buffer))) > 0) {
-    // fwrite(buffer, 1, num_read, outfile);
-    // printf("p=%d,num_read=%d\n", p, num_read);
-    // for (int i = 0; i < num_read; i++) {
-    //   buffer2[p++] = buffer[i];
-    //   printk("buffer2[%d]=%c\n", p - 1, buffer[i]);
-    //   printk("Now buffer2[%d] = %c\n", p - 1, buffer2[p - 1]);
-    // }
-    sz += num_read;
 
-    // memset(buffer, 0, 128);
+  FILE *file;
+  unsigned int flen;
+  unsigned char *fbuf = NULL;
+  unsigned int ulen;
+  unsigned char *ubuf = NULL;
+
+  /* 通过命令行参数将srcfile文件的数据解压缩后存放到dstfile文件中 */
+
+  if ((file = fopen(infilename, "rb")) == NULL) {
+    printf("Can\'t open %s!\n", infilename);
+    return -1;
   }
-  gzseek(infile, 0, SEEK_SET);
-  buffer2 = page_kmalloc(sz);
-  while ((num_read = gzread(infile, buffer, sizeof(buffer))) > 0) {
-    for (int i = 0; i < num_read; i++) {
-      buffer2[p++] = buffer[i];
-    }
+  /* 装载源文件数据到缓冲区 */
+  fread(&ulen, sizeof(uLong), 1, file); /* 获取缓冲区大小 */
+  fread(&flen, sizeof(uLong), 1, file); /* 获取数据流大小 */
+  if ((fbuf = (unsigned char *)malloc(sizeof(unsigned char) * flen)) == NULL) {
+    printf("No enough memory!\n");
+    fclose(file);
+    return -1;
   }
-  gzclose(infile);
-  // fclose(outfile);
-  char buffer3[60];
-  sprintf(buffer3, "del %s", outfilename);
-  vfs_delfile(buffer3);
-  vfs_createfile(outfilename);
-  for (int i = 0; i < sz; i++) {
-    printk("%02x ", buffer2[i]);
+  fread(fbuf, sizeof(unsigned char), flen, file);
+  /* 解压缩数据 */
+  if ((ubuf = (unsigned char *)malloc(sizeof(unsigned char) * ulen)) == NULL) {
+    printf("No enough memory!\n");
+    fclose(file);
+    return -1;
   }
-  EDIT_FILE(outfilename, (char *)buffer2, sz, 0);
-  printk("size=%d\n", sz);
-  // printk("%s\n", buffer2);
-  page_kfree((int)buffer2, sz);
+  if (uncompress(ubuf, (unsigned long *)&ulen, fbuf, flen) != Z_OK) {
+    printf("Uncompress %s failed!\n", infilename);
+    return -1;
+  }
+  fclose(file);
+
+  if (fsz(outfilename) == -1) {
+    vfs_createfile(outfilename);
+  }
+  if ((file = fopen(outfilename, "wb")) == NULL) {
+    printf("Can\'t create %s!\n", outfilename);
+    return -1;
+  }
+  /* 保存解压缩后的数据到目标文件 */
+  fwrite(ubuf, sizeof(unsigned char), ulen, file);
+  fclose(file);
+
+  free(fbuf);
+  free(ubuf);
   return 0;
 }

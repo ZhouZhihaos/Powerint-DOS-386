@@ -117,8 +117,8 @@ struct TASK {
   unsigned int change_dict_times;
   char path[256];
   char *line;
-  void (*keyboard_press)(unsigned char data);
-  void (*keyboard_release)(unsigned char data);
+  void (*keyboard_press)(unsigned char data, uint32_t task);
+  void (*keyboard_release)(unsigned char data, uint32_t task);
   int nl;
   int lock; // 被锁住了？
   char forever;
@@ -132,6 +132,7 @@ struct TASK {
   int last_eip;
   struct vfs_t *nfs;
   char fxsave_region[512] __attribute__((aligned(16)));
+  struct FIFO8 *Pkeyfifo, *Ukeyfifo;
 } __attribute__((packed));
 #define vfs_now NowTask()->nfs
 #define PG_P 1
