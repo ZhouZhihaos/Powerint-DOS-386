@@ -186,7 +186,7 @@ void file_savefile(int clustno, int size, char *buf, int *fat,
 void file_saveinfo(struct FAT_FILEINFO *directory, vfs_t *vfs) {
   if (directory == get_dm(vfs).root_directory) {
     Disk_Write(get_dm(vfs).RootDictAddress / get_dm(vfs).SectorBytes,
-               14 * get_dm(vfs).ClustnoBytes / get_dm(vfs).SectorBytes,
+               get_dm(vfs).RootMaxFiles * 32 / get_dm(vfs).SectorBytes,
                (void *)directory, vfs->disk_number);
   } else {
     for (int i = 1; FindForCount(i, get_dm(vfs).directory_list) != NULL; i++) {

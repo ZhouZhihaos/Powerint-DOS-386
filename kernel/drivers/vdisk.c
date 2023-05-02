@@ -109,13 +109,14 @@ void DriveSemaphoreGive(unsigned int drive_code) {
   // printk("FIFO: %d GET: %d STATUS: %d\n", drive_code, Get_Tid(NowTask()),
   //        fifo8_status(&drive_fifo[drive_code]));
 }
-
+#define SECTORS_ONCE 406
 void Disk_Read(unsigned int lba, unsigned int number, void *buffer,
                char drive) {
   if (have_vdisk(drive)) {
     if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"DISK_DRIVE"))) {
-      for (int i = 0; i != number; i++) {
-        rw_vdisk(drive, lba + i, buffer + i * 512, 1, 1);
+    for (int i = 0; i < number; i += SECTORS_ONCE) {
+      int sectors = ((number - i) >= SECTORS_ONCE) ? SECTORS_ONCE : (number - i);
+        rw_vdisk(drive, lba + i, buffer + i * 512, sectors, 1);
       }
       DriveSemaphoreGive(GetDriveCode((unsigned char *)"DISK_DRIVE"));
     }
@@ -138,10 +139,13 @@ bool DiskReady(char drive) { return have_vdisk(drive); }
 int getReadyDisk() { return 0; }
 void Disk_Write(unsigned int lba, unsigned int number, void *buffer,
                 char drive) {
+//  printf("%d\n",lba);
   if (have_vdisk(drive)) {
     if (DriveSemaphoreTake(GetDriveCode((unsigned char *)"DISK_DRIVE"))) {
-      for (int i = 0; i != number; i++) {
-        rw_vdisk(drive, lba + i, buffer + i * 512, 1, 0);
+     // printk("*buffer(%d %d) = %02x\n",lba,number,*(unsigned char *)buffer);
+    for (int i = 0; i < number; i += SECTORS_ONCE) {
+      int sectors = ((number - i) >= SECTORS_ONCE) ? SECTORS_ONCE : (number - i);
+        rw_vdisk(drive, lba + i, buffer + i * 512, sectors, 0);
       }
       DriveSemaphoreGive(GetDriveCode((unsigned char *)"DISK_DRIVE"));
     }
