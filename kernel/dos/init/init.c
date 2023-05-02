@@ -61,7 +61,7 @@ void sysinit(void) {
   init_vfs();
   init_floppy();
   init_rootfs();
-  Register_fat12_fileSys();
+  Register_fat_fileSys();
   memsize = memtest(0x00400000, 0xbfffffff);
   if (memsize / (1024 * 1024) < 32) {
     while (1) {

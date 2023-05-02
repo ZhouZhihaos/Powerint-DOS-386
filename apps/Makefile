@@ -46,6 +46,7 @@ build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) game.bin gobang.bin memz.bin M
 	@python build.py tedit $(OBJS_GUI)
 	@python build.py c4 $(OBJS_PACK)
 	@python build.py image $(OBJS_PACK)
+	@python build.py uname $(OBJS_PACK)
 clean :
 	del out /s/q
 

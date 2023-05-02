@@ -204,7 +204,7 @@ CHECK_OK:
     strcpy(NowTask()->line, cmdline);
   }
   if (strincmp("FORMAT ", cmdline, 7) == 0) {
-    int res = vfs_format(cmdline[7], "FAT12");
+    int res = vfs_format(cmdline[7], "FAT");
     if (res == 0) {
       printf("fatal error\n\n");
     } else if (res == 1) {
@@ -212,12 +212,24 @@ CHECK_OK:
     }
   } else if (stricmp("FAT", cmdline) == 0) {
     struct TASK *task = NowTask();
-    for (int i = 0; i != 3072; i++) {
-      printf("%03x ", get_dm(task->nfs).fat[i]);
-      if (!((i + 1) % (24 * 20))) {
+    int neline = NowTask()->TTY->xsize / (get_dm(NowTask()->nfs).type / 4 + 1);
+    for (int i = 0, j = 0; i != get_dm(NowTask()->nfs).FatMaxTerms; i++) {
+      if (get_dm(NowTask()->nfs).type == 12) {
+        printf("%03x ", get_dm(task->nfs).fat[i]);
+      } else if (get_dm(NowTask()->nfs).type == 16) {
+        printf("%04x ", get_dm(task->nfs).fat[i]);
+      } else if (get_dm(NowTask()->nfs).type == 32) {
+        printf("%08x ", get_dm(task->nfs).fat[i]);
+      }
+      if (!((i + 1) % neline)) {
+        printf("\b\n");
+        j++;
+      }
+      if (j == NowTask()->TTY->ysize - 1) {
         printf("Press any key to continue...");
         getch();
         printf("\n");
+        j = 0;
       }
     }
     printf("\n");
@@ -1027,9 +1039,9 @@ void cmd_dir(char **args) {
   return;
 }
 
-void tree(struct FAT12_FILEINFO *directory) {
+void tree(struct FAT_FILEINFO *directory) {
   /*struct TASK* task = NowTask();
-  struct FAT12_FILEINFO* finfo = directory;
+  struct FAT_FILEINFO* finfo = directory;
   struct List* list_ = NewList();
   int directory_num = 0;
   int root_file_num = 0;
@@ -1066,7 +1078,7 @@ void tree(struct FAT12_FILEINFO *directory) {
               }
               printf("\n");
               AddVal((int)(finfo + i), list_);
-              finfo = (struct FAT12_FILEINFO*)list->val;
+              finfo = (struct FAT_FILEINFO*)list->val;
               i = 0;
               directory_num++;
               break;
@@ -1078,8 +1090,8 @@ void tree(struct FAT12_FILEINFO *directory) {
     if (finfo == directory + root_file_num + 1) {
       break;
     }
-    struct FAT12_FILEINFO* last =
-        (struct FAT12_FILEINFO*)FindForCount(directory_num, list_)->val;
+    struct FAT_FILEINFO* last =
+        (struct FAT_FILEINFO*)FindForCount(directory_num, list_)->val;
     finfo = last + 1;
     DeleteVal(directory_num, list_);
     directory_num--;

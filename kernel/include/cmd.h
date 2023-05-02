@@ -5,7 +5,7 @@
 void command_run(char *cmdline);
 void pci_list();
 void cmd_dir(char **args);
-void tree(struct FAT12_FILEINFO *directory);
+void tree(struct FAT_FILEINFO *directory);
 void type_deal(char *cmdline);
 void pcinfo();
 void mem();
@@ -13,6 +13,7 @@ void cmd_tl();
 void cmd_vbetest();
 int compress_one_file(char* infilename, char* outfilename);
 int decompress_one_file(char* infilename, char* outfilename);
+void longName28dot3(char *result, char *src_in);
 // execbatch.c
 int run_bat(char *cmdline);
 struct TASK *start_drv(char *cmdline);

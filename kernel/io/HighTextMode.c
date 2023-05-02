@@ -128,11 +128,13 @@ void Draw_Box_HighTextMode(struct tty *res, int x, int y, int x1, int y1,
                            unsigned char color) {
   io_cli();
   struct SHEET *sht = (struct SHEET *)res->vram;
-  for (int i = (x * 8 * y * 16); i != (x1 * 8 * y1 * 16); i++) {
-    if (sht->buf[i] == color_table[res->color & 0xf]) {
-      sht->buf[i] = color_table[color & 0xf];
-    } else {
-      sht->buf[i] = color_table[color >> 4];
+  for (int i = y * 16; i <= y1 * 16; i++) {
+    for (int j = x * 8; j <= x1 * 8; j++) {
+      if (sht->buf[i * sht->bxsize + j] == color_table[res->color & 0xf]) {
+        sht->buf[i * sht->bxsize + j] = color_table[color & 0xf];
+      } else {
+        sht->buf[i * sht->bxsize + j] = color_table[color >> 4];
+      }
     }
   }
   sheet_refresh(sht, x * 8, y * 16, x1 * 8, y1 * 16);

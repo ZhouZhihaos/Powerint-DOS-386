@@ -34,7 +34,7 @@ OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUT
 				$(OUTPATH)mouse.o $(OUTPATH)acpi.o $(OUTPATH)Input_Stack.o $(OUTPATH)gdtidt.o $(OUTPATH)arg.o $(OUTPATH)CASM.o \
 				$(OUTPATH)other.o $(OUTPATH)task.o $(OUTPATH)floppy.o $(OUTPATH)dma.o $(OUTPATH)init.o $(OUTPATH)main.o \
 				$(OUTPATH)std.o $(OUTPATH)sheet.o $(OUTPATH)graphic.o $(OUTPATH)vbe.o $(OUTPATH)cmos.o $(OUTPATH)pci.o \
-				$(OUTPATH)fat12.o $(OUTPATH)beep.o $(OUTPATH)jpeg.o  $(OUTPATH)gui_syscall.o $(OUTPATH)syscall.o \
+				$(OUTPATH)fat.o $(OUTPATH)beep.o $(OUTPATH)jpeg.o  $(OUTPATH)gui_syscall.o $(OUTPATH)syscall.o \
 				$(OUTPATH)list.o $(OUTPATH)input.o $(OUTPATH)keyboard.o $(OUTPATH)pcnet.o $(OUTPATH)ipc.o \
 				$(OUTPATH)tty.o $(OUTPATH)page.o $(OUTPATH)serial.o $(OUTPATH)log.o $(OUTPATH)path.o $(OUTPATH)pra.o \
 				$(OUTPATH)Draw.o $(OUTPATH)HighTextMode.o $(OUTPATH)pic.o $(OUTPATH)bmp.o $(OUTPATH)button.o $(OUTPATH)window.o \
@@ -48,7 +48,9 @@ OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUT
 				$(OUTPATH)inffast.o $(OUTPATH)inflate.o $(OUTPATH)inftrees.o \
 				$(OUTPATH)trees.o $(OUTPATH)uncompr.o $(OUTPATH)zutil.o $(OUTPATH)ftp.o\
 			    $(OUTPATH)linux_style_file.o $(OUTPATH)netgobang.o $(OUTPATH)ide.o $(OUTPATH)net_syscall.o $(OUTPATH)ntp.o \
-				$(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o $(OUTPATH)GraphicMode.o $(OUTPATH)vfs.o
+				$(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o $(OUTPATH)GraphicMode.o \
+				$(OUTPATH)vfs.o
+
 # 默认动作
 
 default :
@@ -92,7 +94,8 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
 		$(FAT12TOOLS) -mkdir other \
 		-copy other/font.bin ../tools/font/font.bin \
 		-copy other/HZK16 ../tools/font/HZK16 \
-		-copy other/copy.bin $(APPSOUTPATH)copy.bin
+		-copy other/copy.bin $(APPSOUTPATH)copy.bin \
+		-copy other/uname.bin $(APPSOUTPATH)uname.bin
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
 		copy from:$(APPSOUTPATH)uigobang.bin to:@: \

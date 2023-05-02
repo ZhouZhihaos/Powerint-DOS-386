@@ -734,7 +734,7 @@ void jpeg_decode(JPEG* jpeg, unsigned char* rgb, int b_type) {
   return;
 }
 void jpgview32(char* path, unsigned char* vram, int xsize) {
-  struct FAT12_FILEINFO* fileinfo = Get_File_Address(path);
+  struct FAT_FILEINFO* fileinfo = Get_File_Address(path);
   FILE *fp = fopen(path, "r");
   char* buf = fp->buffer;
   int info[8];
@@ -772,7 +772,7 @@ void jpgview32(char* path, unsigned char* vram, int xsize) {
   page_free((int)env, sizeof(struct DLL_STRPICENV));
 }
 void show_photo(char *path,vram_t *vr, int xsize) {
-  struct FAT12_FILEINFO* fileinfo = Get_File_Address(path);
+  struct FAT_FILEINFO* fileinfo = Get_File_Address(path);
   FILE *fp = fopen(path, "r");
   char* buf = fp->buffer;
   int info[8];

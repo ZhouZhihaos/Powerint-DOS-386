@@ -166,12 +166,13 @@ typedef struct List List;
 
 /* fs.h */
 extern uint32_t Path_Addr;
-struct FAT12_CACHE {
+struct FAT_CACHE {
   unsigned int ADR_DISKIMG;
-  struct FAT12_FILEINFO *root_directory;
+  struct FAT_FILEINFO *root_directory;
   struct LIST *directory_list;
   struct LIST *directory_clustno_list;
   int *fat;
+  int FatMaxTerms;
   unsigned int ClustnoBytes;
   unsigned short RootMaxFiles;
   unsigned int RootDictAddress;
@@ -180,13 +181,16 @@ struct FAT12_CACHE {
   unsigned short SectorBytes;
   unsigned int Fat1Address, Fat2Address;
   unsigned char *FatClustnoFlags;
+  int type;
 };
 typedef struct {
-  struct FAT12_CACHE dm;
-  struct FAT12_FILEINFO *dir;
-} fat12_cache;
-#define get_dm(vfs) ((fat12_cache *)(vfs->cache))->dm
-#define get_now_dir(vfs) ((fat12_cache *)(vfs->cache))->dir
+  struct FAT_CACHE dm;
+  struct FAT_FILEINFO *dir;
+} fat_cache;
+#define get_dm(vfs) ((fat_cache *)(vfs->cache))->dm
+#define get_now_dir(vfs) ((fat_cache *)(vfs->cache))->dir
+#define get_clustno(high, low) (high << 16) | (low & 0xffff)
+#define clustno_end(type) 0xfffffff & ((((1 << (type - 1)) - 1) << 1) + 1)
 typedef enum { FLE, DIR, RDO, HID, SYS } ftype;
 typedef struct {
   char name[255];
@@ -234,6 +238,14 @@ typedef struct vfs_t {
 #define BPB_NumHeads 26
 #define BPB_HiddSec 28
 #define BPB_TotSec32 32
+#define BPB_FATSz32 36
+#define BPB_ExtFlags 40
+#define BPB_FSVer 42
+#define BPB_RootClus 44
+#define BPB_FSInfo 48
+#define BPB_BkBootSec 50
+#define BPB_Reserved 52
+#define BPB_Fat32ExtByts 28
 #define BS_DrvNum 36
 #define BS_Reserved1 37
 #define BS_BootSig 38
@@ -244,10 +256,12 @@ typedef struct vfs_t {
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
-struct FAT12_FILEINFO {
+struct FAT_FILEINFO {
   unsigned char name[8], ext[3], type;
-  char reserve[10];
-  unsigned short time, date, clustno;
+  char reserve;
+  unsigned char create_time_tenth;
+  unsigned short create_time, create_date, access_date, clustno_high;
+  unsigned short update_time, update_date, clustno_low;
   unsigned int size;
 };
 #define rmfarptr2ptr(x) ((x).seg * 0x10 + (x).offset)
