@@ -27,14 +27,15 @@ asm_inthandler36:
 		PUSH	DS
 		PUSH	ES
 		PUSHAD			; 用于保存的PUSH
-		
+		PUSHAD
 		MOV		AX,SS
 		MOV			DS,AX ; 将操作系统用段地址存入DS和ES
 		MOV		ES,AX
-		call saveregisters
+	;	call saveregisters
 		CALL	inthandler36
 		ADD		ESP,32
-		call loadregisters
+		POPAD
+	;	call loadregisters
 		POP		ES
 		POP		DS
 		IRETD

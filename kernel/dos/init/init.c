@@ -46,6 +46,7 @@ void sysinit(void) {
   ClearMaskIrq(0);   // pit (timer)
   ClearMaskIrq(1);   // keyboard
   ClearMaskIrq(12);  // mouse
+  set_cr0(get_cr0() | CR0_EM | CR0_TS | CR0_NE);
   fifo8_init(&keyfifo, 32, (unsigned char*)keybuf);
   fifo8_init(&mousefifo, 128, (unsigned char*)mousebuf);
   fifo8_init(&keyfifo_sr1, 32, (unsigned char*)keybuf_sr1);

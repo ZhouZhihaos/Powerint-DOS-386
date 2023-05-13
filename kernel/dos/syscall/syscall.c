@@ -5,11 +5,11 @@ void kbd_press(uint8_t dat, uint32_t task) {
 void kbd_up(uint8_t dat, uint32_t task) {
   fifo8_put(GetTask(task)->Ukeyfifo, dat);
 }
-void *aligned_malloc(size_t size, int alignment) {
+void* aligned_malloc(size_t size, int alignment) {
   // 分配足够的内存, 这里的算法很经典, 早期的STL中使用的就是这个算法
 
   // 首先是维护FreeBlock指针占用的内存大小
-  const int pointerSize = sizeof(void *);
+  const int pointerSize = sizeof(void*);
 
   // alignment - 1 + pointerSize这个是FreeBlock内存对齐需要的内存大小
   // 前面的例子sizeof(T) = 20, __alignof(T) = 16,
@@ -19,10 +19,10 @@ void *aligned_malloc(size_t size, int alignment) {
   const int requestedSize = size + alignment - 1 + pointerSize;
 
   // 分配的实际大小就是20000 + 19 = 20019
-  void *raw = malloc(requestedSize);
+  void* raw = malloc(requestedSize);
 
   // 这里实Pool真正为对象实例分配的内存地址
-  uint32_t *start = (uint32_t)raw + pointerSize;
+  uint32_t* start = (uint32_t)raw + pointerSize;
   // 向上舍入操作
   // 解释一下, __ALIGN - 1指明的是实际内存对齐的粒度
   // 例如__ALIGN = 8时, 我们只需要7就可以实际表示8个数(0~7)
@@ -39,33 +39,44 @@ void *aligned_malloc(size_t size, int alignment) {
   // 这个表达式与下面给出的等价
   // ((((bytes) + _ALIGN - 1) * _ALIGN) / _ALIGN)
   // 但是SGI STL使用的方法效率非常高
-  void *aligned =
-      (void *)(((uint32_t)start + alignment - 1) & ~(alignment - 1));
+  void* aligned = (void*)(((uint32_t)start + alignment - 1) & ~(alignment - 1));
 
   // 这里维护一个指向malloc()真正分配的内存
-  *(void **)((uint32_t *)aligned - pointerSize) = raw;
+  *(void**)((uint32_t*)aligned - pointerSize) = raw;
 
   // 返回实例对象真正的地址
   return aligned;
 }
 
-void aligned_free(void *aligned_ptr) {
+void aligned_free(void* aligned_ptr) {
   if (aligned_ptr) {
-    free(((uint32_t *)aligned_ptr)[-1]);
+    free(((uint32_t*)aligned_ptr)[-1]);
   }
 }
-void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
+enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };
+void inthandler36(int edi,
+                  int esi,
+                  int ebp,
+                  int esp,
+                  int ebx,
+                  int edx,
+                  int ecx,
                   int eax) {
   // PowerintDOS API
-  struct TASK *task = NowTask();
+  struct TASK* task = NowTask();
   int cs_base = task->cs_base;
   int ds_base = task->ds_base;
-  int alloc_addr = task->alloc_addr; // malloc地址
+  int alloc_addr = task->alloc_addr;  // malloc地址
   int alloc_size = task->alloc_size;
-  char *memman = task->memman;
+  char* memman = task->memman;
   (void)(cs_base);
+  uint32_t* reg = &eax + 1; /* eax后面的地址*/
+                            /*强行改写通过PUSHAD保存的值*/
+  /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
+  /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
   if (eax == 0x01) {
-    intreturn(eax, ebx, ecx, 0x302e3761, esi, edi, ebp); // 0.7a
+    // intreturn(eax, ebx, ecx, 0x302e3761, esi, edi, ebp);  // 0.7a
+    reg[EDX] = 0x302e3761;
   } else if (eax == 0x02) {
     printchar((edx & 0x000000ff));
   } else if (eax == 0x03) {
@@ -83,15 +94,15 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       } else if (ebx == 0x06) {
         Draw_Px(ecx, edx, esi);
       } else if (ebx == 0x07) {
-        Draw_Str(ecx, edx, (char *)esi + ds_base, edi);
+        Draw_Str(ecx, edx, (char*)esi + ds_base, edi);
       } else if (ebx == 0x08) {
-        PrintChineseStr(ecx, edx, edi, (unsigned char *)esi + ds_base);
+        PrintChineseStr(ecx, edx, edi, (unsigned char*)esi + ds_base);
       }
     }
   } else if (eax == 0x04) {
     gotoxy(edx, ecx);
   } else if (eax == 0x05) {
-    print((char *)edx + ds_base);
+    print((char*)edx + ds_base);
   } else if (eax == 0x06) {
     sleep(edx);
   } else if (eax == 0x08) {
@@ -105,8 +116,9 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
         //   unsigned char c = (unsigned)memman[l];
         //   printk("%02x ", c);
         // }
-        intreturn(eax, ebx, ecx, (i - j) * 128 + (alloc_addr - ds_base), esi,
-                  edi, ebp);
+        // intreturn(eax, ebx, ecx, (i - j) * 128 + (alloc_addr - ds_base), esi,
+        //          edi, ebp);
+        reg[EDX] = (i - j) * 128 + (alloc_addr - ds_base);
         return;
       }
       if (memman[i] == 0x00) {
@@ -115,8 +127,8 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
         j = 0;
       }
     }
-    printf("malloc error\n");
-    intreturn(eax, ebx, ecx, 0, esi, edi, ebp);
+    printk("malloc error\n");
+    reg[EDX] = 0;
   } else if (eax == 0x09) {
     ecx = ((ecx - 1) + 128) / 128;
     int ad = (edx & 0xfffffff0) - (alloc_addr - ds_base);
@@ -134,45 +146,60 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     //  printk("%02x ", c);
     // }
     // printk("\n");
-    clean((char *)(ad + alloc_addr), ecx * 128);
+    clean((char*)(ad + alloc_addr), ecx * 128);
   } else if (eax == 0x0c) {
     Text_Draw_Box(ecx, ebx, esi, edx, (unsigned char)edi);
   } else if (eax == 0x0e) {
-    intreturn(eax, ebx, get_y(), get_x(), esi, edi, ebp);
+    // intreturn(eax, ebx, get_y(), get_x(), esi, edi, ebp);
+    reg[ECX] = get_y();
+    reg[EDX] = get_x();
   } else if (eax == 0x0d) {
     beep(ebx, ecx, edx);
   } else if (eax == 0x0f) {
     if (running_mode == POWERDESKTOP) {
       extern int gmx, gmy;
-      struct SHEET *sht_win = (struct SHEET *)task->TTY->reserved[1];
+      struct SHEET* sht_win = (struct SHEET*)task->TTY->reserved[1];
       for (;;) {
         if ((mdec.btn & 0x01) != 0) {
-          intreturn(eax, ebx, (gmx - sht_win->vx0 - 5) / 8,
-                    (gmy - sht_win->vy0 - 24) / 16, 1, edi, ebp);
+          // intreturn(eax, ebx, (gmx - sht_win->vx0 - 5) / 8,
+          //           (gmy - sht_win->vy0 - 24) / 16, 1, edi, ebp);
+          reg[ECX] = (gmx - sht_win->vx0 - 5) / 8;
+          reg[EDX] = (gmy - sht_win->vy0 - 24) / 16;
+          reg[ESI] = 1;
           return;
         } else if ((mdec.btn & 0x02) != 0) {
-          intreturn(eax, ebx, (gmx - sht_win->vx0 - 5) / 8,
-                    (gmy - sht_win->vy0 - 24) / 16, 2, edi, ebp);
+          // intreturn(eax, ebx, (gmx - sht_win->vx0 - 5) / 8,
+          //           (gmy - sht_win->vy0 - 24) / 16, 2, edi, ebp);
+          reg[ECX] = (gmx - sht_win->vx0 - 5) / 8;
+          reg[EDX] = (gmy - sht_win->vy0 - 24) / 16;
+          reg[ESI] = 2;
           return;
         } else if ((mdec.btn & 0x04) != 0) {
-          intreturn(eax, ebx, (gmx - sht_win->vx0 - 5) / 8,
-                    (gmy - sht_win->vy0 - 24) / 16, 3, edi, ebp);
+          // intreturn(eax, ebx, (gmx - sht_win->vx0 - 5) / 8,
+          //           (gmy - sht_win->vy0 - 24) / 16, 3, edi, ebp);
+          reg[ECX] = (gmx - sht_win->vx0 - 5) / 8;
+          reg[EDX] = (gmy - sht_win->vy0 - 24) / 16;
+          reg[ESI] = 3;
           return;
         } else if (mdec.roll != MOUSE_ROLL_NONE) {
-          intreturn(eax, ebx, NowTask()->mx, NowTask()->my, 3 + mdec.roll, edi,
-                    ebp);
+          // intreturn(eax, ebx, NowTask()->mx, NowTask()->my, 3 + mdec.roll,
+          // edi,
+          //           ebp);
+          reg[ECX] = NowTask()->mx;
+          reg[EDX] = NowTask()->my;
+          reg[ESI] = 3 + mdec.roll;
           mdec.roll = MOUSE_ROLL_NONE;
           break;
         }
       }
     } else if (running_mode == POWERINTDOS) {
-      struct TASK *task = NowTask();
+      struct TASK* task = NowTask();
       int i, mx1 = task->mx, my1 = task->my, bufx = task->mx * 8,
              bufy = task->my * 16;
       int bx = mx1;
       int by = my1;
       int bmp =
-          *(char *)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
+          *(char*)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
       mouse_ready(&mdec);
       for (;;) {
         if (fifo8_status(TaskGetMousefifo(task)) == 0) {
@@ -185,16 +212,29 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
               continue;
             }
             if ((mdec.btn & 0x01) != 0) {
-              intreturn(eax, ebx, task->mx, task->my, 1, edi, ebp);
+              // intreturn(eax, ebx, task->mx, task->my, 1, edi, ebp);
+              reg[ECX] = task->mx;
+              reg[EDX] = task->my;
+              reg[ESI] = 1;
               break;
             } else if ((mdec.btn & 0x02) != 0) {
-              intreturn(eax, ebx, task->mx, task->my, 2, edi, ebp);
+              // intreturn(eax, ebx, task->mx, task->my, 2, edi, ebp);
+              reg[ECX] = task->mx;
+              reg[EDX] = task->my;
+              reg[ESI] = 2;
               break;
             } else if ((mdec.btn & 0x04) != 0) {
-              intreturn(eax, ebx, task->mx, task->my, 3, edi, ebp);
+              // intreturn(eax, ebx, task->mx, task->my, 3, edi, ebp);
+              reg[ECX] = task->mx;
+              reg[EDX] = task->my;
+              reg[ESI] = 3;
               break;
             } else if (mdec.roll != MOUSE_ROLL_NONE) {
-              intreturn(eax, ebx, task->mx, task->my, 3 + mdec.roll, edi, ebp);
+              // intreturn(eax, ebx, task->mx, task->my, 3 + mdec.roll, edi,
+              // ebp);
+              reg[ECX] = task->mx;
+              reg[EDX] = task->my;
+              reg[ESI] = 3 + mdec.roll;
               break;
             }
             mx1 = task->mx;
@@ -215,12 +255,12 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
             } else if (bufy < 0) {
               bufy = 0;
             }
-            *(char *)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
-                      1) = bmp;
-            bmp = *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                            task->mx * 2 + 1);
-            *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                      task->mx * 2 + 1) = ~bmp;
+            *(char*)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
+                     1) = bmp;
+            bmp = *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                           task->mx * 2 + 1);
+            *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                     task->mx * 2 + 1) = ~bmp;
             mouse_sleep(&mdec);
             sleep(50);
             mouse_ready(&mdec);
@@ -228,73 +268,81 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
         }
       }
       mouse_sleep(&mdec);
-      *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                task->mx * 2 + 1) = bmp;
+      *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+               task->mx * 2 + 1) = bmp;
       task->mx = mx1;
       task->my = my1;
     }
   } else if (eax == 0x16) {
     if (ebx == 0x01) {
-      intreturn(eax, ebx, ecx, getch(), esi, edi, ebp);
+      // intreturn(eax, ebx, ecx, getch(), esi, edi, ebp);
+      reg[EDX] = getch();
     } else if (ebx == 0x02) {
-      intreturn(eax, ebx, ecx, input_char_inSM(), esi, edi, ebp);
+      // intreturn(eax, ebx, ecx, input_char_inSM(), esi, edi, ebp);
+      reg[EDX] = input_char_inSM();
     } else if (ebx == 0x03) {
-      input((char *)(edx + ds_base), ecx);
+      input((char*)(edx + ds_base), ecx);
     }
   } else if (eax == 0x19) {
-    command_run((char *)(edx + ds_base));
+    command_run((char*)(edx + ds_base));
   } else if (eax == 0x1a) {
     if (ebx == 0x01) {
-      int fsize = vfs_filesize((char *)(edx + ds_base));
+      int fsize = vfs_filesize((char*)(edx + ds_base));
       if (fsize != -1) {
-        intreturn(eax, ebx, ecx, fsize, esi, edi, ebp);
+        // intreturn(eax, ebx, ecx, fsize, esi, edi, ebp);
+        reg[EDX] = fsize;
       } else {
-        intreturn(eax, ebx, ecx, -1, esi, edi, ebp);
+        // intreturn(eax, ebx, ecx, -1, esi, edi, ebp);
+        reg[EDX] = -1;
       }
       // intreturn(eax, ebx, ecx, finfo->size, esi, edi, ebp);
     } else if (ebx == 0x02) {
-      int fsize = vfs_filesize((char *)(ds_base + edx));
-      FILE *fp = fopen((char *)(ds_base + edx), "r");
-      char *p = (char *)fp->buffer;
-      char *q = (char *)ds_base + esi;
+      int fsize = vfs_filesize((char*)(ds_base + edx));
+      FILE* fp = fopen((char*)(ds_base + edx), "r");
+      char* p = (char*)fp->buffer;
+      char* q = (char*)ds_base + esi;
       int i;
       if (fp != 0) {
         for (i = 0; i != fsize; i++) {
           q[i] = p[i];
         }
         fclose(fp);
-        intreturn(1, ebx, ecx, edx, esi, edi, ebp);
+        reg[EAX] = 1;
+        // intreturn(1, ebx, ecx, edx, esi, edi, ebp);
       } else {
-        intreturn(0, ebx, ecx, edx, esi, edi, ebp);
+        reg[EAX] = 1;
+        // intreturn(0, ebx, ecx, edx, esi, edi, ebp);
       }
     } else if (ebx == 0x03) {
-      char *FilePath = (char *)(ds_base + edx);
+      char* FilePath = (char*)(ds_base + edx);
       vfs_createfile(FilePath);
     } else if (ebx == 0x04) {
-      char *FilePath = (char *)(ds_base + edx);
+      char* FilePath = (char*)(ds_base + edx);
       char buf[270];
       sprintf(buf, "mkdir %s", FilePath);
       command_run(buf);
     } else if (ebx == 0x05) {
       printk("EDIT_FILE\n");
-      char *FilePath = (char *)(ds_base + edx);
-      char *Ptr = (char *)ds_base + esi;
+      char* FilePath = (char*)(ds_base + edx);
+      char* Ptr = (char*)ds_base + esi;
       int length = ecx;
       int offset = edi;
       EDIT_FILE(FilePath, Ptr, length, offset);
     }
   } else if (eax == 0x1b) {
     int i;
-    char *bes = (char *)(edx + ds_base);
+    char* bes = (char*)(edx + ds_base);
     for (i = 0; i < strlen(task->line); i++) {
       bes[i] = task->line[i];
     }
     bes[i] = 0;
   } else if (eax == 0x1c) {
-    intreturn(Copy((char *)(edx + ds_base), (char *)(esi + ds_base)), ebx, ecx,
-              edx, esi, edi, ebp);
+    reg[EAX] = Copy((char*)(edx + ds_base), (char*)(esi + ds_base));
+    // intreturn(Copy((char*)(edx + ds_base), (char*)(esi + ds_base)), ebx, ecx,
+    //           edx, esi, edi, ebp);
   } else if (eax == 0x1d) {
-    intreturn(kbhit(), ebx, ecx, edx, esi, edi, ebp);
+    // intreturn(kbhit(), ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = kbhit();
   } else if (eax == 0x1e) {
     while (FindForCount(1, vfs_now->path) != NULL) {
       // printk("%d\n",vfs_now->path->ctl->all);
@@ -306,18 +354,25 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     page_kfree((int)vfs_now, sizeof(vfs_t));
     extern uint32_t app_num;
     app_num--;
+    printk("at the last\n");
     task->running = 0;
-    WakeUp(GetTask(1)); // 别睡了，起来干活
+    WakeUp(GetTask(1));  // 别睡了，起来干活
+    SleepTask(NowTask());
+    while (1)
+      ;
   } else if (eax == 0x20) {
     // VBE驱动API
     if (running_mode == POWERINTDOS) {
       if (ebx == 0x01) {
-        intreturn(SwitchVBEMode(ecx), ebx, ecx, edx, esi, edi, ebp);
+        reg[EAX] = SwitchVBEMode(ecx);
+        // intreturn(SwitchVBEMode(ecx), ebx, ecx, edx, esi, edi, ebp);
       } else if (ebx == 0x02) {
-        intreturn(check_vbe_mode(ecx, (struct VBEINFO *)VBEINFO_ADDRESS), ebx,
-                  ecx, edx, esi, edi, ebp);
+        reg[EAX] = check_vbe_mode(ecx, (struct VBEINFO*)VBEINFO_ADDRESS);
+        // intreturn(check_vbe_mode(ecx, (struct VBEINFO*)VBEINFO_ADDRESS), ebx,
+        //           ecx, edx, esi, edi, ebp);
       } else if (ebx == 0x05) {
-        intreturn(set_mode(ecx, edx, 32), ebx, ecx, edx, esi, edi, ebp);
+        reg[EAX] = set_mode(ecx, edx, 32);
+        // intreturn(set_mode(ecx, edx, 32), ebx, ecx, edx, esi, edi, ebp);
       }
     }
   } else if (eax == 0x21) {
@@ -334,23 +389,26 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     if (ebx == 0x03) {
       task->forever = 1;
     } else if (ebx == 0x04) {
-      SendIPCMessage(ecx, (void *)(ds_base + edx), esi, asynchronous);
+      SendIPCMessage(ecx, (void*)(ds_base + edx), esi, asynchronous);
     } else if (ebx == 0x05) {
-      GetIPCMessage((void *)(ds_base + edx), ecx);
+      GetIPCMessage((void*)(ds_base + edx), ecx);
     } else if (ebx == 0x06) {
-      intreturn(IPCMessageLength(ecx), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = IPCMessageLength(ecx);
+      // intreturn(IPCMessageLength(ecx), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x07) {
-      intreturn(task->sel / 8 - 103, ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = task->sel / 8 - 103;
+      // intreturn(task->sel / 8 - 103, ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x08) {
-      intreturn(haveMsg(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = haveMsg();
+      // intreturn(haveMsg(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x09) {
-      getMsgAll((void *)(ds_base + edx));
+      getMsgAll((void*)(ds_base + edx));
     } else if (ebx == 0x0a) {
-      io_cli(); // 防止任务提前运行
+      io_cli();  // 防止任务提前运行
       extern int init_ok_flag;
       init_ok_flag = 0;
-      struct TASK *t =
-          AddUserTask((char *)(ecx + ds_base), task->level, task->ss1 - 8, edx,
+      struct TASK* t =
+          AddUserTask((char*)(ecx + ds_base), task->level, task->ss1 - 8, edx,
                       task->ss1, task->ss1, esi);
       init_ok_flag = 1;
       // printk("task->ss1=%d\n",task->ss1);
@@ -364,29 +422,30 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       t->cs_base = task->cs_base;
       t->ds_base = task->ds_base;
       t->nfs = task->nfs;
-      char *kfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
-      char *mfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
-      char *kbuf = (char *)page_kmalloc(4096);
-      char *mbuf = (char *)page_kmalloc(4096);
-      fifo8_init((struct FIFO8 *)kfifo, 4096, (unsigned char *)kbuf);
-      fifo8_init((struct FIFO8 *)mfifo, 4096, (unsigned char *)mbuf);
-      TaskSetFIFO(t, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
+      char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
+      char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
+      char* kbuf = (char*)page_kmalloc(4096);
+      char* mbuf = (char*)page_kmalloc(4096);
+      fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
+      fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
+      TaskSetFIFO(t, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
       t->is_child = 1;
       t->TTY = task->TTY;
       t->thread.father = task;
       // command_run("tl");
       // intreturn(t,ebx,ecx,edx,esi,edi,ebp);
-      io_sti(); // 让任务运行
+      io_sti();  // 让任务运行
     } else if (ebx == 0x0b) {
       TaskLock();
     } else if (ebx == 0x0c) {
       TaskUnLock();
     } else if (ebx == 0x0d) {
-      SubTask((struct TASK *)ecx);
+      SubTask((struct TASK*)ecx);
     }
   } else if (eax == 0x23) {
     if (ebx == 0x01) {
-      intreturn(task->TTY->color, ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = task->TTY->color;
+      // intreturn(task->TTY->color, ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x02) {
       task->TTY->color = ecx;
     }
@@ -396,9 +455,9 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       // printf("Task:%s timer init\n",task->name);
       io_cli();
       task->timer = timer_alloc();
-      task->timer->fifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+      task->timer->fifo = (struct FIFO8*)page_malloc(sizeof(struct FIFO8));
       task->timer->fifo->buf =
-          (unsigned char *)page_malloc(50 * sizeof(unsigned char));
+          (unsigned char*)page_malloc(50 * sizeof(unsigned char));
       fifo8_init(task->timer->fifo, 50, task->timer->fifo->buf);
       timer_init(task->timer, task->timer->fifo, 1);
       io_sti();
@@ -406,61 +465,72 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       timer_settime(task->timer, ecx);
     } else if (ebx == 0x02) {
       if (fifo8_get(task->timer->fifo) == 1) {
-        intreturn(1, ebx, ecx, edx, esi, edi, ebp);
+        reg[EAX] = 1;
+        // intreturn(1, ebx, ecx, edx, esi, edi, ebp);
       } else {
-        intreturn(0, ebx, ecx, edx, esi, edi, ebp);
+        reg[EAX] = 0;
+        // intreturn(0, ebx, ecx, edx, esi, edi, ebp);
       }
     } else if (ebx == 0x03) {
-      page_free((void *)task->timer->fifo->buf, 50 * sizeof(unsigned char));
-      page_free((void *)task->timer->fifo, sizeof(struct FIFO8));
+      page_free((void*)task->timer->fifo->buf, 50 * sizeof(unsigned char));
+      page_free((void*)task->timer->fifo, sizeof(struct FIFO8));
       timer_free(task->timer);
     }
   } else if (eax == 0x25) {
-    intreturn(vfs_format(ebx, "FAT"), ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = vfs_format(ebx, "FAT");
+    // intreturn(vfs_format(ebx, "FAT"), ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x26) {
     // CMOS时间
     if (ebx == 0x00) {
-      intreturn(get_hour_hex(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = get_hour_hex();
+      // intreturn(get_hour_hex(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x01) {
-      intreturn(get_min_hex(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = get_min_hex();
+      // intreturn(get_min_hex(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x02) {
-      intreturn(get_sec_hex(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = get_sec_hex();
+      // intreturn(get_sec_hex(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x03) {
-      intreturn(get_day_of_month(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = get_day_of_month();
+      // intreturn(get_day_of_month(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x04) {
-      intreturn(get_day_of_week(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = get_day_of_week();
+      // intreturn(get_day_of_week(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x05) {
-      intreturn(get_mon_hex(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = get_mon_hex();
+      // intreturn(get_mon_hex(), ebx, ecx, edx, esi, edi, ebp);
     } else if (ebx == 0x06) {
-      intreturn(get_year(), ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = get_year();
+      // intreturn(get_year(), ebx, ecx, edx, esi, edi, ebp);
     }
   } else if (eax == 0x27) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
       // printk("x =%d y=%d color =%08x\n", ebx, ecx, edx);
-      SDraw_Px((vram_t *)vbe->vram, ebx, ecx, edx, vbe->xsize);
+      SDraw_Px((vram_t*)vbe->vram, ebx, ecx, edx, vbe->xsize);
     }
   } else if (eax == 0x28) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *r = (vram_t *)vbe->vram;
-      intreturn(r[ebx * vbe->xsize + ecx], ebx, ecx, edx, esi, edi, ebp);
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* r = (vram_t*)vbe->vram;
+      reg[EAX] = r[ebx * vbe->xsize + ecx];
+      // intreturn(r[ebx * vbe->xsize + ecx], ebx, ecx, edx, esi, edi, ebp);
     }
   } else if (eax == 0x29) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *r = (vram_t *)vbe->vram;
-      memcpy((void *)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* r = (vram_t*)vbe->vram;
+      memcpy((void*)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
     }
   } else if (eax == 0x2a) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *r = (vram_t *)vbe->vram;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* r = (vram_t*)vbe->vram;
       int x = ebx;
       int y = ecx;
       int w = edx;
       int h = esi;
-      unsigned int *buffer = (unsigned int *)(edi + ds_base);
+      unsigned int* buffer = (unsigned int*)(edi + ds_base);
       for (int i = x; i < x + w; i++) {
         for (int j = y; j < y + h; j++) {
           r[j * vbe->xsize + i] = buffer[(j - y) * w + (i - x)];
@@ -472,8 +542,8 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       int a, c;
       a = 0;
       c = ebx;
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *vram_buffer = (vram_t *)vbe->vram;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* vram_buffer = (vram_t*)vbe->vram;
       for (; c <= vbe->ysize; c++, a++) {
         for (int i = 0; i < vbe->xsize; i++) {
           // VBEDraw_Px(i,a,VBEGet_Px(i,c));
@@ -484,42 +554,46 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     }
   } else if (eax == 0x2c) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *vram_buffer = (vram_t *)vbe->vram;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* vram_buffer = (vram_t*)vbe->vram;
       (void)(vram_buffer);
-      SDraw_Box((vram_t *)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
+      SDraw_Box((vram_t*)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
     }
   } else if (eax == 0x2d) {
-    intreturn(NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
-                           get_hour_hex(), get_min_hex(), get_sec_hex()),
-              ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
+                            get_hour_hex(), get_min_hex(), get_sec_hex());
+    // intreturn(NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
+    //                        get_hour_hex(), get_min_hex(), get_sec_hex()),
+    //           ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x2e) {
-    intreturn(timerctl.count, ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = timerctl.count;
+    // intreturn(timerctl.count, ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x2f) {
-    // Maskirq(0);
-    // NowTask()->fpu_use =1;
-    extern int st_task;
-    st_task = Get_Tid(task);
-    asm("fninit");
-    asm volatile("fnsave %0" ::"m"(NowTask()->fxsave_region));
-    NowTask()->fpu_use = 1;
+    task->fpu = 0;
+    task->fpu_flag = 0;
   } else if (eax == 0x30) {
     NowTask()->Pkeyfifo = malloc(sizeof(struct FIFO8));
     NowTask()->Ukeyfifo = malloc(sizeof(struct FIFO8));
-    unsigned char *kbuf = (unsigned char *)page_kmalloc(4096);
-    unsigned char *mbuf = (unsigned char *)page_kmalloc(4096);
+    unsigned char* kbuf = (unsigned char*)page_kmalloc(4096);
+    unsigned char* mbuf = (unsigned char*)page_kmalloc(4096);
     fifo8_init(NowTask()->Pkeyfifo, 4096, kbuf);
     fifo8_init(NowTask()->Ukeyfifo, 4096, mbuf);
     NowTask()->keyboard_press = kbd_press;
     NowTask()->keyboard_release = kbd_up;
   } else if (eax == 0x31) {
-    intreturn(fifo8_status(NowTask()->Pkeyfifo), ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = fifo8_status(NowTask()->Pkeyfifo);
+    // intreturn(fifo8_status(NowTask()->Pkeyfifo), ebx, ecx, edx, esi, edi,
+    // ebp);
   } else if (eax == 0x32) {
-    intreturn(fifo8_status(NowTask()->Ukeyfifo), ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = fifo8_status(NowTask()->Ukeyfifo);
+    // intreturn(fifo8_status(NowTask()->Ukeyfifo), ebx, ecx, edx, esi, edi,
+    // ebp);
   } else if (eax == 0x33) {
-    intreturn(fifo8_get(NowTask()->Pkeyfifo), ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = fifo8_get(NowTask()->Pkeyfifo);
+    // intreturn(fifo8_get(NowTask()->Pkeyfifo), ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x34) {
-    intreturn(fifo8_get(NowTask()->Ukeyfifo), ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = fifo8_get(NowTask()->Ukeyfifo);
+    // intreturn(fifo8_get(NowTask()->Ukeyfifo), ebx, ecx, edx, esi, edi, ebp);
   }
   return;
 }

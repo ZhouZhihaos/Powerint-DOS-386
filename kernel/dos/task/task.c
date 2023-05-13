@@ -40,15 +40,18 @@ void mt_init(void) {
 }
 void mt_taskswitch1() {
   // printk("mt1\n");
+  io_cli();
   if (Get_Running_Task_Num() == 0) {
     printk("Start idle task.\n");
     WakeUp(GetTask(1));  // 启动idle task
     timer_settime(mt_timer1, 1);
+    io_sti();
     return;
   }
   if (mt_tr1 == 103 * 8) {
     if (cg_flag0) {
-      io_cli();
+      Maskirq(0);
+      // io_cli();
       for (int i = 1; GetTask(i) != 0; i++) {
         // printk("Set %s Task %d To
         // %d\n",GetTask(i)->name,GetTask(i)->level,GetTask(i)->nl);
@@ -58,7 +61,12 @@ void mt_taskswitch1() {
       mt_tr3 = 103 * 8;
       taskctl = 103 * 8;
       cg_flag0 = 0;
-      io_sti();
+      // timer_settime(mt_timer1, 1);
+      // timer_settime(mt_timer2, 3);
+      // timer_settime(mt_timer3, 8);
+      // io_sti();
+      // return;
+      ClearMaskIrq(0);
     }
   }
   if (Get_Running_Task_Num() == 1) {
@@ -72,18 +80,24 @@ void mt_taskswitch1() {
     }
     timer_settime(mt_timer1, 1);
     // 没必要切换了
+    io_sti();
     return;
   }
   for (int i = mt_tr1 / 8 - 103; i < tasknum + 1; i++) {
     // 优先级1的执行
     struct TASK* task = GetTask(mt_tr1 / 8 - 103);
     if (task->level == 1 && task->sleep == 0 && task->lock == 0 &&
-        task->running) {  // 找到level=1的任务并且没有休眠
+        task->running == 1) {  // 找到level=1的任务并且没有休眠
       // task->level = task->nl;
 
       if (taskctl == mt_tr1) {
         mt_tr1 += 8;
+
+        if (mt_tr1 / 8 - 103 >= tasknum + 1) {
+          mt_tr1 = 103 * 8;
+        }
         timer_settime(mt_timer1, 1);
+        io_sti();
         return;
       }
       taskctl = mt_tr1;
@@ -91,6 +105,7 @@ void mt_taskswitch1() {
       timer_settime(mt_timer1, 1);
       // printk("task->eip = %08x\n",task->tss.eip);
       farjmp(0, taskctl);
+      io_sti();
       return;
     }
     mt_tr1 += 8;
@@ -98,13 +113,15 @@ void mt_taskswitch1() {
   // 无优先级1的任务
   mt_tr1 = 103 * 8;  // mt_tr1复原
   timer_settime(mt_timer1, 1);
+  io_sti();
 }
 void mt_taskswitch2() {
   // printk("mt2\n");
-  // asm volatile ("cli");
+  asm volatile("cli");
   if (Get_Running_Task_Num() <= 1) {
     timer_settime(mt_timer2, 3);
     timer_settime(mt_timer1, 1);
+    asm volatile("sti");
     return;
   }
 
@@ -112,11 +129,16 @@ void mt_taskswitch2() {
     // 优先级2的执行
     struct TASK* task = GetTask(mt_tr2 / 8 - 103);
     if (task->level == 2 && task->sleep == 0 && task->lock == 0 &&
-        task->running) {  // 找到level=2的任务并且没有休眠
-                          // task->level = task->nl;
+        task->running == 1) {  // 找到level=2的任务并且没有休眠
+                               // task->level = task->nl;
       if (taskctl == mt_tr2) {
         mt_tr2 += 8;
-        timer_settime(mt_timer2, 1);
+        if (mt_tr2 / 8 - 103 >= tasknum + 1) {
+          mt_tr2 = 103 * 8;
+        }
+        timer_settime(mt_timer2, 3);
+        timer_settime(mt_timer1, 1);
+        asm volatile("sti");
         return;
       }
       taskctl = mt_tr2;
@@ -128,6 +150,7 @@ void mt_taskswitch2() {
       farjmp(0, taskctl);  // 跳转
       // asm volatile ("sti");
       // putchar('\0');
+      asm volatile("sti");
       return;
     }
     mt_tr2 += 8;
@@ -136,28 +159,39 @@ void mt_taskswitch2() {
   mt_tr2 = 103 * 8;  // mt_tr2复原
   timer_settime(mt_timer2, 3);
   timer_settime(mt_timer1, 1);
-  // asm volatile ("sti");
+  asm volatile("sti");
 }
 void mt_taskswitch3() {
   // printk("mt3\n");
   extern int mt2flag;
+  asm volatile("cli");
   if (Get_Running_Task_Num() <= 1) {
     timer_settime(mt_timer3, 8);
     if (mt2flag == 1) {
       timer_settime(mt_timer2, 3);
     }
     timer_settime(mt_timer1, 1);
+    asm volatile("sti");
     return;
   }
   for (int i = mt_tr3 / 8 - 103; i < tasknum + 1; i++) {
     // 优先级3的执行
     struct TASK* task = GetTask(mt_tr3 / 8 - 103);
     if (task->level == 3 && task->sleep == 0 && task->lock == 0 &&
-        task->running) {  // 找到level=3的任务并且没有休眠
-                          // task->level = task->nl;
+        task->running == 1) {  // 找到level=3的任务并且没有休眠
+                               // task->level = task->nl;
       if (taskctl == mt_tr3) {
         mt_tr3 += 8;
-        timer_settime(mt_timer3, 1);
+        // timer_settime(mt_timer3, 1);
+        if (mt_tr3 / 8 - 103 >= tasknum + 1) {
+          mt_tr3 = 103 * 8;
+        }
+        timer_settime(mt_timer3, 8);
+        if (mt2flag == 1) {
+          timer_settime(mt_timer2, 3);
+        }
+        timer_settime(mt_timer1, 1);
+        asm volatile("sti");
         return;
       }
       taskctl = mt_tr3;
@@ -170,6 +204,7 @@ void mt_taskswitch3() {
       }
       timer_settime(mt_timer1, 1);
       farjmp(0, taskctl);  // 跳转
+      asm volatile("sti");
       return;
     }
     mt_tr3 += 8;
@@ -181,6 +216,7 @@ void mt_taskswitch3() {
     timer_settime(mt_timer2, 3);
   }
   timer_settime(mt_timer1, 1);
+  asm volatile("sti");
 }
 int Get_Running_Task_Num() {
   int ret = 0;
@@ -274,9 +310,7 @@ AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->change_dict_times = 0;
   task->fpu_use = 0;
   task->app = 0;
-  for (int i = 0; i < 512; i++) {
-    task->fxsave_region[i] = 0;
-  }
+
   extern int init_ok_flag;
   if (init_ok_flag) {
     vfs_change_disk_for_task(task->drive, task);
@@ -373,10 +407,10 @@ AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->change_dict_times = 0;
   task->app = 0;
   task->fpu_use = 0;
+  task->fpu = 0;
+  task->fpu_flag = 0;
   // task->fxsave_region = 0;
-  for (int i = 0; i < 512; i++) {
-    task->fxsave_region[i] = 0;
-  }
+
   extern int init_ok_flag;
   if (init_ok_flag) {
     vfs_change_disk_for_task(task->drive, task);
@@ -533,6 +567,7 @@ void __SubTask(struct TASK* task) {
   // }
   // tasknum -= 2;
   // ClearMaskIrq(0);
+  Maskirq(0);
   io_cli();
   for (int i = 0; GetTask(i) != NULL; i++) {
     struct TASK* t = GetTask(i);
@@ -556,12 +591,29 @@ void __SubTask(struct TASK* task) {
       int t, p;
       page2tpo(i, &t, &p);
       void* ptr = (void*)get_line_address(t, p, 0);
-      // printk("SubTask Free a page:%08x\n",ptr);
+      //  printk("SubTask Free a page:%08x\n",ptr);
       page_free_one(ptr);
     }
   }
   page_kfree((int)task, sizeof(struct TASK));
+  mt_tr1 = 103 * 8;
+  mt_tr2 = 103 * 8;
+  mt_tr3 = 103 * 8;
+  // printk("try.\n");
+  // disableExp();            // 关闭蓝屏
+  // ClearExpFlag();          // 清除err标志
+  // SetCatchEip(get_eip());  // 重定位Catch后返回的EIP
+  // if (GetExpFlag()) {      // 是否产生了异常？
+  //   mt_tr1 = 103 * 8;
+  //   mt_tr2 = 103 * 8;
+  //   mt_tr3 = 103 * 8;
+  //   printf("error catch!\n");  // 产生了
+  //   ClearExpFlag();            // 清除标志
+  //   EnableExp();               // 测试完成，开启蓝屏
+  // }
   io_sti();
+  ClearMaskIrq(0);
+  // sleep(10);
 }
 void ChangeLevel(struct TASK* task, int nlevel) {
   if (task == NULL) {
@@ -575,11 +627,8 @@ void ChangeLevel(struct TASK* task, int nlevel) {
     return;  // 防止修改一个不存在的进程
   }
   io_cli();
-  task->nl = nlevel;
-  cg_flag0 = 1;
+  task->level = nlevel;
   io_sti();
-  while (task->level != nlevel)
-    ;
 }
 void RunTask(struct TASK* task) {
   io_cli();

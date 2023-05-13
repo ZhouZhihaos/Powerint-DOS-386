@@ -1,10 +1,10 @@
 // Powerint DOS 386
 // Copyright (C) 2021-2022 zhouzhihao & min0911
 #include <dos.h>
-uint32_t running_mode = POWERINTDOS; // 运行模式
+uint32_t running_mode = POWERINTDOS;  // 运行模式
 uint32_t Path_Addr;
 unsigned char *font, *ascfont, *hzkfont;
-unsigned char *IVT;
+unsigned char* IVT;
 int init_ok_flag = 0;
 void shell(void) {
   ide_initialize(0x1F0, 0x3F6, 0x170, 0x376, 0x000);
@@ -16,8 +16,8 @@ void shell(void) {
   vfs_change_disk(NowTask()->drive);
   init_ok_flag = 1;
   /*到这里 系统的初始化才真正结束*/
-  font = (unsigned char *)"/other/font.bin";
-  FILE *fp = fopen("/other/font.bin", "r");
+  font = (unsigned char*)"/other/font.bin";
+  FILE* fp = fopen("/other/font.bin", "r");
   ascfont = fp->buffer;
   fp = fopen("/other/hzk16", "r");
   hzkfont = fp->buffer;
@@ -50,13 +50,13 @@ void shell(void) {
   } else {
     run_bat("AUTOEXEC.BAT");
   }
-  extern struct tty *tty_default;
+  extern struct tty* tty_default;
   tty_set(NowTask(), tty_default);
   shell_handler();
 }
 void shell_handler() {
-  struct TASK *task = NowTask();
-  task->line = (char *)page_kmalloc(1024);
+  struct TASK* task = NowTask();
+  task->line = (char*)page_kmalloc(1024);
   strcpy(task->path, "");
   char buf[255];
   while (1) {
@@ -67,11 +67,11 @@ void shell_handler() {
     command_run(task->line);
   }
 }
-struct tty *now_tty() {
-  extern struct List *tty_list;
-  struct tty *n;
+struct tty* now_tty() {
+  extern struct List* tty_list;
+  struct tty* n;
   for (int j = 1; FindForCount(j, tty_list) != 0; j++) {
-    n = (struct tty *)FindForCount(j, tty_list)->val;
+    n = (struct tty*)FindForCount(j, tty_list)->val;
     if ((now_tty_TextMode(n) && running_mode == POWERINTDOS) ||
         (now_tty_HighTextMode(n) && running_mode == HIGHTEXTMODE) ||
         (now_tty_GraphicMode(n) && running_mode == POWERDESKTOP)) {
@@ -94,8 +94,14 @@ void task_sr1() {
       }
     }
     for (int i = 1; i != tasknum + 1; i++) {
-      struct TASK *task = GetTask(i);
-      if (task->running == 0) { // 进程没有运行
+      struct TASK* task = GetTask(i);
+      if (task->running == 0) {  // 进程没有运行
+        printk("a task .\n");
+        extern struct TASK* last_fpu_task;
+        if (last_fpu_task == task) {
+          printk("Set last fpu task.\n");
+          last_fpu_task = 0x1;
+        }
         __SubTask(task);
         goto re;
       }
@@ -103,7 +109,7 @@ void task_sr1() {
     SleepTask(NowTask());
   }
 }
-void com_input(char *ptr, int len) {
+void com_input(char* ptr, int len) {
   int i;
   for (i = 0; i != len; i++) {
     char in = read_serial();
@@ -129,23 +135,26 @@ void com_input(char *ptr, int len) {
   }
 }
 void task_sr2() {
+  // SleepTask(NowTask());
+
   for (;;) {
-    printk("Debug> ");
-    char buf[150];
-    com_input(buf, 150);
-    printk("Recved Command:%s\n", buf);
-    if (strcmp("show_all", buf) == 0) {
-      for (int i = 1; GetTask(i) != 0; i++) {
-        printk("Task %s,CS:EIP=%04x:%08x Sleep=%d,%d lock=%d is_child=%d\n",
-               GetTask(i)->name, GetTask(i)->last_cs, GetTask(i)->last_eip,
-               GetTask(i)->sleep, GetTask(i)->fifosleep, GetTask(i)->lock,
-               GetTask(i)->is_child);
-      }
-    } else {
-      printk("Bad Command\n");
-    }
-    // printk("Task Running.\n");
   }
+  // for (;;) {
+  //   printk("Debug> ");
+  //   char buf[150];
+  //   com_input(buf, 150);
+  //   printk("Recved Command:%s\n", buf);
+  //   if (strcmp("show_all", buf) == 0) {
+  //     for (int i = 1; GetTask(i) != 0; i++) {
+  //       printk("Task %s,Sleep=%d,%d lock=%d is_child=%d\n", GetTask(i)->name,
+  //              GetTask(i)->sleep, GetTask(i)->fifosleep, GetTask(i)->lock,
+  //              GetTask(i)->is_child);
+  //     }
+  //   } else {
+  //     printk("Bad Command\n");
+  //   }
+  //   // printk("Task Running.\n");
+  // }
   // while (1) {
   //   if (IPCMessageStatus() != 0) {
   //     printk("Get Message.\n");

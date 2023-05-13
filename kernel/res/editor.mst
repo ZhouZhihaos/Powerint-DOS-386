@@ -1,0 +1,210 @@
+".C" = {
+    "keymap" = [{
+        "key" = "auto"
+        "color" = 9
+    },{
+        "key" = "break"
+        "color" = 9
+    },{
+        "key" = "case"
+        "color" = 9
+    },{
+        "key" = "char"
+        "color" = 9
+    },{
+        "key" = "const"
+        "color" = 9
+    },{
+        "key" = "continue"
+        "color" = 9
+    },{
+        "key" = "default"
+        "color" = 9
+    },{
+        "key" = "do"
+        "color" = 9
+    },{
+        "key" = "double"
+        "color" = 9
+    },{
+        "key" = "else"
+        "color" = 9
+    },{
+        "key" = "enum"
+        "color" = 9
+    },{
+        "key" = "extern"
+        "color" = 9
+    },{
+        "key" = "float"
+        "color" = 9
+    },{
+        "key" = "for"
+        "color" = 9
+    },{
+        "key" = "goto"
+        "color" = 9
+    },{
+        "key" = "if"
+        "color" = 9
+    },{
+        "key" = "int"
+        "color" = 9
+    },{
+        "key" = "long"
+        "color" = 9
+    },{
+        "key" = "register"
+        "color" = 9
+    },{
+        "key" = "return"
+        "color" = 9
+    },{
+        "key" = "short"
+        "color" = 9
+    },{
+        "key" = "signed"
+        "color" = 9
+    },{
+        "key" = "sizeof"
+        "color" = 9
+    },{
+        "key" = "static"
+        "color" = 9
+    },{
+        "key" = "struct"
+        "color" = 9
+    },{
+        "key" = "switch"
+        "color" = 9
+    },{
+        "key" = "typedef"
+        "color" = 9
+    },{
+        "key" = "union"
+        "color" = 9
+    },{
+        "key" = "unsigned"
+        "color" = 9
+    },{
+        "key" = "void"
+        "color" = 9
+    },{
+        "key" = "volatile"
+        "color" = 9
+    },{
+        "key" = "while"
+        "color" = 9
+    },{
+        "key" = "{"
+        "color" = 5
+    },{
+        "key" = "}"
+        "color" = 5
+    },{
+        "key" = ")"
+        "color" = 5
+    },{
+        "key" = "("
+        "color" = 5
+    },{
+        "key" = "+"
+        "color" = 2
+    },{
+        "key" = "-"
+        "color" = 2
+    },{
+        "key" = "*"
+        "color" = 2
+    },{
+        "key" = "/"
+        "color" = 2
+    },{
+        "key" = "="
+        "color" = 2
+    }]
+    "string" = [["\"","\""],["\'","\'"]]
+    "comment" = { # 注释
+        "key" = "//"
+        "color" = 8
+    }
+    "number" = { # 数字
+        "enable" = "true"
+        "color" = 12
+    }
+}
+".LUA" = {
+    "keymap" = [{
+        "key" = "and"
+        "color" = 9
+    },{
+        "key" = "break"
+        "color" = 9
+    },{
+        "key" = "do"
+        "color" = 9
+    },{
+        "key" = "else"
+        "color" = 9
+    },{
+        "key" = "elseif"
+        "color" = 9
+    },{
+        "key" = "end"
+        "color" = 9
+    },{
+        "key" = "false"
+        "color" = 9
+    },{
+        "key" = "for"
+        "color" = 9
+    },{
+        "key" = "function"
+        "color" = 9
+    },{
+        "key" = "if"
+        "color" = 9
+    },{
+        "key" = "in"
+        "color" = 9
+    },{
+        "key" = "local"
+        "color" = 9
+    },{
+        "key" = "nil"
+        "color" = 9
+    },{
+        "key" = "not"
+        "color" = 9
+    },{
+        "key" = "or"
+        "color" = 9
+    },{
+        "key" = "repeat"
+        "color" = 9
+    },{
+        "key" = "return"
+        "color" = 9
+    },{
+        "key" = "then"
+        "color" = 9
+    },{
+        "key" = "true"
+        "color" = 9
+    },{
+        "key" = "until"
+        "color" = 9
+    },{
+        "key" = "while"
+        "color" = 9
+    }]
+    "string" = [["\"","\""],["\'","\'"]]
+    "comment" = {
+        "key" = "#"
+        "color" = 8
+    }
+    "number" = {
+        "enable" = "true"
+        "color" = 12
+    }
+}

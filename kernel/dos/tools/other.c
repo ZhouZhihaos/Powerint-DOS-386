@@ -2,11 +2,22 @@
 // Copyright (C) 2021-2022 zhouzhihao & min0911_
 // ------------------------------------------------
 #include <dos.h>
+
 int DisableExpFlag = 0;
 uint32_t CatchEIP = 0;
 char flagOfexp = 0;
 char public_catch = 0;
 int st_task = 0;
+// 得到 cr0 寄存器
+uint32_t get_cr0() {
+  // 直接将 mov eax, cr0，返回值在 eax 中
+  asm volatile("movl %cr0, %eax\n");
+}
+
+// 设置 cr0 寄存器，参数是页目录的地址
+void set_cr0(uint32_t cr0) {
+  asm volatile("movl %%eax, %%cr0\n" ::"a"(cr0));
+}
 void SwitchPublic() {
   public_catch = 1;
 }
@@ -75,6 +86,42 @@ void delete_char(char* str, int pos) {
   int i;
   for (i = pos; i < strlen(str); i++) {
     str[i] = str[i + 1];
+  }
+}
+struct TASK* last_fpu_task = NULL;
+void fpu_disable() {
+  set_cr0(get_cr0() | (CR0_EM | CR0_TS));
+}
+void fpu_enable(struct TASK* task) {
+  // LOGK("fpu enable...\n");
+
+  set_cr0(get_cr0() & ~(CR0_EM | CR0_TS));
+  // 如果使用的任务没有变化，则无需恢复浮点环境
+  if (last_fpu_task == task)
+    return;
+
+  // 如果存在使用过浮点处理单元的进程，则保存浮点环境
+  if (last_fpu_task && last_fpu_task->fpu_flag) {
+    // assert(last_fpu_task->fpu);
+    asm volatile("fnsave (%%eax) \n" ::"a"(last_fpu_task->fpu));
+    last_fpu_task->fpu_flag = !last_fpu_task->fpu_flag;
+  }
+
+  last_fpu_task = task;
+
+  // 如果 fpu 不为空，则恢复浮点环境
+  if (task->fpu) {
+    printk("task->fpu=%08x\n", task->fpu_flag);
+    asm volatile("frstor (%%eax) \n" ::"a"(task->fpu));
+  } else {
+    // 否则，初始化浮点环境
+    asm volatile(
+        "fnclex \n"
+        "fninit \n");
+
+    printk("FPU create state for task 0x%p\n", task->fpu_flag);
+    task->fpu = (fpu_t*)malloc(sizeof(fpu_t));
+    task->fpu_flag = 1;
   }
 }
 void ERROR0(uint32_t eip) {
@@ -152,29 +199,16 @@ bool has_fpu_error() {
   return (status_word & 0x1F) != 0;
 }
 void ERROR7(uint32_t eip) {
-  if (dflag) {
-    // printk("1\n");
+  // printk("ERROR7.\n");
+  if (NowTask()->fpu_flag > 1 || NowTask()->fpu_flag < 0) {
+    printk("do nothing.\n");
+    printk("%d\n", NowTask()->fpu);
+    set_cr0(get_cr0() & ~(CR0_EM | CR0_TS));
     return;
+  } else {
   }
-  if (has_fpu_error()) {
-    asm volatile("fnclex");
-    return;
-  }
-
-  if (NowTask()->fpu_use == 1) {
-    extern int dflag;
-    dflag = 1;
-    asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
-    NowTask()->fpu_use = 0;
-    dflag = 0;
-    return;
-  }
-  st_task = Get_Tid(NowTask());
-  if (st_task) {
-    asm volatile("fnsave %0" ::"m"(GetTask(st_task)->fxsave_region));
-    st_task = 0;
-    NowTask()->fpu_use = 1;
-  }
+  printk("%08x\n", NowTask()->fpu);
+  fpu_enable(NowTask());
 }
 void ERROR8(uint32_t eip) {
   uint32_t* esp = &eip;
@@ -339,6 +373,13 @@ void ERROR(int CODE, char* TIPS) {
   }
 }
 void KILLAPP(int eip, int ec) {
+  while (FindForCount(1, vfs_now->path) != NULL) {
+    // printk("%d\n",vfs_now->path->ctl->all);
+    page_kfree(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
+    DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
+  }
+  DeleteList(vfs_now->path);
+  page_kfree((int)vfs_now, sizeof(vfs_t));
   struct TASK* task = NowTask();
   if (task->is_child) {
     task = task->thread.father;  // 找你家长，乱搞！
@@ -357,6 +398,13 @@ void KILLAPP(int eip, int ec) {
     ;
 }
 void KILLAPP0(int ec, int tn) {
+  while (FindForCount(1, vfs_now->path) != NULL) {
+    // printk("%d\n",vfs_now->path->ctl->all);
+    page_kfree(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
+    DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
+  }
+  DeleteList(vfs_now->path);
+  page_kfree((int)vfs_now, sizeof(vfs_t));
   struct TASK* task = GetTask(tn);
   struct tty* t = task->TTY;
   t = tty_set(NowTask(), t);

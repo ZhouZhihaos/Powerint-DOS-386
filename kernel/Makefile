@@ -128,8 +128,9 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
 		copy from:$(APPSOUTPATH)cc.bin to:@: \
 		copy from:$(APPSOUTPATH)spgame.bin to:@: \
 		copy from:$(APPSOUTPATH)ps2test.bin to:@: \
+		copy from:$(APPSOUTPATH)msttest.bin to:@: \
 		copy from:$(RESPATH)codeedit.ini to:@: \
-		copy from:$(RESPATH)hanzi.txt to:@: \
+		copy from:$(RESPATH)editor.mst to:@: \
 		imgout:$(IMGPATH)Disk2.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \

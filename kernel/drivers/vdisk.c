@@ -109,7 +109,8 @@ void DriveSemaphoreGive(unsigned int drive_code) {
   // printk("FIFO: %d GET: %d STATUS: %d\n", drive_code, Get_Tid(NowTask()),
   //        fifo8_status(&drive_fifo[drive_code]));
 }
-#define SECTORS_ONCE 406
+
+#define SECTORS_ONCE 255
 void Disk_Read(unsigned int lba, unsigned int number, void *buffer,
                char drive) {
   if (have_vdisk(drive)) {

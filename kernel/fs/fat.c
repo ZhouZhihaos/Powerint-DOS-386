@@ -153,9 +153,8 @@ void file_savefile(int clustno, int size, char *buf, int *fat,
   }
   void *img = page_malloc(alloc_size);
   clean((char *)img, alloc_size);
-  memcpy(img, (void *)buf, size); // 把要写入的数据复制到新请求的内存地址
+  memcpy(img, buf, size); // 把要写入的数据复制到新请求的内存地址
   for (int i = 0; i != (alloc_size / get_dm(vfs).ClustnoBytes); i++) {
-    // 计算LBA & 写盘
     uint32_t sec = (get_dm(vfs).FileDataAddress +
                     (clustno - 2) * get_dm(vfs).ClustnoBytes) /
                    get_dm(vfs).SectorBytes;
@@ -869,6 +868,10 @@ int format(char drive) {
           drive - 'C' + 0x80;
       memcpy((void *)&((unsigned char *)read_in)[BS_FileSysType],
              (void *)"FAT12   ", 8);
+      srand(time());
+      *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = rand();
+      memcpy((void *)&((unsigned char *)read_in)[BS_VolLab],
+             (void *)"POWERINTDOS", 11);
       Disk_Write(0, 1, (unsigned short *)read_in, drive);
       unsigned int *fat = (unsigned int *)page_malloc(fatsz * 512);
       fat[0] = 0x00fffff0;
@@ -884,10 +887,11 @@ int format(char drive) {
       // page_free((void*)info, 256 * sizeof(short));
     } else if (disk_Size(drive) > 2097152 &&
                disk_Size(drive) <= 134217728) { // 2MB~128MB fat16
+      unsigned int clustno_size = ((disk_Size(drive) - 1) / 65536 + 512) / 512 * 512;
       *(unsigned char *)(&((unsigned char *)read_in)[BPB_SecPerClus]) =
-          disk_Size(drive) / 65536 / 512;
+          clustno_size / 512;
       *(unsigned short *)(&((unsigned char *)read_in)[BPB_RootEntCnt]) =
-          14 * (disk_Size(drive) / 65536) / 32;
+          14 * clustno_size / 32;
       if (disk_Size(drive) / 512 > 65535) {
         *(unsigned short *)(&((unsigned char *)read_in)[BPB_TotSec16]) = 0;
       } else {
@@ -897,12 +901,16 @@ int format(char drive) {
       *(unsigned int *)(&((unsigned char *)read_in)[BPB_TotSec32]) =
           disk_Size(drive) / 512;
       unsigned short fatsz =
-          (disk_Size(drive) - 1) / (disk_Size(drive) / 65536) * 2 / 512 + 1;
+          (disk_Size(drive) - 1) / clustno_size * 2 / 512 + 1;
       *(unsigned short *)(&((unsigned char *)read_in)[BPB_FATSz16]) = fatsz;
       *(unsigned char *)(&((unsigned char *)read_in)[BS_DrvNum]) =
           drive - 'C' + 0x80;
       memcpy((void *)&((unsigned char *)read_in)[BS_FileSysType],
              (void *)"FAT16   ", 8);
+      srand(time());
+      *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = rand();
+      memcpy((void *)&((unsigned char *)read_in)[BS_VolLab],
+             (void *)"POWERINTDOS", 11);
       Disk_Write(0, 1, (unsigned short *)read_in, drive);
       unsigned short *fat = (unsigned short *)page_malloc(fatsz * 512);
       fat[0] = 0xfff0;
@@ -912,9 +920,55 @@ int format(char drive) {
       page_free((void *)fat, fatsz * 512);
       void *null_sec = page_malloc(512);
       clean((char *)null_sec, 512);
-      for (int i = 0; i < 14 * (disk_Size(drive) / 65536) / 512; i++) {
+      for (int i = 0; i < 14 * clustno_size / 512; i++) {
         Disk_Write(1 + fatsz * 2 + i, 1, (unsigned short *)null_sec, drive);
       }
+      page_free(null_sec, 512);
+    } else if (disk_Size(drive) > 134217728) { // 128MB以上 fat32
+      unsigned int clustno_size =
+          (disk_Size(drive) - 1) / 268435456 * 512 + 512;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_RsvdSecCnt]) = 1;
+      *(unsigned char *)(&((unsigned char *)read_in)[BPB_SecPerClus]) =
+          clustno_size / 512;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_RootEntCnt]) = 0;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_TotSec16]) = 0;
+      *(unsigned int *)(&((unsigned char *)read_in)[BPB_TotSec32]) =
+          disk_Size(drive) / 512;
+      unsigned int fatsz = (disk_Size(drive) - 1) / clustno_size * 4 / 512 + 1;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_FATSz16]) = 0;
+      *(unsigned int *)(&((unsigned char *)read_in)[BPB_FATSz32]) = fatsz;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_ExtFlags]) = 0;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_FSVer]) = 0;
+      *(unsigned int *)(&((unsigned char *)read_in)[BPB_RootClus]) = 2;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_FSInfo]) = 0;
+      *(unsigned short *)(&((unsigned char *)read_in)[BPB_BkBootSec]) = 0;
+      *(unsigned long long *)(&((unsigned char *)read_in)[BPB_Reserved]) = 0;
+      *(unsigned char *)(&(
+          (unsigned char *)read_in)[BS_DrvNum + BPB_Fat32ExtByts]) =
+          drive - 'C' + 0x80;
+      *(unsigned char *)(&(
+          (unsigned char *)read_in)[BS_Reserved1 + BPB_Fat32ExtByts]) = 0;
+      *(unsigned char *)(&(
+          (unsigned char *)read_in)[BS_BootSig + BPB_Fat32ExtByts]) = 0x29;
+      memcpy((void *)&(
+                 (unsigned char *)read_in)[BS_FileSysType + BPB_Fat32ExtByts],
+             (void *)"FAT32   ", 8);
+      srand(time());
+      *(unsigned int *)(&(
+          (unsigned char *)read_in)[BS_VolD + BPB_Fat32ExtByts]) = rand();
+      memcpy((void *)&((unsigned char *)read_in)[BS_VolLab + BPB_Fat32ExtByts],
+             (void *)"POWERINTDOS", 11);
+      Disk_Write(0, 1, (unsigned short *)read_in, drive);
+      unsigned int *fat = (unsigned int *)page_malloc(fatsz * 512);
+      fat[0] = 0xffffff0;
+      fat[1] = 0xfffffff;
+      fat[2] = 0xfffffff;
+      Disk_Write(1, fatsz, (void *)fat, drive);
+      Disk_Write(1 + fatsz, fatsz, (void *)fat, drive);
+      page_free((void *)fat, fatsz * 512);
+      void *null_sec = page_malloc(512);
+      clean((char *)null_sec, 512);
+      Disk_Write(1 + fatsz * 2, 1, (unsigned short *)null_sec, drive);
       page_free(null_sec, 512);
     }
   }

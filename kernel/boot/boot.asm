@@ -29,6 +29,7 @@ drvnum:
 	dd	0xffffffff
 	db	"POWERINTDOS"
 	db	"FAT12   "
+	times	28	db	0
 
 start:
 ; main

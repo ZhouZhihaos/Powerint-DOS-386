@@ -5,7 +5,8 @@ OBJS_GUI = ./out/WinEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 			./out/math.obj ./out/gui_syscall.obj ./out/libc.obj ./out/net_syscall.obj
 OBJS_PACK_CPP = ./out/CppEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj
-build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) game.bin gobang.bin memz.bin Makefile
+MST_LIB = ./out/mst.obj ./out/list.obj
+build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) game.bin gobang.bin memz.bin Makefile
 	@python build.py bainian $(OBJS_PACK)
 	@python build.py test $(OBJS_PACK)
 	@python build.py uigobang $(OBJS_GUI)
@@ -37,7 +38,7 @@ build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) game.bin gobang.bin memz.bin M
 	@python build.py Maze $(OBJS_PACK)
 	@python build.py clock $(OBJS_PACK)
 	@python build.py nettest $(OBJS_PACK)
-	@python buildpp.py editor $(OBJS_PACK_CPP)
+	@python buildpp.py editor $(OBJS_PACK_CPP) $(MST_LIB)
 	@python build.py lua $(OBJS_PACK) ./out/gui_syscall.obj
 	@python build.py luac $(OBJS_PACK)
 	@python buildpp.py SPGAME $(OBJS_PACK_CPP)
@@ -47,6 +48,7 @@ build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) game.bin gobang.bin memz.bin M
 	@python build.py c4 $(OBJS_PACK)
 	@python build.py image $(OBJS_PACK)
 	@python build.py uname $(OBJS_PACK)
+	@python build.py msttest $(OBJS_PACK) $(MST_LIB)
 clean :
 	del out /s/q
 

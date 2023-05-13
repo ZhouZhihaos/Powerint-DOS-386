@@ -1,10 +1,10 @@
 /* Editor.cpp : 文本编辑器*/
 #include <mouse.h>
+#include <mst.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <syscall.h>
-
 #define VIEW_LINE 0  // 有bug，暂时不开启
 int mLine(char* buffer, int len);
 #define T_DrawBox(x, y, w, h, c) Text_Draw_Box((y), (x), (h) + y, (w) + x, (c))
@@ -38,6 +38,209 @@ struct Line {
   int len;          // 这个行有几个字符
   int start_index;  // 行首索引
 };
+struct StringStyle {
+  char* start;
+  char* end;
+};
+MST_Object* mst_obj;
+SPACE* comment_config;
+SPACE* number_config;
+Array* keymap;
+Array* string_style;
+bool number;
+int number_color;
+struct km_style {
+  char* key;
+  int color;
+};
+void strtoupper(char* str) {
+  while (*str != '\0') {
+    if (*str >= 'a' && *str <= 'z') {
+      *str -= 32;
+    }
+    str++;
+  }
+}
+void get_next(char* T, int next[]) {
+  int strs_len = strlen(T);
+  int i = 0, j = -1;
+  next[0] = -1;
+  while (i < strs_len) {  //遍历
+    if (j == -1 || T[i] == T[j]) {
+      i++;
+      j++;
+      next[i] = j;
+    } else {
+      j = next[j];
+    }
+  }
+}
+
+int kmp(char* str_main, char* str_branch) {
+  int next[100];
+  int str_main_len = strlen(str_main);
+  int str_branch_len = strlen(str_branch);
+  int i, j;
+  get_next(str_branch, next);
+  i = 0;
+  j = 0;
+  /*kmp 核心
+      当主串i和子串j相等的时候，i++,j++;
+      反之 j = next[j];
+      当 j==-1 的时候，i++,j++
+  */
+  while (i < str_main_len && j < str_branch_len) {
+    if (str_main[i] == str_branch[j]) {
+      i++;
+      j++;
+    } else {
+      j = next[j];
+      if (j == -1) {
+        j++;
+        i++;
+      }
+    }
+  }
+  if (j >= str_branch_len) {
+    /*此时说明在主串中找到了子串*/
+    return i - str_branch_len;
+  } else {
+    return -1;  //没有找到的话返回-1
+  }
+}
+void convert(char* str) {
+  int i, j;
+  for (i = 0, j = 0; str[i] != '\0'; i++, j++) {
+    if (str[i] == '\\') {
+      i++;
+      switch (str[i]) {
+        case 'n':
+          str[j] = '\n';
+          break;
+        case 't':
+          str[j] = '\t';
+          break;
+        case 'r':
+          str[j] = '\r';
+          break;
+        case '\"':
+          str[j] = '\"';
+          break;
+        case '\\':
+          str[j] = '\\';
+          break;
+        default:
+          str[j] = str[i];
+      }
+    } else
+      str[j] = str[i];
+  }
+  str[j] = '\0';
+}
+void* operator new(size_t size, void* ptr) {
+  return ptr;
+}
+
+void* operator new[](size_t size, void* ptr) {
+  return ptr;
+}
+
+void operator delete(void* ptr, void* place) {}
+void operator delete[](void* ptr, void* place) {}
+
+extern "C" void atexit() {}
+template <typename T>
+class EVector {
+ public:
+  EVector() : _size(0), _capacity(1), _data(new T[1]) {}
+
+  EVector(int capacity)
+      : _size(0), _capacity(capacity), _data(new T[capacity]) {}
+
+  ~EVector() {
+    clear();
+    delete[] _data;
+  }
+
+  int size() const { return _size; }
+
+  bool empty() const { return _size == 0; }
+
+  T& operator[](int index) {
+    // assert(index >= 0 && index < _size);
+    return _data[index];
+  }
+
+  const T& operator[](int index) const {
+    //  assert(index >= 0 && index < _size);
+    return _data[index];
+  }
+
+  void clear() {
+    for (int i = 0; i < _size; i++) {
+      _data[i].~T();
+    }
+    _size = 0;
+  }
+
+  void push_back(const T& value) {
+    if (_size >= _capacity) {
+      reserve(_capacity * 2);
+    }
+    new (_data + _size) T(value);
+    _size++;
+  }
+
+  void pop_back() {
+    // assert(_size > 0);
+    _data[_size - 1].~T();
+    _size--;
+  }
+
+  void insert(int index, const T& value) {
+    // assert(index >= 0 && index <= _size);
+    if (_size >= _capacity) {
+      reserve(_capacity * 2);
+    }
+    for (int i = _size; i > index; i--) {
+      new (_data + i) T(_data[i - 1]);
+      _data[i - 1].~T();
+    }
+    new (_data + index) T(value);
+    _size++;
+  }
+
+  void erase(int index) {
+    // assert(index >= 0 && index < _size);
+    _data[index].~T();
+    for (int i = index; i < _size - 1; i++) {
+      new (_data + i) T(_data[i + 1]);
+      _data[i + 1].~T();
+    }
+    _size--;
+  }
+
+  void reserve(int capacity) {
+    if (capacity <= _capacity) {
+      return;
+    }
+    T* newData = new T[capacity];
+    for (int i = 0; i < _size; i++) {
+      new (newData + i) T(_data[i]);
+      _data[i].~T();
+    }
+    delete[] _data;
+    _data = newData;
+    _capacity = capacity;
+  }
+
+ private:
+  int _size;
+  int _capacity;
+  T* _data;
+};
+EVector<StringStyle> string_vector;
+EVector<km_style> key_map;
 // 用“ ”画一个长方形
 void putSpace(int x, int y, int w, int h) {
   goto_xy(x, y);
@@ -326,13 +529,111 @@ class render {
   void showAll() {
     Line* l = p->getBuf();
     char buf[90];
-    int fg = 0;
     goto_xy(0, 0);
     for (int i = 0; i < MAX_LINE; i++) {
       goto_xy(0, i);
+      int fg = 0;
+      int fg1 = 0;
+      int ll = 0;
+      int b = 0;
+      char* end;
       for (int j = 0, l1 = 0; j < 80; j++) {
         printf("%c", l[i].line[j].ch == '\0' ? ' ' : l[i].line[j].ch);
+        if(mst_obj == nullptr) {
+          continue;
+        }
+        if (fg1) {
+          T_DrawBox(j, i, 1, 1, 0x0c);
+          if (b >= ll) {
+            buf[l1++] = l[i].line[j].ch;
+            buf[l1] = 0;
+            if (kmp(buf, end) != -1) {
+              fg1 = 0;
+              buf[l1] = 0;
+              l1 = 0;
+            }
+          } else {
+            b++;
+          }
+          continue;
+        }
+        if (fg) {
+          T_DrawBox(j, i, 1, 1,
+                    MST_Space_GetInteger(MST_GetVar("color", comment_config)));
+          continue;
+        }
+        if (number) {
+          if ((l[i].line[j].ch - 0x30 <= 9) && (l[i].line[j].ch - 0x30 >= 0))
+            T_DrawBox(j, i, 1, 1, number_color);
+        }
+
+        if (l[i].line[j].ch == ' ' || l[i].line[j].ch == '\0') {
+          buf[l1] = 0;
+          l1 = 0;
+          if (l[i].len != 0) {
+            for (int h = 0; h < key_map.size(); h++) {
+              int pos = 0;
+              int pos1 = 0;
+              char* buf1 = buf;
+              while (1) {
+                pos = kmp(buf1, key_map[h].key);
+                if (pos == -1) {
+                  break;
+                }
+                pos1 += pos;
+                T_DrawBox(j - ((strlen(buf) - pos1)), i, strlen(key_map[h].key),
+                          1, key_map[h].color);
+                pos1 += strlen(key_map[h].key);
+                buf1 += pos + strlen(key_map[h].key);
+                // printf("%d\n",pos);
+              }
+            }
+          }
+
+        } else {
+          buf[l1++] = l[i].line[j].ch;
+          buf[l1] = 0;
+          if (kmp(buf, MST_Space_GetStr(MST_GetVar("key", comment_config))) !=
+              -1) {
+            j -= strlen(MST_Space_GetStr(MST_GetVar("key", comment_config)));
+            fg = 1;
+            goto_xy(j + 1, i);
+          } else {
+            for (int q = 0; q < string_vector.size(); q++) {
+              if (kmp(buf, string_vector[q].start) != -1) {
+                j -= strlen(string_vector[q].start);
+                end = string_vector[q].end;
+                fg1 = 1;
+                buf[l1] = 0;
+                l1 = 0;
+                ll = strlen(string_vector[q].start);
+                b = 0;
+                goto_xy(j + 1, i);
+                for (int h = 0; h < key_map.size(); h++) {
+                  int pos = 0;
+                  int pos1 = 0;
+                  char* buf1 = buf;
+                  while (1) {
+                    pos = kmp(buf1, key_map[h].key);
+                    if (pos == -1) {
+                      break;
+                    }
+                    pos1 += pos;
+                    T_DrawBox(j - ((strlen(buf) - pos1)), i,
+                              strlen(key_map[h].key), 1, key_map[h].color);
+                    pos1 += strlen(key_map[h].key);
+                    buf1 += pos + strlen(key_map[h].key);
+                    // printf("%d\n",pos);
+                  }
+                }
+
+                break;
+              }
+            }
+          }
+        }
       }
+      buf[0] = 0;
     }
     /* 通过一个80个空格的字符串，往里面写，让格式不会乱套 */
     char buf1[81] =
@@ -736,7 +1037,7 @@ class Editor {
     int temp_x = c->curser_pos_x;
     int temp_y = c->curser_pos_y;
     c->curser_pos_x = 0;
-    c->curser_pos_y = MAX_LINE-1;
+    c->curser_pos_y = MAX_LINE - 1;
     if (n->down() == 0) {
       c->curser_pos_x = temp_x;
       c->curser_pos_y = temp_y;
@@ -885,6 +1186,70 @@ int main(int argc, char** argv) {
     print("<FileName>");
     print("\n");
     return 0;
+  }
+  mst_obj == nullptr;
+  char ext_str[100];
+  int q;
+  for (q = 0; q < strlen(argv[1]); q++) {
+    if (argv[1][q] == '.') {
+      break;
+    }
+  }
+  strcpy(ext_str, argv[1] + q);
+  strtoupper(ext_str);
+  if (filesize("/editor.mst") == -1) {
+    printf("Warning: Couldn't find `editor.mst`.\n");
+  } else {
+    // char* buf = (char*)malloc(filesize("/editor.mst") + 1);
+    FILE* fp = fopen("/editor.mst", "rb");
+    fseek(fp, 0, SEEK_END);
+    int fz = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    char* buf = (char*)malloc(fz + 1);
+    fread(buf, fz, 1, fp);
+    buf[fz] = 0;
+    mst_obj = Init_MstObj(buf);
+    Var* ext_v1 = MST_GetVar(ext_str, MST_GetRootSpace(mst_obj));
+    SPACE* ext = MST_Space_GetSpace(ext_v1);
+    comment_config = MST_Space_GetSpace(MST_GetVar("comment", ext));
+    number_config = MST_Space_GetSpace(MST_GetVar("number", ext));
+    keymap = MST_Space_GetArray(MST_GetVar("keymap", ext));
+    string_style = MST_Space_GetArray(MST_GetVar("string", ext));
+
+    if (!(ext_v1 && ext && comment_config && number_config && keymap &&
+          string_style)) {
+      printf("%08x %08x %08x %08x %08x %08x\n", ext_v1, ext, comment_config,
+             number_config, keymap, string_style);
+      mst_obj = nullptr;
+    }
+    Array_data* ad;
+
+    for (int h = 0; ad = MST_Array_Get(keymap, h); h++) {
+      char* key = MST_Space_GetStr(MST_GetVar("key", MST_Array_get_space(ad)));
+      int color =
+          MST_Space_GetInteger(MST_GetVar("color", MST_Array_get_space(ad)));
+      km_style ks;
+      ks.key = key;
+      ks.color = color;
+      key_map.push_back(ks);
+    }
+    if (strcmp(MST_Space_GetStr(MST_GetVar("enable", number_config)), "true") ==
+        0) {
+      // printf("set number ok\n");
+      number = true;
+      number_color = MST_Space_GetInteger(MST_GetVar("color", number_config));
+    }
+    for (int h = 0; ad = MST_Array_Get(string_style, h); h++) {
+      Array* ar = MST_Array_get_array(ad);
+      Array_data* ad1 = MST_Array_Get(ar, 0);
+      StringStyle ss;
+      convert(MST_Array_get_str(ad1));
+      ss.start = MST_Array_get_str(ad1);
+      ad1 = MST_Array_Get(ar, 1);
+      convert(MST_Array_get_str(ad1));
+      ss.end = MST_Array_get_str(ad1);
+      string_vector.push_back(ss);
+    }
   }
   printf("Powerint DOS Editor v0.2c\n");
   printf("We can help you write note(code)s in Powerint DOS\n");

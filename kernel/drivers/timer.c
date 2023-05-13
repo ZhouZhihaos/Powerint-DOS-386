@@ -3,7 +3,7 @@
 #define PIT_CNT0 0x0040
 
 struct TIMERCTL timerctl;
-
+void fpu_disable();
 #define TIMER_FLAGS_ALLOC 1 /* 已配置状态 */
 #define TIMER_FLAGS_USING 2 /* 定时器运行中 */
 extern int cg_flag0;
@@ -143,6 +143,7 @@ void inthandler20(int cs, int* esp) {
 
   io_cli();
   extern int st_task;
+  fpu_disable();
   if (ts == 3) {
     mt_taskswitch3();
   }
