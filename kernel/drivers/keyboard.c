@@ -135,17 +135,18 @@ void inthandler21(int* esp) {
   unsigned char data, s[4];
   io_out8(PIC0_OCW2, 0x61);
   data = io_in8(PORT_KEYDAT);  // 从键盘IO口读取扫描码
-  //printk("%02x\n", data);
-  // 特殊键处理
+  // printk("%02x\n", data);
+  //  特殊键处理
   if (data == 0xe0) {
-    
-    if (e0_flag) {
-      e0_flag = 0;
-    } else {
-      e0_flag = 0x80;
-    }
+    e0_flag = 0x80;
+
     io_sti();
     return;
+  }
+  if(e0_flag) {
+    if(data > 0x80) {
+      e0_flag = 0;
+    }
   }
   if (data == 0x2a || data == 0x36) {  // Shift按下
     shift = 1;
