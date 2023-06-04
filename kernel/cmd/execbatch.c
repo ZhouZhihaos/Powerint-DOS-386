@@ -295,7 +295,7 @@ int cmd_app(char* cmdline) {
       app_num++;
       this_task->forever = 0;
       SleepTaskFIFO(current_task());
-      int tid = Get_Tid(GetTaskForName(name));
+      int tid = Get_Tid(this_task);
       io_sti();
       while (GetTask(tid) == this_task && this_task->running) {
         // printk("App(%s):Run. --> %08x\n",name,GetTaskForName(name));
@@ -320,9 +320,11 @@ int cmd_app(char* cmdline) {
           WakeUp(current_task());
           app_task_num = -1;
           print("\n");
+          printk("a task set forever.\n");
           goto end;
         }
       }
+      printk("done.\n");
       ChangeLevel(current_task(), now);
       //  SubTask(GetTaskForName(name));
       // printf("--- End ---\n");

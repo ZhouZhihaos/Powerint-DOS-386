@@ -111,7 +111,7 @@ void fpu_enable(struct TASK* task) {
 
   // 如果 fpu 不为空，则恢复浮点环境
   if (task->fpu) {
-    printk("task->fpu=%08x\n", task->fpu_flag);
+   // printk("task->fpu=%08x\n", task->fpu_flag);
     asm volatile("frstor (%%eax) \n" ::"a"(task->fpu));
   } else {
     // 否则，初始化浮点环境

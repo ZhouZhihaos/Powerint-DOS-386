@@ -228,7 +228,7 @@ void inthandler21(int* esp) {
       // 如果进程正在休眠
       continue;
     // 一般进程
-    // printk("Send packet to %s ID %d\n",task->name,Get_Tid(task));
+   // printk("Send packet to %s ID %d\n",task->name,Get_Tid(task));
     fifo8_put(TaskGetKeyfifo(task), data + e0_flag);
     // printk(
     //    "TASKNUM:%d TASK NAME:%s TASK ID:%d TASK FIFO:%08x STATUS:%d
