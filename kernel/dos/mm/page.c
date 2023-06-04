@@ -61,7 +61,7 @@ void *page_malloc_one() {
       page2tpo(i, &t, &p);
       unsigned int addr = get_line_address(t, p, 0);
       pages[i].flag = 1;
-      pages[i].task_id = NowTask()->sel / 8 - 103;
+      pages[i].task_id = current_task()->sel / 8 - 103;
       return (void *)addr;
     }
   }
@@ -90,7 +90,7 @@ int find_kpage(int line, int n) {
     if (free == n) {
       for (int j = line - n; j != line + 1; j++) {
         pages[j].flag = 1;
-        pages[j].task_id = NowTask()->sel / 8 - 103;
+        pages[j].task_id = current_task()->sel / 8 - 103;
       }
       line -= n - 1;
       break;
@@ -154,7 +154,7 @@ void page_map(void *target, void *start, void *end) {
 void *page_malloc_lessthan4kb(int size) {
   if (size >= 4 * 1024) // "less than 4 kb"
     return page_kmalloc(size);
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   char *memman = task->memman;
   int alloc_addr = task->alloc_addr;
   int alloc_size = task->alloc_size;
@@ -181,7 +181,7 @@ void page_free_lessthan4kb(void *p, int size) {
     page_kfree((int)p, size);
     return;
   }
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   char *memman = task->memman;
   int alloc_addr = task->alloc_addr;
   int alloc_size = task->alloc_size;
@@ -211,7 +211,7 @@ void *page_malloc(int size) {
   return NULL;
 }
 void page_free(void *p, int size) {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (size > 0 && size < 4 * 1024 &&
       task->alloc_addr <= (int)p && p<= (void *)((uint32_t)task->alloc_addr + 512 * 1024)) {
     page_free_lessthan4kb(p, size);

@@ -200,8 +200,8 @@ void command_run(char *cmdline) {
   //都是空格，直接返回
   return;
 CHECK_OK:
-  if (NowTask()->line != cmdline) {
-    strcpy(NowTask()->line, cmdline);
+  if (current_task()->line != cmdline) {
+    strcpy(current_task()->line, cmdline);
   }
   if (strincmp("FORMAT ", cmdline, 7) == 0) {
     int res = vfs_format(cmdline[7], "FAT");
@@ -211,21 +211,21 @@ CHECK_OK:
       printf("Format OK\n");
     }
   } else if (stricmp("FAT", cmdline) == 0) {
-    struct TASK *task = NowTask();
-    int neline = NowTask()->TTY->xsize / (get_dm(NowTask()->nfs).type / 4 + 1);
-    for (int i = 0, j = 0; i != get_dm(NowTask()->nfs).FatMaxTerms; i++) {
-      if (get_dm(NowTask()->nfs).type == 12) {
+    struct TASK *task = current_task();
+    int neline = current_task()->TTY->xsize / (get_dm(current_task()->nfs).type / 4 + 1);
+    for (int i = 0, j = 0; i != get_dm(current_task()->nfs).FatMaxTerms; i++) {
+      if (get_dm(current_task()->nfs).type == 12) {
         printf("%03x ", get_dm(task->nfs).fat[i]);
-      } else if (get_dm(NowTask()->nfs).type == 16) {
+      } else if (get_dm(current_task()->nfs).type == 16) {
         printf("%04x ", get_dm(task->nfs).fat[i]);
-      } else if (get_dm(NowTask()->nfs).type == 32) {
+      } else if (get_dm(current_task()->nfs).type == 32) {
         printf("%08x ", get_dm(task->nfs).fat[i]);
       }
       if (!((i + 1) % neline)) {
         printf("\b\n");
         j++;
       }
-      if (j == NowTask()->TTY->ysize - 1) {
+      if (j == current_task()->TTY->ysize - 1) {
         printf("Press any key to continue...");
         getch();
         printf("\n");
@@ -540,9 +540,9 @@ CHECK_OK:
   } else if (stricmp("SB16", cmdline) == 0) {
     // wav_player_test();
   } else if (stricmp("DISKLS", cmdline) == 0) {
-    extern vdisk vdisk_ctl[255];
+    extern vdisk vdisk_ctl[26];
 
-    for (int i = 0; i < 255; i++) {
+    for (int i = 0; i < 26; i++) {
       if (vdisk_ctl[i].flag) {
         printf("%c:\\ => TYPE: %s\n", i + ('A'), vdisk_ctl[i].DriveName);
       }
@@ -772,7 +772,7 @@ CHECK_OK:
   } else if (strincmp("MKDIR ", cmdline, 6) == 0) {
     vfs_createdict(cmdline + 6);
   } else if (stricmp("TREE", cmdline) == 0) {
-    // tree(NowTask()->directory);
+    // tree(current_task()->directory);
   } else if (strincmp("POKE ", cmdline, 5) == 0) {
     addr = (ascii2num(cmdline[5]) >> 28) + (ascii2num(cmdline[6]) >> 24);
     addr = addr + (ascii2num(cmdline[7]) >> 20) + (ascii2num(cmdline[8]) >> 16);
@@ -848,7 +848,7 @@ CHECK_OK:
     Get_Arg(out, cmdline, 2);
     decompress_one_file(asm1, out);
   } else if (strincmp("COLOR ", cmdline, 6) == 0) {
-    struct TASK *task = NowTask();
+    struct TASK *task = current_task();
     unsigned char c = (ascii2num(cmdline[6]) << 4) + ascii2num(cmdline[7]);
     Text_Draw_Box(0, 0, task->TTY->xsize, task->TTY->ysize, c);
     task->TTY->color = c;
@@ -1040,7 +1040,7 @@ void cmd_dir(char **args) {
 }
 
 void tree(struct FAT_FILEINFO *directory) {
-  /*struct TASK* task = NowTask();
+  /*struct TASK* task = current_task();
   struct FAT_FILEINFO* finfo = directory;
   struct List* list_ = NewList();
   int directory_num = 0;

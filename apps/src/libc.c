@@ -1799,49 +1799,79 @@ double atan2(double y, double x)
 #define EPS (2.22044604925031308085e-16)
 static const double_t toint = 1/EPS;
 
-double floor(double x)
-{
-	union {double f; uint64_t i;} u = {x};
-	int e = u.i >> 52 & 0x7ff;
-	double_t y;
+double floor(double x) {
+  // 分离出x的符号、指数、尾数部分
+  unsigned long long sign = (unsigned long long)x >> 63;
+  unsigned long long exponent = ((unsigned long long)x >> 52) & 0x7ffull;
+  unsigned long long mantissa = (unsigned long long)x & 0xfffffffffffffull;
 
-	if (e >= 0x3ff+52 || x == 0)
-		return x;
-	/* y = int(x) - x, where int(x) is an integer neighbor of x */
-	if (u.i >> 63)
-		y = x - toint + toint - x;
-	else
-		y = x + toint - toint - x;
-	/* special case because of non-nearest rounding modes */
-	if (e <= 0x3ff-1) {
-		FORCE_EVAL(y);
-		return u.i >> 63 ? -1 : 0;
-	}
-	if (y > 0)
-		return x + y - 1;
-	return x + y;
+  // 构造一个与x二进制表示相同且指数部分为0的浮点数t
+  unsigned long long t_exponent = exponent & 0x7ffull;
+  unsigned long long t_mantissa = 0;
+  if (exponent > 1023) {
+    t_exponent -= 1023;
+  }
+  if (t_exponent > 52) {
+    t_mantissa = mantissa;
+  } else {
+    t_mantissa = mantissa >> (52 - t_exponent);
+  }
+  unsigned long long t_sign = 0;
+  if (sign) {
+    t_sign = 0x8000000000000000ull;
+  }
+  unsigned long long t = t_sign | (t_exponent << 52) | t_mantissa;
+
+  // 判断x是否小于t
+  unsigned long long xi = *(unsigned long long*)&x;
+  if (xi < t) {
+    double r = (x - 1);  // 如果小于，则返回x-1的整数部分
+    double s;
+    modf(r, &s);
+    return s;
+  } else {
+    double r = (x);  // 如果大于等于，则返回x的整数部分
+    double s;
+    modf(r, &s);
+    return s;
+  }
 }
-double ceil(double x)
-{
-	union {double f; uint64_t i;} u = {x};
-	int e = u.i >> 52 & 0x7ff;
-	double_t y;
+double ceil(double x) {
+  // 分离出x的符号、指数、尾数部分
+  unsigned long long sign = (unsigned long long)x >> 63;
+  unsigned long long exponent = ((unsigned long long)x >> 52) & 0x7ffull;
+  unsigned long long mantissa = (unsigned long long)x & 0xfffffffffffffull;
 
-	if (e >= 0x3ff+52 || x == 0)
-		return x;
-	/* y = int(x) - x, where int(x) is an integer neighbor of x */
-	if (u.i >> 63)
-		y = x - toint + toint - x;
-	else
-		y = x + toint - toint - x;
-	/* special case because of non-nearest rounding modes */
-	if (e <= 0x3ff-1) {
-		FORCE_EVAL(y);
-		return u.i >> 63 ? -0.0 : 1;
-	}
-	if (y < 0)
-		return x + y + 1;
-	return x + y;
+  // 构造一个与x二进制表示相同且指数部分为0的浮点数t
+  unsigned long long t_exponent = exponent & 0x7ffull;
+  unsigned long long t_mantissa = 0;
+  if (exponent > 1023) {
+    t_exponent -= 1023;
+  }
+  if (t_exponent > 52) {
+    t_mantissa = mantissa;
+  } else {
+    t_mantissa = mantissa >> (52 - t_exponent);
+  }
+  unsigned long long t_sign = 0;
+  if (sign) {
+    t_sign = 0x8000000000000000ull;
+  }
+  unsigned long long t = t_sign | (t_exponent << 52) | t_mantissa;
+
+  // 判断x是否小于t
+  unsigned long long xi = *(unsigned long long*)&x;
+  if (xi > t) {
+    double r = (x + 1);  // 如果小于，则返回x-1的整数部分
+    double s;
+    modf(r, &s);
+    return s;
+  } else {
+    double r = (x);  // 如果大于等于，则返回x的整数部分
+    double s;
+    modf(r, &s);
+    return s;
+  }
 }
 static const double
 bp[]   = {1.0, 1.5,},

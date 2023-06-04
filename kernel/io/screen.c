@@ -1,7 +1,7 @@
 #include <io.h>
 extern struct tty *tty_default;
 void clear() {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->clear(tty_default);
   } else {
@@ -10,7 +10,7 @@ void clear() {
 }
 void printchar(char ch) {
   char ch1[2] = {ch, '\0'};
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->print(tty_default, ch1);
   } else {
@@ -18,7 +18,7 @@ void printchar(char ch) {
   }
 }
 void putchar(char ch) {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->putchar(tty_default, ch);
   } else {
@@ -26,7 +26,7 @@ void putchar(char ch) {
   }
 }
 void screen_ne() {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->screen_ne(tty_default);
   } else {
@@ -34,7 +34,7 @@ void screen_ne() {
   }
 }
 int get_x() {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     return tty_default->x;
   } else {
@@ -42,7 +42,7 @@ int get_x() {
   }
 }
 int get_y() {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     return tty_default->y;
   } else {
@@ -50,7 +50,7 @@ int get_y() {
   }
 }
 int Get_Raw_y() {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     return tty_default->Raw_y;
   } else {
@@ -58,7 +58,7 @@ int Get_Raw_y() {
   }
 }
 int get_xsize() {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     return tty_default->xsize;
   } else {
@@ -66,7 +66,7 @@ int get_xsize() {
   }
 }
 int get_ysize() {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     return tty_default->ysize;
   } else {
@@ -74,7 +74,7 @@ int get_ysize() {
   }
 }
 void print(const char *str) {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->print(tty_default, str);
   } else {
@@ -83,7 +83,7 @@ void print(const char *str) {
 }
 
 void GotoXy_No_Safe(int x1, int y1) {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->MoveCursor(tty_default, x1, y1);
   } else {
@@ -91,7 +91,7 @@ void GotoXy_No_Safe(int x1, int y1) {
   }
 }
 void gotoxy(int x1, int y1) {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->gotoxy(tty_default, x1, y1);
   } else {
@@ -99,7 +99,7 @@ void gotoxy(int x1, int y1) {
   }
 }
 void Text_Draw_Box(int x, int y, int x1, int y1, unsigned char color) {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     tty_default->Draw_Box(tty_default, x, y, x1, y1, color);
   } else {

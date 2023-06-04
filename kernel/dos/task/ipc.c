@@ -8,7 +8,7 @@
 #include <dos.h>
 int SendIPCMessage(int to_tid, void *data, unsigned int size, char type) {
   Maskirq(0);
-  struct TASK *to_task = GetTask(to_tid), *this_task = NowTask();
+  struct TASK *to_task = GetTask(to_tid), *this_task = current_task();
   int levelold = this_task->level;
   if (to_task->IPC_header.now == MAX_IPC_MESSAGE - 1) {
     ClearMaskIrq(0);
@@ -38,7 +38,7 @@ int SendIPCMessageForName(char *tname, void *data, unsigned int size,
 }
 int GetIPCMessage(void *data, int from_tid) {
   Maskirq(0);
-  struct TASK *this_task = NowTask();
+  struct TASK *this_task = current_task();
   if (this_task->IPC_header.now == 0) {
     ClearMaskIrq(0);
     return -1;
@@ -118,10 +118,10 @@ int GetIPCMessageForName(void *data, char *tname) {
   struct TASK *from_task = GetTaskForName(tname);
   return GetIPCMessage(data, (from_task->sel / 8) - 103);
 }
-int IPCMessageStatus() { return NowTask()->IPC_header.now; }
+int IPCMessageStatus() { return current_task()->IPC_header.now; }
 unsigned int IPCMessageLength(int from_tid) {
   // Maskirq(0);
-  struct TASK *this_task = NowTask();
+  struct TASK *this_task = current_task();
   // printk("entry IPCMessageLength\n");
   for (int i = MAX_IPC_MESSAGE - 1; i >= 0; i--) {
     // printk("TID-- %d / %d\n", this_task->IPC_header.from_tid[i], from_tid);
@@ -156,7 +156,7 @@ int SendIPCMessageTID(int to_tid,        // 收信人
   // }
 
   Maskirq(0);
-  struct TASK *to_task = GetTask(to_tid), *this_task = NowTask();
+  struct TASK *to_task = GetTask(to_tid), *this_task = current_task();
   int levelold = this_task->level;
   if (to_task->IPC_header.now == MAX_IPC_MESSAGE - 1) {
     ClearMaskIrq(0);
@@ -183,7 +183,7 @@ bool haveMsg() {
   Maskirq(0);
   // printf("????");
   // 你自己有没有消息
-  struct TASK *this_task = NowTask();
+  struct TASK *this_task = current_task();
   // printk("entry IPCMessageLength\n");
   for (int i = MAX_IPC_MESSAGE - 1; i >= 0; i--) {
     // printk("TID-- %d\n", this_task->IPC_header.from_tid[i]);
@@ -200,7 +200,7 @@ bool haveMsg() {
 int getMsgAll(void *data) {
   // printk("entry getMsgAll\n");
   Maskirq(0);
-  struct TASK *this_task = NowTask();
+  struct TASK *this_task = current_task();
   if (this_task->IPC_header.now == 0) {
     ClearMaskIrq(0);
     return -1;

@@ -175,7 +175,7 @@ void graphic(void) {
                     screen_ne_GraphicMode, Draw_Box_GraphicMode);
   tty_set_reserved(tty_g, (unsigned int)sht_b_cur, (unsigned int)sht_win, 0, 0);
   tty_default_ = tty_set_default(tty_g);
-  tty_now_ = tty_set(NowTask(), tty_g);
+  tty_now_ = tty_set(current_task(), tty_g);
   tty_set(Task_cmdline, tty_g);
   io_sti();
   for (;;) {
@@ -188,8 +188,8 @@ void graphic(void) {
       sht_b_cur = (struct SHEET *)shtctl->sheets[shtctl->top - 1]
                       ->task->TTY->reserved[0];
     } else {
-      sht_win = (struct SHEET *)NowTask()->TTY->reserved[1];
-      sht_b_cur = (struct SHEET *)NowTask()->TTY->reserved[0];
+      sht_win = (struct SHEET *)current_task()->TTY->reserved[1];
+      sht_b_cur = (struct SHEET *)current_task()->TTY->reserved[0];
     }
     char s[100];
     sprintf(s, "日期:20%02x年%02x月%02x日 时间:%02x时%02x分%02x秒",
@@ -208,8 +208,8 @@ void graphic(void) {
       sheet_updown(sht_fm, -1);
       sheet_updown(sht_win, -1);
     }*/
-    if (fifo8_status(TaskGetMousefifo(NowTask())) +
-            fifo8_status(TaskGetKeyfifo(NowTask())) + fifo8_status(&fifo) ==
+    if (fifo8_status(TaskGetMousefifo(current_task())) +
+            fifo8_status(TaskGetKeyfifo(current_task())) + fifo8_status(&fifo) ==
         0) {
       if (new_mx >= 0) {
         // io_sti();
@@ -221,15 +221,15 @@ void graphic(void) {
         new_wx = 0x7fffffff;
       } else {
       }
-      WakeUp(NowTask());
+      WakeUp(current_task());
       io_sti();
     } else {
-      if (fifo8_status(TaskGetMousefifo(NowTask())) != 0) {
+      if (fifo8_status(TaskGetMousefifo(current_task())) != 0) {
         // printk("Mouse.\n");
-        int i = fifo8_get(TaskGetMousefifo(NowTask()));
+        int i = fifo8_get(TaskGetMousefifo(current_task()));
         if (mouse_decode(&mdec, i) != 0) {
           // io_cli();
-          SleepTaskFIFO(NowTask());
+          SleepTaskFIFO(current_task());
           gmx += mdec.x;
           gmy += mdec.y;
           if (gmx > vbinfo->xsize - 10) {
@@ -327,7 +327,7 @@ void graphic(void) {
                   }
                   if (sht->buf[y * sht->bxsize + x] != sht->col_inv) {
                     // for (int L = 1; GetTask(L) != NULL; L++) {
-                    //   if (GetTask(L) == NowTask()) {
+                    //   if (GetTask(L) == current_task()) {
                     //  SubTask(L);
                     //  break;
                     //    continue;
@@ -339,7 +339,7 @@ void graphic(void) {
                     SendIPCMessageTID(Get_Tid(sht->task), -3, &xy, 4,
                                       asynchronous);
                     AddVal(Get_Tid(sht->task), list_ipc);
-                    if (old->task != NowTask()) {
+                    if (old->task != current_task()) {
                       SleepTaskFIFO(old->task);
                       if (sht != old) {
                         // printf("Change -> %s\n",old->task->name);
@@ -347,14 +347,14 @@ void graphic(void) {
                       }
                     }
                     WakeUp(sht->task);
-                    if (sht->task != NowTask()) {
+                    if (sht->task != current_task()) {
                       ChangeLevel(sht->task, 1);
                     }
                     for (int j = 1; GetTask(j) != 0; j++) {
                       struct TASK *t = GetTask(j);
                       // printk("%s:%08x %s:%08x\n", t->name, t->TTY,
-                      //        NowTask()->name, NowTask()->TTY);
-                      if (t->TTY == NowTask()->TTY && t->app && !t->forever) {
+                      //        current_task()->name, current_task()->TTY);
+                      if (t->TTY == current_task()->TTY && t->app && !t->forever) {
                         SleepTaskFIFO(sht->task);
                         break;
                       }
@@ -455,8 +455,8 @@ void graphic(void) {
         // io_sti();
       }
     }
-    if (fifo8_status(TaskGetKeyfifo(NowTask())) != 0) {
-      int i = fifo8_get(TaskGetKeyfifo(NowTask()));
+    if (fifo8_status(TaskGetKeyfifo(current_task())) != 0) {
+      int i = fifo8_get(TaskGetKeyfifo(current_task()));
       if (i > 0x80) {
         ClearMaskIrq(0);
         continue;

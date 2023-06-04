@@ -55,12 +55,17 @@ static void Handler_TCP(struct Socket *socket, void *base) {
     }
   }
 }
+enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };
 void net_API(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
              int eax) {
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   int cs_base = task->cs_base;
   int ds_base = task->ds_base;
   int alloc_addr = task->alloc_addr; // malloc地址
+  uint32_t *reg = &eax + 1; /* eax后面的地址*/
+                            /*强行改写通过PUSHAD保存的值*/
+  /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
+  /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
   if (eax == 0x01) {                 // Socket
     struct Socket *socket = Socket_Alloc(ebx);
     if (ebx == UDP_PROTOCOL) {
@@ -68,7 +73,7 @@ void net_API(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     } else if (ebx == TCP_PROTOCOL) {
       Socket_Bind(socket, Handler_TCP);
     }
-    intreturn(socket, ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = socket;
   } else if (eax == 0x02) {
     Socket_Free((struct Socket *)ebx);
   } else if (eax == 0x03) {
@@ -92,8 +97,8 @@ void net_API(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     Socket_Init(socket, ecx, edx, esi, edi);
   } else if (eax == 0x06) {
     extern uint32_t ip;
-    intreturn(ip, ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = ip;
   } else if (eax == 0x07) {
-    intreturn(ping(ebx), ebx, ecx, edx, esi, edi, ebp);
+    reg[EAX] = ping(ebx);
   }
 }

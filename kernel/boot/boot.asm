@@ -2,7 +2,7 @@
 ; Copyright (C) zhouzhihao 2020-2022
 bootseg		equ		7c0h
 dataseg		equ		800h
-readsize	equ		90			; DOSLDR.BIN的大小
+readsize	equ		144			; DOSLDR.BIN的大小
 HRBAT		equ		0x100000	; HRB格式文件的装载地址
 
 jmp	short	start
@@ -12,11 +12,13 @@ jmp	short	start
 	dw	512
 	db	1
 	dw	1
+numfats:
 	db	2
 rotentcnt:
 	dw	224
 	dw	2880
 	db	0xf0
+fatsz16:
 	dw	9
 	dw	18
 	dw	2
@@ -29,17 +31,15 @@ drvnum:
 	dd	0xffffffff
 	db	"POWERINTDOS"
 	db	"FAT12   "
-	times	28	db	0
 
 start:
 ; main
-	
 	mov	ax,bootseg
 	mov	ds,ax
 	mov	ax,dataseg
 	mov	es,ax
-	mov byte [drvnum],dl
-	
+	mov byte[drvnum],dl
+
 	mov bx,[rotentcnt]
 	mov ax,1
 .longdiv:
@@ -49,11 +49,24 @@ start:
 	inc ax
 	jmp .longdiv
 .longdiv.end:
-	add ax,19
+	mov cl,byte[numfats]
+	mov ch,0
+	inc	ax
+.fat16_2:
+	add ax,word[fatsz16]
+	loop .fat16_2
 	cmp byte[drvnum],0x80
 	jne .chs
 	mov [packet.lba],ax
+	mov cl,0
+.lba_read_loop:
+	cmp cl,readsize
+	jae .hrb
 	call read1sector
+	add word[packet.off],72*512
+	add dword[packet.lba],72
+	add cl,72
+	jmp .lba_read_loop
 .chs:
 	mov bl,2*18
 	div bl
@@ -151,7 +164,7 @@ inprotectmode:
 	mov	gs,ax
 	mov	ss,ax
 
-	cmp byte[0x8001],0x30
+	cmp byte[0x8001],0x50
 	jne $
 	
 	; 1.传输HRB数据
@@ -190,11 +203,11 @@ memcpy:
 	jnz	memcpy
 	ret
 
-read db	0
+read: db 0
 packet:
 	db	10h
 	db	0
-	dw	readsize
+	dw	72
 .off:
 	dw	0
 .seg:

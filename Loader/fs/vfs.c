@@ -1,11 +1,13 @@
-#include <dos.h>
+#include <dosldr.h>
 #define vfs(task) ((task)->nfs)
 #define toupper(c) ((c) >= 'a' && (c) <= 'z' ? c - 32 : c)
-#define PDEBUG
-vfs_t vfsstl[26];
-vfs_t vfsMount_Stl[26];
+#define PDEBUG(str, ...) printf(str "\n", ##__VA_ARGS__)
+#define WARNING_K(str, ...) printf(str "\n", ##__VA_ARGS__)
+#define Panic_K(str, ...) printf(str "\n", ##__VA_ARGS__)
+vfs_t vfsstl[5];
+vfs_t vfsMount_Stl[5];
 static vfs_t *drive2fs(uint8_t drive) {
-  for (int i = 0; i < 26; i++) {
+  for (int i = 0; i < 5; i++) {
     if (vfsMount_Stl[i].drive == toupper(drive) && vfsMount_Stl[i].flag == 1) {
       return &vfsMount_Stl[i];
     }
@@ -37,7 +39,7 @@ static vfs_t *ParsePath(char *result) {
   return vfs_result;
 }
 static vfs_t *findSeat(vfs_t *vstl) {
-  for (int i = 0; i < 26; i++) {
+  for (int i = 0; i < 5; i++) {
     if (vstl[i].flag == 0) {
       return &vstl[i];
     }
@@ -45,7 +47,7 @@ static vfs_t *findSeat(vfs_t *vstl) {
   return NULL;
 }
 static vfs_t *check_disk_fs(uint8_t disk_number) {
-  for (int i = 0; i < 26; i++) {
+  for (int i = 0; i < 5; i++) {
     if (vfsstl[i].flag == 1) {
       if (vfsstl[i].Check(disk_number)) {
         return &vfsstl[i];
@@ -61,7 +63,7 @@ static void insert_str(char *str, char *insert_str, int pos) {
 }
 bool vfs_mount_disk(uint8_t disk_number, uint8_t drive) {
   PDEBUG("Mount DISK ---- %02x", disk_number);
-  for (int i = 0; i < 26; i++) {
+  for (int i = 0; i < 5; i++) {
     if (vfsMount_Stl[i].flag == 1 &&
         (vfsMount_Stl[i].drive == drive ||
          vfsMount_Stl[i].disk_number == disk_number)) {
@@ -91,7 +93,7 @@ bool vfs_mount_disk(uint8_t disk_number, uint8_t drive) {
 }
 bool vfs_unmount_disk(uint8_t drive) {
   PDEBUG("Unmount disk ---- %c", drive);
-  for (int i = 0; i < 26; i++) {
+  for (int i = 0; i < 5; i++) {
     if (vfsMount_Stl[i].drive == drive && vfsMount_Stl[i].flag == 1) {
       vfsMount_Stl[i].DeleteFs(&vfsMount_Stl[i]);
       vfsMount_Stl[i].flag = 0;
@@ -239,7 +241,7 @@ bool vfs_attrib(char *filename, ftype type) {
   return result;
 }
 bool vfs_format(uint8_t disk_number, char *FSName) {
-  for (int i = 0; i < 255; i++) {
+  for (int i = 0; i < 5; i++) {
     if (strcmp(vfsstl[i].FSName, FSName) == 0 && vfsstl[i].flag == 1) {
       return vfsstl[i].Format(disk_number);
     }
@@ -333,12 +335,10 @@ void vfs_getPath(char *buffer) {
   }
   delete_char(buffer, pos - 1);
 }
-bool vfs_check_mount(uint8_t drive) {
-  return drive2fs(drive) ? true : false;
-}
+bool vfs_check_mount(uint8_t drive) { return drive2fs(drive) ? true : false; }
 void init_vfs() {
   PDEBUG("init vfs..........");
-  for (int i = 0; i < 26; i++) {
+  for (int i = 0; i < 5; i++) {
     vfsstl[i].flag = 0;
     vfsstl[i].disk_number = 0;
     vfsstl[i].drive = 0;

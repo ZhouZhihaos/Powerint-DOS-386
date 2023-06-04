@@ -96,7 +96,7 @@ int init_sb16() {
     WARNING_F("sb16 is busy");
     return;
   }
-  sb16_driver.use_task_id = Get_Tid(NowTask());
+  sb16_driver.use_task_id = Get_Tid(current_task());
   sb16_driver.status = 0;
   // set irq
   io_out8(SB16_PORT_MIXER, COMMAND_SET_IRQ);

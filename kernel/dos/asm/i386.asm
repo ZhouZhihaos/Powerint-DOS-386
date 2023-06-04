@@ -7,9 +7,8 @@ section .data
 		GLOBAL	load_gdtr, load_idtr
 		GLOBAL ASM_call
 		GLOBAL	load_cr0, store_cr0,memtest_sub,farjmp,farcall,start_app
-		GLOBAL	loadregisters,saveregisters,get_eip
 		GLOBAL load_tr
-		EXTERN NowTask_asm
+		GLOBAL get_eip
 str: db 'Yun Xing Ni Ma De Kernel Xiang Si Shi Bu Shi',0
 section .text
 %define ADR_BOTPAK 							   0x280000
@@ -194,63 +193,6 @@ inc dx
 mov al,bl
 out dx,al
 ret
-
-%define registers	633 ; registers在TASK结构体中的偏移
-loadregisters:
-	call NowTask_asm
-	mov ebx,eax
-	mov	eax,[ds:ebx+registers]
-	mov	ecx,[ds:ebx+registers+8]
-	mov	edx,[ds:ebx+registers+12]
-	mov	esi,[ds:ebx+registers+16]
-	mov	edi,[ds:ebx+registers+20]
-	mov	ebp,[ds:ebx+registers+24]
-	mov	ebx,[ds:ebx+registers+4]
-	ret
-
-saveregisters:
-	push ebx
-	push eax
-	call NowTask_asm
-	mov ebx,eax
-	pop eax
-	mov	[ds:ebx+registers],eax
-	mov	[ds:ebx+registers+8],ecx
-	mov	[ds:ebx+registers+12],edx
-	mov	[ds:ebx+registers+16],esi
-	mov	[ds:ebx+registers+20],edi
-	mov	[ds:ebx+registers+24],ebp
-	push esi
-	mov esi,ebx
-	mov ebx,[esp+4]
-	mov	[ds:esi+registers+4],ebx
-	pop	esi
-	pop	ebx
-	ret
-GLOBAL intreturn
-intreturn:		; void intreturn(int eax,int ebx,int ecx,int edx,int esi,int edi,int ebp);
-; 中断返回数据
-	push	ebx
-	push	eax
-	call	NowTask_asm
-	mov ebx,eax
-	mov eax,[esp+12]
-	mov [ds:ebx+registers],eax
-	mov eax,[esp+16]
-	mov	[ds:ebx+registers+4],eax
-	mov eax,[esp+20]
-	mov	[ds:ebx+registers+8],eax
-	mov eax,[esp+24]
-	mov	[ds:ebx+registers+12],eax
-	mov eax,[esp+28]
-	mov	[ds:ebx+registers+16],eax
-	mov eax,[esp+32]
-	mov	[ds:ebx+registers+20],eax
-	mov eax,[esp+36]
-	mov	[ds:ebx+registers+24],eax
-	pop	eax
-	pop	ebx
-	ret
 
 ;;蜂鸣器驱动
 gensound1:

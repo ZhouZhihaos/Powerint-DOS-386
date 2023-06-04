@@ -46,7 +46,7 @@ int fifo8_status(struct FIFO8* fifo) {
   extern int taskctl;
   (void)(taskctl);
   if(fifo == NULL) {
-    //printk("fifo == NULL!(%08x)\n",NowTask()->keyfifo);
+    //printk("fifo == NULL!(%08x)\n",current_task()->keyfifo);
     return 0;
   }
   return fifo->size - fifo->free;

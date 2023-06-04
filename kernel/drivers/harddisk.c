@@ -60,7 +60,7 @@ void drivers_idehdd_read(unsigned int LBA,
                          unsigned short* buffer) {
   // if (running_mode == POWERDESKTOP) {
   //   // io_cli();
-  //   // int a = NowTask()->level;
+  //   // int a = current_task()->level;
   //   // unsigned char* buf = buffer;
   //   // for (int i = 0; i < number; i++) {
   //   //   bios_read_hd_sec(LBA + i, buf + i * 512);

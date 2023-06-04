@@ -12,8 +12,8 @@ void shell(void) {
   init_network();
   init_card();
   init_palette();
-  vfs_mount_disk(NowTask()->drive, NowTask()->drive);
-  vfs_change_disk(NowTask()->drive);
+  vfs_mount_disk(current_task()->drive, current_task()->drive);
+  vfs_change_disk(current_task()->drive);
   init_ok_flag = 1;
   /*到这里 系统的初始化才真正结束*/
   font = (unsigned char*)"/other/font.bin";
@@ -46,18 +46,17 @@ void shell(void) {
     }
   }
   if (fsz("AUTOEXEC.BAT") == -1) {
-    printf("Boot Warning:No AUTOEXEC.BAT in Drive %c\n", NowTask()->drive);
+    printf("Boot Warning:No AUTOEXEC.BAT in Drive %c\n", current_task()->drive);
   } else {
     run_bat("AUTOEXEC.BAT");
   }
   extern struct tty* tty_default;
-  tty_set(NowTask(), tty_default);
+  tty_set(current_task(), tty_default);
   shell_handler();
 }
 void shell_handler() {
-  struct TASK* task = NowTask();
+  struct TASK* task = current_task();
   task->line = (char*)page_kmalloc(1024);
-  strcpy(task->path, "");
   char buf[255];
   while (1) {
     vfs_getPath(buf);
@@ -106,7 +105,7 @@ void task_sr1() {
         goto re;
       }
     }
-    SleepTask(NowTask());
+    SleepTask(current_task());
   }
 }
 void com_input(char* ptr, int len) {
@@ -135,7 +134,7 @@ void com_input(char* ptr, int len) {
   }
 }
 void task_sr2() {
-  // SleepTask(NowTask());
+  // SleepTask(current_task());
 
   for (;;) {
   }
@@ -158,7 +157,7 @@ void task_sr2() {
   // while (1) {
   //   if (IPCMessageStatus() != 0) {
   //     printk("Get Message.\n");
-  //     int tid = NowTask()->IPC_header.from_tid[0];
+  //     int tid = current_task()->IPC_header.from_tid[0];
   //     int length = IPCMessageLength(tid);
   //     int* data = page_malloc(length);
   //     GetIPCMessage(data, tid);

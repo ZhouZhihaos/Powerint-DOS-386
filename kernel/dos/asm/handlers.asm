@@ -1,26 +1,12 @@
 [BITS 32]
 section .data
 GLOBAL	asm_inthandler21, asm_inthandler20
-EXTERN	inthandler21,inthandler20,inthandler36,inthandler2c,loadregisters,saveregisters
+EXTERN	inthandler21,inthandler20,inthandler36,inthandler2c
 GLOBAL	asm_inthandler36,asm_inthandler2c,floppy_int
 section .text
 global null_inthandler
 null_inthandler:
 	IRETD
-extern taskctl
-%define ADR_GDT 0x00270000
-global NowTask_asm
-NowTask_asm:
-	pushad
-	mov	esi,dword[taskctl]
-	mov	al,byte[ADR_GDT+esi+4]	; base_mid
-	mov	ah,byte[ADR_GDT+esi+7]	; base_high
-	shl	eax,16
-	mov	ax,word[ADR_GDT+esi+2]	; base_low
-	sub	eax,0xc
-	mov	[ss:esp+32-4],eax	; eax在pushad中的顺序
-	popad
-	ret
 
 asm_inthandler36:
 		STI
@@ -29,13 +15,11 @@ asm_inthandler36:
 		PUSHAD			; 用于保存的PUSH
 		PUSHAD
 		MOV		AX,SS
-		MOV			DS,AX ; 将操作系统用段地址存入DS和ES
+		MOV		DS,AX ; 将操作系统用段地址存入DS和ES
 		MOV		ES,AX
-	;	call saveregisters
 		CALL	inthandler36
 		ADD		ESP,32
 		POPAD
-	;	call loadregisters
 		POP		ES
 		POP		DS
 		IRETD
@@ -150,15 +134,13 @@ asm_gui_api:
 		PUSH	DS
 		PUSH	ES
 		PUSHAD			; 用于保存的PUSH
-		PUSHAD			; 用于向Gui_API传值的PUSH
+		PUSHAD
 		MOV		AX,SS
-		MOV			DS,AX ; 将操作系统用段地址存入DS和ES
+		MOV		DS,AX ; 将操作系统用段地址存入DS和ES
 		MOV		ES,AX
-		call saveregisters
 		CALL	Gui_API
 		ADD		ESP,32
 		POPAD
-		call loadregisters
 		POP		ES
 		POP		DS
 		IRETD
@@ -169,15 +151,13 @@ asm_net_api:
 		PUSH	DS
 		PUSH	ES
 		PUSHAD			; 用于保存的PUSH
-		PUSHAD			; 用于向net_API传值的PUSH
+		PUSHAD
 		MOV		AX,SS
-		MOV			DS,AX ; 将操作系统用段地址存入DS和ES
+		MOV		DS,AX ; 将操作系统用段地址存入DS和ES
 		MOV		ES,AX
-		call saveregisters
 		CALL	net_API
 		ADD		ESP,32
 		POPAD
-		call loadregisters
 		POP		ES
 		POP		DS
 		IRETD

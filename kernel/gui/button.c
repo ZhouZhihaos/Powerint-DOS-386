@@ -114,7 +114,7 @@ Button *MakeButton(int x, int y, int w, int h, struct SHEET *buf, char *text,
   buf_->OnClick = OnClick;
   buf_->is_clicking = false;
   buf_->cont = -1;
-  buf_->task = NowTask();
+  buf_->task = current_task();
   Button_Draw(buf_);
   AddVal((int)buf_, list);
   buf_->cont = GetLastCount(list);
@@ -158,7 +158,7 @@ Button *MakeButton_NoFrame(int x, int y, int w, int h, struct SHEET *buf,
   buf_->OnClick = OnClick;
   buf_->is_clicking = false;
   buf_->cont = -1;
-  buf_->task = NowTask();
+  buf_->task = current_task();
   buf_->bc = bc;
   buf_->hide = hide;
   Button_Draw_NoFrame(buf_);

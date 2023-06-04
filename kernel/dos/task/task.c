@@ -228,7 +228,7 @@ int Get_Running_Task_Num() {
   // printk("ret = %d\n",ret);
   return ret;
 }
-struct TASK* NowTask() {
+struct TASK* current_task() {
   // while(taskctl != 103*8 && tasknum < 2);
   return GetTask(taskctl / 8 - 103);
 }
@@ -307,7 +307,6 @@ AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->flagOfexp = 0;
   task->drive_number = default_drive_number;
   task->drive = default_drive;
-  task->change_dict_times = 0;
   task->fpu_use = 0;
   task->app = 0;
 
@@ -327,9 +326,8 @@ AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->cs_base = 0;
   task->alloc_addr = 0;
   task->memman = 0;
-  task->esp0 = 0;
-  task->esp1 = 0;
-  task->ss1 = 0;
+  task->ss_start = 0;
+  task->cs_start = 0;
   task->is_child = 0;
   task->keyboard_press = NULL;
   task->keyboard_release = NULL;
@@ -404,7 +402,6 @@ AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->flagOfexp = 0;
   task->drive_number = default_drive_number;
   task->drive = default_drive;
-  task->change_dict_times = 0;
   task->app = 0;
   task->fpu_use = 0;
   task->fpu = 0;
@@ -420,9 +417,8 @@ AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp) {
   task->cs_base = 0;
   task->alloc_addr = 0;
   task->memman = 0;
-  task->esp0 = 0;
-  task->esp1 = 0;
-  task->ss1 = 0;
+  task->ss_start = 0;
+  task->cs_start = 0;
   task->is_child = 0;
   task->keyboard_press = NULL;
   task->keyboard_release = NULL;
@@ -652,7 +648,7 @@ struct TASK* _fork(int b) {
   ESP = (int)eipa;
   // printk("eipa=%08x\n", eipa[-1]);
   Maskirq(0);
-  if (NowTask()->is_child) {
+  if (current_task()->is_child) {
     io_sti();
     ClearMaskIrq(0);
     return NULL;  // 子进程返回0
@@ -661,9 +657,10 @@ struct TASK* _fork(int b) {
   int* eip = &b;
   int EIP = eip[-1];
   // printk("eip=%08x\n", EIP);
-  int esp = NowTask()->tss.esp;
+  int esp = current_task()->tss.esp;
+
   (void)(esp);
-  int sz = NowTask()->esp_start - ESP;
+  int sz = current_task()->esp_start - ESP;
   uint8_t* stack = (uint8_t*)page_malloc(32 * 1024);  // 分配32KB内存用作栈空间
   stack += 32 * 1024;
   stack -= sz;
@@ -672,19 +669,17 @@ struct TASK* _fork(int b) {
   stack += sz;
 
   struct TASK* task =
-      AddTask(NowTask()->name, NowTask()->level, NowTask()->tss.cs, EIP,
-              NowTask()->tss.ds, 1 * 8, (int)((uint32_t)stack - sz));
+      AddTask(current_task()->name, current_task()->level, current_task()->tss.cs, EIP,
+              current_task()->tss.ds, 1 * 8, (int)((uint32_t)stack - sz));
   Maskirq(0);
   char* memman = (char*)page_kmalloc(4 * 1024);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   task->alloc_addr = alloc_addr;
   task->alloc_size = 512 * 1024;
   task->memman = memman;
-  task->drive = NowTask()->drive;
-  task->drive_number = NowTask()->drive_number;
-  task->change_dict_times = NowTask()->change_dict_times;
-  task->TTY = NowTask()->TTY;
-  strcpy(task->path, NowTask()->path);
+  task->drive = current_task()->drive;
+  task->drive_number = current_task()->drive_number;
+  task->TTY = current_task()->TTY;
   char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
   char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
   char* kbuf = (char*)page_kmalloc(4096);
@@ -696,7 +691,7 @@ struct TASK* _fork(int b) {
   change_page_task_id(task->sel / 8 - 103, memman, 4 * 1024);
 
   task->is_child = 1;
-  task->thread.father = NowTask();
+  task->thread.father = current_task();
 
   ClearMaskIrq(0);
   return task;
@@ -753,17 +748,17 @@ struct TASK* clone_task(struct TASK* tk, int stack_sz) {
 }
 void TaskLock() {
   io_cli();                        // 保证原子操作
-  if (NowTask()->is_child == 0) {  // 父进程
+  if (current_task()->is_child == 0) {  // 父进程
     for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == NowTask()) {
+      if (GetTask(i)->thread.father == current_task()) {
         GetTask(i)->lock = 1;  // 锁住他，不让他运行，和此任务抢资源
       }
     }
   } else {
     for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == NowTask()->thread.father ||
-          GetTask(i) == NowTask()->thread.father) {
-        if (GetTask(i) != NowTask()) {
+      if (GetTask(i)->thread.father == current_task()->thread.father ||
+          GetTask(i) == current_task()->thread.father) {
+        if (GetTask(i) != current_task()) {
           GetTask(i)->lock = 1;  // 锁住他，不让他运行，和此任务抢资源
         }
       }
@@ -773,17 +768,17 @@ void TaskLock() {
 }
 void TaskUnLock() {
   io_cli();                        // 保证原子操作
-  if (NowTask()->is_child == 0) {  // 父进程
+  if (current_task()->is_child == 0) {  // 父进程
     for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == NowTask()) {
+      if (GetTask(i)->thread.father == current_task()) {
         GetTask(i)->lock = 0;
       }
     }
   } else {
     for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == NowTask()->thread.father ||
-          GetTask(i) == NowTask()->thread.father) {
-        if (GetTask(i) != NowTask()) {
+      if (GetTask(i)->thread.father == current_task()->thread.father ||
+          GetTask(i) == current_task()->thread.father) {
+        if (GetTask(i) != current_task()) {
           GetTask(i)->lock = 0;
         }
       }

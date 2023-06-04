@@ -127,7 +127,7 @@ void Draw_Box_GraphicMode(struct tty* res,
 extern struct SHTCTL* shtctl;
 void AddShell_GraphicMode() {
   io_cli();
-  struct TASK* task = NowTask();
+  struct TASK* task = current_task();
   struct SHEET* sht_win = sheet_alloc(shtctl);
   sht_win->Close = NULL;
   vram_t* vram1 =

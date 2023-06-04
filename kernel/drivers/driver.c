@@ -47,7 +47,7 @@ void driver_call(drv_t driver, int func, void* arg) {
   struct arg_struct args;
   args.func_num = func;
   args.arg = arg;
-  args.tid = Get_Tid(NowTask());
+  args.tid = Get_Tid(current_task());
   SendIPCMessage(Get_Tid(driver->drv_task), &args, sizeof(struct arg_struct),
                  synchronous);
   for (;;) {

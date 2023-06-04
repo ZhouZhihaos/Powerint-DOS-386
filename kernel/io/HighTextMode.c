@@ -192,11 +192,11 @@ void SwitchToHighTextMode() {
                                 MoveCursor_HighTextMode, clear_HighTextMode,
                                 screen_ne_HighTextMode, Draw_Box_HighTextMode);
   tty_set_default(tty_h);
-  tty_set(NowTask(), tty_h);
+  tty_set(current_task(), tty_h);
 }
 void AddShell_HighTextMode() {
   io_cli();
-  struct TASK *task = NowTask();
+  struct TASK *task = current_task();
   vram_t *vram = page_kmalloc((task->TTY->xsize * 8 + 1) *
                               (task->TTY->ysize * 16 + 1) * sizeof(color_t));
   struct SHEET *sht_scr = sheet_alloc(shtctl0);

@@ -10,9 +10,9 @@ BIM2HRB  = $(TOOLPATH)bim2hrb.exe
 RULEFILE = make.rul
 DEL      = del
 
-OBJS_BOOTPACK = $(OUTPATH)8295a.o $(OUTPATH)asmfunc.obj $(OUTPATH)BasicVideo.o $(OUTPATH)cmos.o $(OUTPATH)dma.o $(OUTPATH)dosldr.o \
-			    $(OUTPATH)dsk.o $(OUTPATH)fat12.o $(OUTPATH)fdc.o $(OUTPATH)file.o $(OUTPATH)gdtidt.o $(OUTPATH)ide.o $(OUTPATH)libc.o \
-				$(OUTPATH)List.o $(OUTPATH)mm.o
+OBJS_BOOTPACK = $(OUTPATH)8295a.o $(OUTPATH)asmfunc.obj $(OUTPATH)start.obj $(OUTPATH)BasicVideo.o $(OUTPATH)cmos.o $(OUTPATH)dma.o $(OUTPATH)dosldr.o \
+			    $(OUTPATH)vdisk.o $(OUTPATH)fat.o $(OUTPATH)fdc.o $(OUTPATH)file.o $(OUTPATH)gdtidt.o $(OUTPATH)ide.o $(OUTPATH)libc.o \
+				$(OUTPATH)List.o $(OUTPATH)mm.o $(OUTPATH)vfs.o $(OUTPATH)other.o
 
 default :
 	$(MAKE) -C $(DOSPATH)

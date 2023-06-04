@@ -73,10 +73,10 @@ void input(char *ptr, int len) {
       for (int k = 0; k < 0x54; ++k) {
         if (keytable1[k] == ' ') {
           // in = k;
-          fifo8_put(TaskGetKeyfifo(NowTask()), k);
-          fifo8_put(TaskGetKeyfifo(NowTask()), k);
-          fifo8_put(TaskGetKeyfifo(NowTask()), k);
-          fifo8_put(TaskGetKeyfifo(NowTask()), k);
+          fifo8_put(TaskGetKeyfifo(current_task()), k);
+          fifo8_put(TaskGetKeyfifo(current_task()), k);
+          fifo8_put(TaskGetKeyfifo(current_task()), k);
+          fifo8_put(TaskGetKeyfifo(current_task()), k);
           i--;
           break;
         }

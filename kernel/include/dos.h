@@ -33,7 +33,7 @@ void mt_taskswitch1();
 void mt_taskswitch2();
 void mt_taskswitch3();
 int Get_Running_Task_Num();
-struct TASK* NowTask();
+struct TASK* current_task();
 void TaskSetFIFO(struct TASK* task,
                  struct FIFO8* keyfifo,
                  struct FIFO8* mousefifo);
@@ -112,9 +112,6 @@ void load_gdtr(int limit, int addr);
 void load_idtr(int limit, int addr);
 int load_cr0(void);
 void store_cr0(int cr0);
-void loadregisters();
-void saveregisters();
-void intreturn(int eax, int ebx, int ecx, int edx, int esi, int edi, int ebp);
 void gensound(int notes, int dup);
 int get_cpu1();
 int get_cpu2();
@@ -146,9 +143,6 @@ void asm_sb16_handler();
 void asm_rtc_handler();
 void __init_PIT();
 void init_float();
-void switch_stack_app();
-void switch_stack_sys();
-
 // other.c
 void INT(unsigned char intnum, regs16_t* regs);
 void ERROR0();

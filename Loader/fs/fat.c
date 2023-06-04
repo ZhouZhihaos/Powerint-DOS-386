@@ -1,6 +1,5 @@
 // fat.c : fat文件系统的实现
-#include <dos.h>
-#include <fs.h>
+#include <dosldr.h>
 static inline int get_fat_date(unsigned short year, unsigned short month,
                                unsigned short day) {
   year -= 1980;
@@ -870,8 +869,7 @@ int format(char drive) {
           drive - 'C' + 0x80;
       memcpy((void *)&((unsigned char *)read_in)[BS_FileSysType],
              (void *)"FAT12   ", 8);
-      srand(time());
-      *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = rand();
+      *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = 114514;
       memcpy((void *)&((unsigned char *)read_in)[BS_VolLab],
              (void *)"POWERINTDOS", 11);
       Disk_Write(0, 1, (unsigned short *)read_in, drive);
@@ -910,8 +908,7 @@ int format(char drive) {
           drive - 'C' + 0x80;
       memcpy((void *)&((unsigned char *)read_in)[BS_FileSysType],
              (void *)"FAT16   ", 8);
-      srand(time());
-      *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = rand();
+      *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = 114514;
       memcpy((void *)&((unsigned char *)read_in)[BS_VolLab],
              (void *)"POWERINTDOS", 11);
       Disk_Write(0, 1, (unsigned short *)read_in, drive);
@@ -956,9 +953,8 @@ int format(char drive) {
       memcpy((void *)&(
                  (unsigned char *)read_in)[BS_FileSysType + BPB_Fat32ExtByts],
              (void *)"FAT32   ", 8);
-      srand(time());
       *(unsigned int *)(&(
-          (unsigned char *)read_in)[BS_VolD + BPB_Fat32ExtByts]) = rand();
+          (unsigned char *)read_in)[BS_VolD + BPB_Fat32ExtByts]) = 114514;
       memcpy((void *)&((unsigned char *)read_in)[BS_VolLab + BPB_Fat32ExtByts],
              (void *)"POWERINTDOS", 11);
       Disk_Write(0, 1, (unsigned short *)read_in, drive);

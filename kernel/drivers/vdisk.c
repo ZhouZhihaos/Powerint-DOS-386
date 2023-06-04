@@ -1,14 +1,14 @@
 #include <dos.h>
 #include <drivers.h>
 int getReadyDisk(); // init.c
-vdisk vdisk_ctl[255];
+vdisk vdisk_ctl[26];
 int init_vdisk() {
-  for (int i = 0; i < 255; i++) {
+  for (int i = 0; i < 26; i++) {
     vdisk_ctl[i].flag = 0; // 设置为未使用
   }
 }
 int register_vdisk(vdisk vd) {
-  for (int i = 0; i < 255; i++) {
+  for (int i = 0; i < 26; i++) {
     if (!vdisk_ctl[i].flag) {
       vdisk_ctl[i] = vd; // 找到了！
       return i + ('A');  // 注册成功，返回drive
@@ -19,7 +19,7 @@ int register_vdisk(vdisk vd) {
 }
 int logout_vdisk(char drive) {
   int indx = drive - ('A');
-  if (indx > 255) {
+  if (indx > 26) {
     return 0; // 失败
   }
   if (vdisk_ctl[indx].flag) {
@@ -32,7 +32,7 @@ int logout_vdisk(char drive) {
 int rw_vdisk(char drive, unsigned int lba, unsigned char *buffer,
              unsigned int number, int read) {
   int indx = drive - ('A');
-  if (indx > 255) {
+  if (indx > 26) {
     return 0; // 失败
   }
   if (vdisk_ctl[indx].flag) {
@@ -49,7 +49,7 @@ int rw_vdisk(char drive, unsigned int lba, unsigned char *buffer,
 bool have_vdisk(char drive) {
   int indx = drive - 'A';
   // printk("drive=%c\n",drive);
-  if (indx > 255) {
+  if (indx > 26) {
     return 0; // 失败
   }
   if (vdisk_ctl[indx].flag) {
@@ -88,11 +88,11 @@ bool DriveSemaphoreTake(unsigned int drive_code) {
   if (drive_code >= 16) {
     return true;
   }
-  fifo8_put(&drive_fifo[drive_code], Get_Tid(NowTask()));
-  // printk("FIFO: %d PUT: %d STATUS: %d\n", drive_code, Get_Tid(NowTask()),
+  fifo8_put(&drive_fifo[drive_code], Get_Tid(current_task()));
+  // printk("FIFO: %d PUT: %d STATUS: %d\n", drive_code, Get_Tid(current_task()),
   //        fifo8_status(&drive_fifo[drive_code]));
   while (drive_buf[drive_code][drive_fifo[drive_code].q] !=
-         Get_Tid(NowTask())) {
+         Get_Tid(current_task())) {
     // printk("Waiting....\n");
   }
   return true;
@@ -101,12 +101,12 @@ void DriveSemaphoreGive(unsigned int drive_code) {
   if (drive_code >= 16) {
     return;
   }
-  if (drive_buf[drive_code][drive_fifo[drive_code].q] != Get_Tid(NowTask())) {
+  if (drive_buf[drive_code][drive_fifo[drive_code].q] != Get_Tid(current_task())) {
     // 暂时先不做处理 一般不会出现这种情况
     return;
   }
   fifo8_get(&drive_fifo[drive_code]);
-  // printk("FIFO: %d GET: %d STATUS: %d\n", drive_code, Get_Tid(NowTask()),
+  // printk("FIFO: %d GET: %d STATUS: %d\n", drive_code, Get_Tid(current_task()),
   //        fifo8_status(&drive_fifo[drive_code]));
 }
 
@@ -126,7 +126,6 @@ void Disk_Read(unsigned int lba, unsigned int number, void *buffer,
 int disk_Size(char drive) {
   unsigned char drive1 = drive;
   if (have_vdisk(drive1)) {
-    extern vdisk vdisk_ctl[255];
     int indx = drive1 - 'A';
     return vdisk_ctl[indx].size;
   } else {

@@ -28,14 +28,14 @@ void disableExp() {
   if (public_catch) {
     DisableExpFlag = 1;
   } else {
-    NowTask()->DisableExpFlag = 1;
+    current_task()->DisableExpFlag = 1;
   }
 }
 void EnableExp() {
   if (public_catch) {
     DisableExpFlag = 0;
   } else {
-    NowTask()->DisableExpFlag = 0;
+    current_task()->DisableExpFlag = 0;
   }
 }
 char GetExpFlag() {
@@ -43,14 +43,14 @@ char GetExpFlag() {
   if (public_catch) {
     return flagOfexp;
   } else {
-    return NowTask()->flagOfexp;
+    return current_task()->flagOfexp;
   }
 }
 void ClearExpFlag() {
   if (public_catch) {
     flagOfexp = 0;
   } else {
-    NowTask()->flagOfexp = 0;
+    current_task()->flagOfexp = 0;
   }
 }
 void SetCatchEip(uint32_t eip) {
@@ -58,7 +58,7 @@ void SetCatchEip(uint32_t eip) {
   if (public_catch) {
     CatchEIP = eip;
   } else {
-    NowTask()->CatchEIP = eip;
+    current_task()->CatchEIP = eip;
   }
 }
 void print_32bits_ascil(unsigned int n);
@@ -119,76 +119,64 @@ void fpu_enable(struct TASK* task) {
         "fnclex \n"
         "fninit \n");
 
-    printk("FPU create state for task 0x%p\n", task->fpu_flag);
+    printk("FPU create state for task 0x%08x\n", task);
     task->fpu = (fpu_t*)malloc(sizeof(fpu_t));
     task->fpu_flag = 1;
   }
 }
 void ERROR0(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();  // loadregisters();
   ERROR(0, "#DE");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR1(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(1, "#DB");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR3(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(3, "#BP");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR4(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(4, "#OF");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR5(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(5, "#BR");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR6(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(6, "#UD");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 int dflag = 0;
 bool has_fpu_error() {
@@ -200,141 +188,121 @@ bool has_fpu_error() {
 }
 void ERROR7(uint32_t eip) {
   // printk("ERROR7.\n");
-  if (NowTask()->fpu_flag > 1 || NowTask()->fpu_flag < 0) {
-    printk("do nothing.\n");
-    printk("%d\n", NowTask()->fpu);
+  if (current_task()->fpu_flag > 1 || current_task()->fpu_flag < 0) {
+  //  printk("do nothing.\n");
+  //  printk("%d\n", current_task()->fpu);
     set_cr0(get_cr0() & ~(CR0_EM | CR0_TS));
     return;
   } else {
   }
-  printk("%08x\n", NowTask()->fpu);
-  fpu_enable(NowTask());
+ // printk("%08x\n", current_task()->fpu);
+  fpu_enable(current_task());
 }
 void ERROR8(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(8, "#DF");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR9(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(9, "#MF");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR10(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(10, "#TS");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR11(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(11, "#NP");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR12(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(12, "#SS");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR13(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(13, "#GP");
   if (public_catch) {
     printk("eip = %08x Catch EIP = %08x\n", eip, CatchEIP);
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR16(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(16, "#MF");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR17(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(17, "#AC");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR18(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(18, "#MC");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR19(uint32_t eip) {
   uint32_t* esp = &eip;
-  saveregisters();
   ERROR(19, "#XF");
   if (public_catch) {
     *esp = CatchEIP;
   } else {
-    *esp = NowTask()->CatchEIP;
+    *esp = current_task()->CatchEIP;
   }
-  loadregisters();  // 恢复寄存器状态
 }
 void ERROR(int CODE, char* TIPS) {
   if (public_catch) {
     flagOfexp = 1;
   } else {
-    NowTask()->flagOfexp = 1;
+    current_task()->flagOfexp = 1;
   }
   printk("DisableExpFlag = %d\n",
-         public_catch ? DisableExpFlag : NowTask()->DisableExpFlag);
+         public_catch ? DisableExpFlag : current_task()->DisableExpFlag);
   if (public_catch) {
     if (DisableExpFlag) {
       return;
     }
   } else {
-    if (NowTask()->DisableExpFlag) {
+    if (current_task()->DisableExpFlag) {
       return;
     }
   }
@@ -353,7 +321,7 @@ void ERROR(int CODE, char* TIPS) {
       }
     }
   }
-  NowTask()->TTY->color = 0x1f;
+  current_task()->TTY->color = 0x1f;
   gotoxy(0, 0);
   // beep(2, 7, 8);
   printf("Sorry!Your computer has some problem!\n");
@@ -365,9 +333,7 @@ void ERROR(int CODE, char* TIPS) {
   printf("Error Code:%08x\n", CODE);
   printf("Error Message:%s\n", TIPS);
 
-  // loadregisters();
-
-  printf("Task sel=%d\n", NowTask()->sel);
+  printf("Task sel=%d\n", current_task()->sel);
   io_cli();
   for (;;) {
   }
@@ -380,7 +346,7 @@ void KILLAPP(int eip, int ec) {
   }
   DeleteList(vfs_now->path);
   page_kfree((int)vfs_now, sizeof(vfs_t));
-  struct TASK* task = NowTask();
+  struct TASK* task = current_task();
   if (task->is_child) {
     task = task->thread.father;  // 找你家长，乱搞！
   }
@@ -407,14 +373,14 @@ void KILLAPP0(int ec, int tn) {
   page_kfree((int)vfs_now, sizeof(vfs_t));
   struct TASK* task = GetTask(tn);
   struct tty* t = task->TTY;
-  t = tty_set(NowTask(), t);
+  t = tty_set(current_task(), t);
   if (ec == 0xff) {  // 返回系统快捷键
     printf("\n(%s)System Protect:Break Key(F1).\n", task->name);
   } else {
     printf("\nSystem Protect:The program name:%s TASK ID:%d EC:%x,EIP:%08x\n",
            task->name, task->sel / 8 - 103, ec, task->tss.eip);
   }
-  tty_set(NowTask(), t);
+  tty_set(current_task(), t);
   // SleepTask(task);
   extern uint32_t app_num;
   app_num--;

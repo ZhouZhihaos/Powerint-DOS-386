@@ -15,7 +15,7 @@ struct SHEET* MakeWindow(int x,
   struct SHEET* buf;
   buf = sheet_alloc(stl);
   buf->Close = Close;
-  buf->task = NowTask();
+  buf->task = current_task();
   sheet_setbuf(buf, vbuf, w, h, -1);
   make_window(vbuf, w, h, title);
   struct SHEET* old = stl->sheets[stl->top - 1];
@@ -37,7 +37,7 @@ struct SHEET* MakeWindow(int x,
   sheet_updown(buf, stl->top);
   sheet_slide(buf, x, y);
   for (int L = 1; GetTask(L) != NULL; L++) {
-    if (GetTask(L) == NowTask()) {
+    if (GetTask(L) == current_task()) {
       // SubTask(L);
       // break;
       continue;

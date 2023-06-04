@@ -394,7 +394,6 @@ static int collectargs (char **argv, int *first) {
 static int runargs (lua_State *L, char **argv, int n) {
   int i;
   for (i = 1; i < n; i++) {
-    printf("run args: %s\n",argv[i]);
     int option = argv[i][1];
     lua_assert(argv[i][0] == '-');  /* already checked */
     switch (option) {

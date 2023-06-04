@@ -33,6 +33,7 @@ void Window_Close_Handler() {
   SendIPCMessageTID(Get_Tid(close_tid->task), -2, &close_tid,
                     sizeof(unsigned int), asynchronous);
 }
+enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };
 void Gui_API(int edi,
              int esi,
              int ebp,
@@ -43,17 +44,20 @@ void Gui_API(int edi,
              int eax) {
   // Power Desktop API
   // Maskirq(0);
-  struct TASK* task = NowTask();
+  struct TASK* task = current_task();
   int cs_base = task->cs_base;
   int ds_base = task->ds_base;
   int alloc_addr = task->alloc_addr;  // malloc地址
+  uint32_t *reg = &eax + 1; /* eax后面的地址*/
+                            /*强行改写通过PUSHAD保存的值*/
+  /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
+  /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
   if (eax == 0x01) {
     // Create Window
     // MsgBox("Create Window", "Create Window");
-    intreturn((int)MakeWindow(ebx, ecx, edx, esi, (char*)ds_base + edi, shtctl,
+    reg[EAX] = (uint32_t)MakeWindow(ebx, ecx, edx, esi, (char*)ds_base + edi, shtctl,
                               page_malloc(edx * esi * sizeof(color_t)),
-                              Window_Close_Handler),
-              ebx, ecx, edx, esi, edi, ebp);
+                              Window_Close_Handler);
   } else if (eax == 0x02) {
     // EBX，窗口ID
     struct Close_Window_args* _sht =
@@ -67,7 +71,7 @@ void Gui_API(int edi,
     unsigned int a = (unsigned int)MakeButton(
         args->x, args->y, args->width, args->height, (struct SHEET*)args->sht,
         (char*)args->text + ds_base, Button_handle);
-    intreturn(eax, ebx, ecx, a, esi, edi, ebp);
+    reg[EDX] = a;
   } else if (eax == 0x04) {
     struct Close_Window_args* _sht =
         (struct Close_Window_args*)(ds_base + ebx + 8);
@@ -125,34 +129,29 @@ void Gui_API(int edi,
     MsgBox((char*)(ds_base + ebx), (char*)(ds_base + edx));
   } else if (eax == 0x07) {
     if (running_mode != POWERDESKTOP) {
-      intreturn(0, ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = 0;
     } else {
-      intreturn(1, ebx, ecx, edx, esi, edi, ebp);
+      reg[EAX] = 1;
     }
 
   } else if (eax == 0x08) {
     int base = edx + ds_base + 12 - 4;
     int* arg = (int*)(base + 4);
-
-    intreturn(MakeTextBox(arg[0], arg[1], arg[2], arg[3], arg[4]), ebx, ecx,
-              edx, esi, edi, ebp);
+    reg[EAX] = MakeTextBox(arg[0], arg[1], arg[2], arg[3], arg[4]);
   } else if (eax == 0x09) {
     int base = edx + ds_base + 12;
     int* arg = (int*)(base + 4);
     DeleteTextBox((struct TextBox*)arg[0]);
-    intreturn(eax, ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x0a) {
     int base = edx + ds_base + 12;
     int* arg = (int*)(base + 4);
     strcpy((char*)(arg[0] + ds_base), ((struct TextBox*)(arg[1]))->text);
-    intreturn(eax, ebx, ecx, edx, esi, edi, ebp);
   } else if (eax == 0x0b) {
     int base = edx + ds_base + 12 - 4;
     int* arg = (int*)(base + 4);
     // printf("wid:%d,x%d,y:%d,w:%d,h:%d", arg[0], arg[1], arg[2], arg[3],
     // arg[4]);
-    intreturn(MakeListBox(arg[0], arg[1], arg[2], arg[3], arg[4]), ebx, ecx,
-              edx, esi, edi, ebp);
+    reg[EAX] = MakeListBox(arg[0], arg[1], arg[2], arg[3], arg[4]);
   } else if (eax == 0x0c) {
     int base = edx + ds_base + 12;
     int* arg = (int*)(base + 4);

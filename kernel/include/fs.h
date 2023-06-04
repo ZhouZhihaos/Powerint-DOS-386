@@ -1,7 +1,7 @@
 #ifndef _FS_H
 #define _FS_H
 #include <define.h>
-// fat12.c
+// fat.c
 void Register_fat_fileSys();
 // file.c
 FILE* fopen(char* path, char* mode);

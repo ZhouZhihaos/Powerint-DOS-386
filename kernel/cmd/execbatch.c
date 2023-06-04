@@ -143,7 +143,7 @@ int cmd_app(char* cmdline) {
       set_segmdesc(gdt + 4 + app_num * 2, fsize - 1 + 64 * 1024 + 512 * 1024,
                    (int)p, AR_DATA32_RW | 3 << 5);
       io_cli();
-      int n = NowTask()->level;
+      int n = current_task()->level;
       init_ok_flag = 0;
       struct TASK* this_task = AddUserTask(
           name, 1, ((3 + app_num * 2) * 8), 1, ((4 + app_num * 2) * 8),
@@ -151,19 +151,17 @@ int cmd_app(char* cmdline) {
       init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)p;
+      this_task->cs_start = this_task->tss.cs;
+      this_task->ss_start = this_task->tss.ss;
       this_task->alloc_addr = (int)((uint32_t)p + fsize + 64 * 1024);
       this_task->alloc_size = 512 * 1024;
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((unsigned int)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
-      this_task->ss1 = this_task->tss.ss;
-      this_task->esp0 = this_task->tss.esp0;
-      this_task->nfs = NowTask()->nfs;
-      this_task->line = NowTask()->line;
-      strcpy(this_task->path, NowTask()->path);
-      this_task->drive = NowTask()->drive;
-      this_task->drive_number = NowTask()->drive_number;
-      this_task->change_dict_times = NowTask()->change_dict_times;
+      this_task->nfs = current_task()->nfs;
+      this_task->line = current_task()->line;
+      this_task->drive = current_task()->drive;
+      this_task->drive_number = current_task()->drive_number;
       char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* kbuf = (char*)page_kmalloc(4096);
@@ -173,14 +171,14 @@ int cmd_app(char* cmdline) {
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
       TaskSetFIFO(this_task, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
-      this_task->TTY = NowTask()->TTY;
+      this_task->TTY = current_task()->TTY;
       this_task->app = 1;
       app_task_num = this_task->sel / 8 - 103;
       app_num++;
       this_task->forever = 0;
-      SleepTaskFIFO(NowTask());
+      SleepTaskFIFO(current_task());
       io_sti();
-      ChangeLevel(NowTask(), 3);
+      ChangeLevel(current_task(), 3);
       while (GetTaskForName(name) != 0) {
         if (this_task->forever == 1) {
           io_cli();
@@ -197,17 +195,17 @@ int cmd_app(char* cmdline) {
           this_task->app = 0;
           io_sti();
           ChangeLevel(this_task, 2);
-          WakeUp(NowTask());
+          WakeUp(current_task());
           app_task_num = -1;
           print("\n");
-          ChangeLevel(NowTask(), n);
+          ChangeLevel(current_task(), n);
           goto end;
         }
       }
       // task_sr1会帮我们结束程序
       // SubTask(GetTaskForName(name)); //程序退出咯
-      WakeUp(NowTask());
-      ChangeLevel(NowTask(), n);
+      WakeUp(current_task());
+      ChangeLevel(current_task(), n);
       app_task_num = -1;
       page_kfree((int)kfifo, sizeof(struct FIFO8));
       page_kfree((int)mfifo, sizeof(struct FIFO8));
@@ -225,7 +223,7 @@ int cmd_app(char* cmdline) {
               这里只注释新的代码
       */
 
-      int now = NowTask()->level;
+      int now = current_task()->level;
       p = (char*)page_malloc(fsize);
       memcpy(p, fp->buffer, fsize);
       fclose(fp);
@@ -253,9 +251,9 @@ int cmd_app(char* cmdline) {
         // printf("%c",p[dathrb + i]);
         q[esp + i] = p[dathrb + i];  //这里通过头数据拷贝数据段数据
       }
-      int n = NowTask()->level;
+      int n = current_task()->level;
       (void)(n);
-      ChangeLevel(NowTask(), 3);
+      ChangeLevel(current_task(), 3);
       io_cli();
       char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
@@ -269,6 +267,8 @@ int cmd_app(char* cmdline) {
       init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
+      this_task->cs_start = this_task->tss.cs;
+      this_task->ss_start = this_task->tss.ss;
       this_task->alloc_addr = (int)((uint32_t)q + segsiz);
       this_task->alloc_size = 512 * 1024 * 4 * 2 * 2 * 2 * 2;
       this_task->memman = memman;
@@ -276,29 +276,25 @@ int cmd_app(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
-      this_task->ss1 = this_task->tss.ss;
-      this_task->esp0 = this_task->tss.esp0;
-      vfs_change_disk_for_task(NowTask()->nfs->drive, this_task);
+      vfs_change_disk_for_task(current_task()->nfs->drive, this_task);
       List *l;
       char *path;
-      for (int i = 1; FindForCount(i,NowTask()->nfs->path) != NULL; i++) {
-        l = FindForCount(i, NowTask()->nfs->path);
+      for (int i = 1; FindForCount(i,current_task()->nfs->path) != NULL; i++) {
+        l = FindForCount(i, current_task()->nfs->path);
         path = (char*)l->val;
         this_task->nfs->cd(this_task->nfs,path);
       }
-      this_task->line = NowTask()->line;
-      strcpy(this_task->path, NowTask()->path);
-      this_task->drive = NowTask()->drive;
-      this_task->drive_number = NowTask()->drive_number;
-      this_task->change_dict_times = NowTask()->change_dict_times;
+      this_task->line = current_task()->line;
+      this_task->drive = current_task()->drive;
+      this_task->drive_number = current_task()->drive_number;
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
       TaskSetFIFO(this_task, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
-      this_task->TTY = NowTask()->TTY;
+      this_task->TTY = current_task()->TTY;
       app_task_num = this_task->sel / 8 - 103;
       app_num++;
       this_task->forever = 0;
-      SleepTaskFIFO(NowTask());
+      SleepTaskFIFO(current_task());
       int tid = Get_Tid(GetTaskForName(name));
       io_sti();
       while (GetTask(tid) == this_task && this_task->running) {
@@ -317,20 +313,20 @@ int cmd_app(char* cmdline) {
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, kbuf, 4096);
           change_page_task_id(this_task->sel / 8 - 103, mbuf, 4096);
-          ChangeLevel(NowTask(), now);
+          ChangeLevel(current_task(), now);
           ChangeLevel(this_task, 2);
           this_task->app = 0;
           io_sti();
-          WakeUp(NowTask());
+          WakeUp(current_task());
           app_task_num = -1;
           print("\n");
           goto end;
         }
       }
-      ChangeLevel(NowTask(), now);
+      ChangeLevel(current_task(), now);
       //  SubTask(GetTaskForName(name));
       // printf("--- End ---\n");
-      WakeUp(NowTask());
+      WakeUp(current_task());
       app_task_num = -1;
       // printk("kfifo:%08x,mfifo:%08x\n",kfifo,mfifo);
       // printk("kbuf:%08x,mbuf:%08x\n",kbuf,mbuf);
@@ -382,6 +378,8 @@ int cmd_app(char* cmdline) {
       init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
+      this_task->cs_start = this_task->tss.cs;
+      this_task->ss_start = this_task->tss.ss;
       this_task->alloc_addr = (int)((uint32_t)q + segsiz);
       this_task->alloc_size = 512 * 1024 * 4;
       this_task->memman = memman;
@@ -389,21 +387,17 @@ int cmd_app(char* cmdline) {
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
-      this_task->ss1 = this_task->tss.ss;
-      this_task->esp0 = this_task->tss.esp0;
-      this_task->nfs = NowTask()->nfs;
-      strcpy(this_task->path, NowTask()->path);
-      this_task->drive = NowTask()->drive;
-      this_task->drive_number = NowTask()->drive_number;
-      this_task->change_dict_times = NowTask()->change_dict_times;
+      this_task->nfs = current_task()->nfs;
+      this_task->drive = current_task()->drive;
+      this_task->drive_number = current_task()->drive_number;
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
       TaskSetFIFO(this_task, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
-      this_task->TTY = NowTask()->TTY;
+      this_task->TTY = current_task()->TTY;
       app_task_num = this_task->sel / 8 - 103;
       app_num++;
       this_task->forever = 0;
-      SleepTaskFIFO(NowTask());
+      SleepTaskFIFO(current_task());
       io_sti();
       while (GetTaskForName(name) != 0) {
         if (this_task->forever == 1) {
@@ -419,14 +413,14 @@ int cmd_app(char* cmdline) {
           change_page_task_id(this_task->sel / 8 - 103, kbuf, 4096);
           change_page_task_id(this_task->sel / 8 - 103, mbuf, 4096);
           io_sti();
-          WakeUp(NowTask());
+          WakeUp(current_task());
           app_task_num = -1;
           print("\n");
           goto end;
         }
       }
       // SubTask(GetTaskForName(name));
-      WakeUp(NowTask());
+      WakeUp(current_task());
       app_task_num = -1;
       // printk("kfifo:%08x,mfifo:%08x\n",kfifo,mfifo);
       // printk("kbuf:%08x,mbuf:%08x\n",kbuf,mbuf);
@@ -439,7 +433,7 @@ int cmd_app(char* cmdline) {
       page_free(memman, 4 * 1024);
       page_free(stack, 64 * 1024);
       page_free(p, fsize);
-      page_free(q, segsiz + 512 * 1024 + 512 * 1024);
+      page_free(q, segsiz + 512 * 1024 * 4 + 512 * 1024);
       print("\n");
       // printk("----------ProGram Running Malloc Info End-----------\n");
     } else {

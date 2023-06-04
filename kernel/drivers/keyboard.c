@@ -65,27 +65,29 @@ int getch() {
 }
 int input_char_inSM() {
   int i;
-  struct TASK* task = NowTask();
+  struct TASK* task = current_task();
   struct SHEET* sht_win = (struct SHEET*)task->TTY->reserved[1];
   extern struct SHTCTL* shtctl;
   while (1) {
-    if ((fifo8_status(TaskGetKeyfifo(NowTask())) == 0) ||
-        (running_mode == POWERDESKTOP && NowTask()->app && NowTask()->forever &&
-         shtctl->sheets[shtctl->top - 1]->task != NowTask()) ||
-        (NowTask()->TTY != now_tty() && NowTask()->TTY->using1 == 1 &&
-         !NowTask()->forever)) {
+    if ((fifo8_status(TaskGetKeyfifo(current_task())) == 0) ||
+        (running_mode == POWERDESKTOP && current_task()->app &&
+         current_task()->forever &&
+         shtctl->sheets[shtctl->top - 1]->task != current_task()) ||
+        (current_task()->TTY != now_tty() && current_task()->TTY->using1 == 1 &&
+         !current_task()->forever)) {
       // 不返回扫描码的情况
       // 1.没有输入
       // 2.窗口未处于顶端
       // 3.正在运行的控制台并不是函数发起的控制台（TTY）
-      if (fifo8_status(TaskGetKeyfifo(NowTask())) != 0) {
-        fifo8_get(
-            TaskGetKeyfifo(NowTask()));  // tnnd 都到这里了还想走？给你拦截了
+      if (fifo8_status(TaskGetKeyfifo(current_task())) != 0) {
+        fifo8_get(TaskGetKeyfifo(
+            current_task()));  // tnnd 都到这里了还想走？给你拦截了
       }
       io_stihlt();
     } else {
       // 返回扫描码
-      i = fifo8_get(TaskGetKeyfifo(NowTask()));  // 从FIFO缓冲区中取出扫描码
+      i = fifo8_get(
+          TaskGetKeyfifo(current_task()));  // 从FIFO缓冲区中取出扫描码
       if (i != -1) {
         break;
       }
@@ -94,8 +96,9 @@ int input_char_inSM() {
   return i;
 }
 int kbhit() {
-  // printk("kbhit : %d\n", fifo8_status(NowTask()->keyfifo));
-  return fifo8_status(NowTask()->keyfifo) != 0;  // 进程的键盘FIFO缓冲区是否为空
+  // printk("kbhit : %d\n", fifo8_status(current_task()->keyfifo));
+  return fifo8_status(current_task()->keyfifo) !=
+         0;  // 进程的键盘FIFO缓冲区是否为空
 }
 int sc2a(int sc) {
   // 扫描码转化ASCII码
@@ -132,11 +135,15 @@ void inthandler21(int* esp) {
   unsigned char data, s[4];
   io_out8(PIC0_OCW2, 0x61);
   data = io_in8(PORT_KEYDAT);  // 从键盘IO口读取扫描码
-  // printk("%02x\n", data);
+  //printk("%02x\n", data);
   // 特殊键处理
   if (data == 0xe0) {
-    // printk("Set e0_flag\n");
-    e0_flag = 0x80;
+    
+    if (e0_flag) {
+      e0_flag = 0;
+    } else {
+      e0_flag = 0x80;
+    }
     io_sti();
     return;
   }
@@ -195,11 +202,11 @@ void inthandler21(int* esp) {
   }
   // 普通键处理
   if (data >= 0x80) {
-    //printk("press\n");
+    // printk("press\n");
     for (int i = 1; i < tasknum + 1; i++) {
       if (GetTask(i)->keyboard_release != NULL) {
         // TASK结构体中有对松开键特殊处理的
-        GetTask(i)->keyboard_release(data,i);  // 处理松开键
+        GetTask(i)->keyboard_release(data, i);  // 处理松开键
       }
     }
 
@@ -207,10 +214,10 @@ void inthandler21(int* esp) {
     return;
   }
   for (int i = 1; i < tasknum + 1; i++) {
-   // printk("up\n");
+    // printk("up\n");
     if (GetTask(i)->keyboard_press != NULL) {
       // TASK结构体中有对按下键特殊处理的
-      GetTask(i)->keyboard_press(data,i);  // 处理按下键
+      GetTask(i)->keyboard_press(data, i);  // 处理按下键
     }
   }
   for (int i = 1; i < tasknum + 1; i++) {
@@ -227,7 +234,6 @@ void inthandler21(int* esp) {
     //    DATA:%c\n", tasknum, task->name, Get_Tid(task), TaskGetKeyfifo(task),
     //    fifo8_status(TaskGetKeyfifo(task)), data);
   }
-  e0_flag = 0;
   io_sti();
   return;
 }

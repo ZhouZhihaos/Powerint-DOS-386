@@ -9,7 +9,10 @@ void fpu_disable();
 extern int cg_flag0;
 extern struct TASK* c_task;
 void init_pit(void) {
-  __init_PIT();
+  io_out8(0x43, 0x36);
+  io_out8(0x40, 0xA1);
+  io_out8(0x40, 0x04);
+
   int i;
   struct TIMER* t;
   timerctl.count = 0;
@@ -99,7 +102,7 @@ int g = 0;
 static uint32_t count = 0;
 void inthandler20(int cs, int* esp) {
   // printk("*");
-  // printk("CS:EIP=%04x:%08x\n",NowTask()->tss.cs,esp[-10]);
+  // printk("CS:EIP=%04x:%08x\n",current_task()->tss.cs,esp[-10]);
 
   extern struct TIMER *mt_timer1, *mt_timer2, *mt_timer3;
   extern int tasknum;
@@ -154,12 +157,12 @@ void inthandler20(int cs, int* esp) {
     mt_taskswitch1();
   }
   io_sti();
-  // if (NowTask()->fpu_use == 1 && NowTask()->app == 1) {
+  // if (current_task()->fpu_use == 1 && current_task()->app == 1) {
   //   extern int dflag ;
   //   dflag = 1;
-  //   // printk("switch %s\n",NowTask()->name);
-  //   asm volatile("frstor %0" ::"m"(NowTask()->fxsave_region));
-  //   NowTask()->fpu_use = 0;
+  //   // printk("switch %s\n",current_task()->name);
+  //   asm volatile("frstor %0" ::"m"(current_task()->fxsave_region));
+  //   current_task()->fpu_use = 0;
   //   dflag = 0;
   // } else {
   //   //asm volatile("fninit");

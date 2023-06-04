@@ -1,0 +1,29 @@
+"step" = [
+	{
+		"Name" = "Copy system file"
+		"Before" = [{
+			"Command" = "OKCancelBox"
+			"args" = ["Welcome to Powerint DOS Installation!",{
+				"Command" = "next"
+			},{
+				"Command" = "poweroff"
+			}]
+		}]
+		"file" = [{
+				"path" = ""
+				"path_in_disk" = ""
+			},{
+				"Other" = [{
+					"Command" = "tips"
+					"args" = "mkdir abc"
+				},{
+					"Command" = "mkdir"
+					"args" = "abc"
+				}]
+				"path" = "abc/xxx.txt"
+				"path_in_disk" = "abc/xxx.txt"
+			}
+		]
+
+	}
+]
