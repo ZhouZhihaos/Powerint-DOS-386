@@ -70,21 +70,10 @@ static void init_Card_all() {
 
   printf("RTL8139 INIT DONE\n");
 
-  extern uint32_t ip, gateway, submask, dns;
-  ip = 0xFFFFFFFF;
-  gateway = 0xFFFFFFFF;
-  submask = 0xFFFFFFFF;
-  dns = 0xFFFFFFFF;
-  dhcp_discovery(&mac0);
-  while (gateway == 0xFFFFFFFF && submask == 0xFFFFFFFF && dns == 0xFFFFFFFF &&
-         ip == 0xFFFFFFFF)
-    ;
+
   ClearMaskIrq(0);
 
   // 初始化ARP表
-  for (uint8_t i = 1; i != 0; i++) {
-    IPParseMAC((ip & 0xffffff00) | i);
-  }
 }
 void Rtl8139Recv() {
   // printk("RECV: ");

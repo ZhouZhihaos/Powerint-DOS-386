@@ -190,7 +190,7 @@ struct TASK {
   char drive;
   struct vfs_t *nfs;
 } __attribute__((packed));
-#define vfs_now current_task()->nfs
+#define vfs_now NowTask()->nfs
 
 struct ListCtl {
   struct List *start;
@@ -232,7 +232,7 @@ struct GATE_DESCRIPTOR {
   char dw_count, access_right;
   short offset_high;
 };
-struct TASK *current_task();
+struct TASK *NowTask();
 #define BS_jmpBoot 0
 #define BS_OEMName 3
 #define BPB_BytsPerSec 11

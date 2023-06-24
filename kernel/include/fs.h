@@ -50,6 +50,11 @@ void PraShell();
 void pra_view_32(unsigned char* path, unsigned char* vram, int scr_xsize);
 void jpgview32(char* path, unsigned char* vram, int xsize);
 // path.c
+void env_init(void);
+void env_write(char *name,char *val);
+void env_save();
+void env_reload();
+char* env_read(char* name);
 bool Path_Find_File(char* fileName, char* PATH_ADDR);
 void Path_Find_FileName(char* Result, char* fileName, char* PATH_ADDR);
 // vfs.c

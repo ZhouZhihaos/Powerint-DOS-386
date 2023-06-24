@@ -4,4 +4,4 @@ format:
 file:
 
 label:
-	_start;
+	_DOSLDR_MAIN;

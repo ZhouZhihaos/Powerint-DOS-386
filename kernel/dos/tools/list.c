@@ -1,6 +1,9 @@
 // 链表
+#include <stdio.h>
+#include <stdlib.h>
 #include <dos.h>
-void AddVal(int val, struct List* Obj) {
+#include <stddef.h>
+void AddVal(uintptr_t val, struct List* Obj) {
   while (Obj->next != NULL)
     Obj = Obj->next;
   Obj = Obj->ctl->end;
@@ -15,7 +18,7 @@ void AddVal(int val, struct List* Obj) {
   // printk("Address:%08x Val:%08x Start:%08x
   // Count:%d\n",new,val,Obj->ctl->start,GetLastCount(Obj->ctl->start));
 }
-struct List* FindForCount(int count, struct List* Obj) {
+struct List* FindForCount(size_t count, struct List* Obj) {
   int count_last = GetLastCount(Obj);
   struct List *p = Obj, *q = Obj->ctl->end;
   if (count > count_last)
@@ -30,7 +33,7 @@ struct List* FindForCount(int count, struct List* Obj) {
     q = q->prev;
   }
 }
-void DeleteVal(int count, struct List* Obj) {
+void DeleteVal(size_t count, struct List* Obj) {
   struct List* Will_Free = FindForCount(count, Obj);
   if (Will_Free == NULL) {
     // Not found!
@@ -50,7 +53,7 @@ void DeleteVal(int count, struct List* Obj) {
     prev->next = next;
     next->prev = prev;
   }
-  page_kfree((int)Will_Free, sizeof(struct List));
+  page_kfree((size_t)Will_Free, sizeof(struct List));
   Obj->ctl->all--;
 }
 struct List* NewList() {
@@ -65,7 +68,7 @@ struct List* NewList() {
   Obj->ctl->all = 0;
   return Obj;
 }
-void Change(int count, struct List* Obj, int val) {
+void Change(size_t count, struct List* Obj, uintptr_t val) {
   struct List* Will_Change = FindForCount(count + 1, Obj);
   if (Will_Change != NULL) {
     Will_Change->val = val;
@@ -73,15 +76,18 @@ void Change(int count, struct List* Obj, int val) {
     AddVal(val, Obj);
   }
 }
-//获取尾节点的count
+// 获取尾节点的count
 int GetLastCount(struct List* Obj) {
   return Obj->ctl->all;
 }
 void DeleteList(struct List* Obj) {
   Obj = Obj->ctl->start;
-  page_kfree((int)Obj->ctl, sizeof(struct ListCtl));
-  for (; Obj->next != (struct List*)NULL; Obj = Obj->next) {
-    page_kfree((int)Obj, sizeof(struct List));
+  page_kfree((size_t)Obj->ctl, sizeof(struct ListCtl));
+  for (; Obj != (struct List*)NULL;) {
+    //printf("Will free: %llx\n", Obj);
+    struct List* tmp = Obj;
+    Obj = Obj->next;
+    page_kfree((size_t)tmp, sizeof(struct List));
   }
   return;
 }

@@ -218,8 +218,7 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
             bufx += mdec.x;
             bufy += mdec.y;
 
-            task->mx = bufx / 8;
-            task->my = bufy / 16;
+
 
             if (bufx > (task->TTY->xsize - 1) * 8) {
               bufx = (task->TTY->xsize - 1) * 8;
@@ -231,14 +230,16 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
             } else if (bufy < 0) {
               bufy = 0;
             }
+            task->mx = bufx / 8;
+            task->my = bufy / 16;
             *(char *)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
                       1) = bmp;
             bmp = *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
                             task->mx * 2 + 1);
             *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
                       task->mx * 2 + 1) = ~bmp;
-            mouse_sleep(&mdec);
-            sleep(50);
+          //  mouse_sleep(&mdec);
+          //  sleep(50);
             mouse_ready(&mdec);
           }
         }

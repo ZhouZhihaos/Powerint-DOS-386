@@ -2,6 +2,8 @@
 #define _DEFINE_H
 #include <ctypes.h>
 #include <stdarg.h>
+#include <stddef.h>
+
 typedef unsigned int vram_t;
 typedef vram_t color_t;
 
@@ -178,7 +180,7 @@ struct ListCtl {
 struct List {
   struct ListCtl *ctl;
   struct List *prev;
-  int val;
+  uintptr_t val;
   struct List *next;
 };
 typedef struct List List;

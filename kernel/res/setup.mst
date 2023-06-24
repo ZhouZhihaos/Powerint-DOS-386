@@ -13,7 +13,7 @@
 				"path" = ""
 				"path_in_disk" = ""
 			},{
-				"Other" = [{
+				"Before" = [{
 					"Command" = "tips"
 					"args" = "mkdir abc"
 				},{

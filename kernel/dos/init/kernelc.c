@@ -1,19 +1,38 @@
 // Powerint DOS 386
 // Copyright (C) 2021-2022 zhouzhihao & min0911
 #include <dos.h>
+#include <mst.h>
 uint32_t running_mode = POWERINTDOS;  // 运行模式
 uint32_t Path_Addr;
 unsigned char *font, *ascfont, *hzkfont;
 unsigned char* IVT;
 int init_ok_flag = 0;
+
 void shell(void) {
   ide_initialize(0x1F0, 0x3F6, 0x170, 0x376, 0x000);
-  init_networkCTL();
-  init_network();
-  init_card();
   init_palette();
   vfs_mount_disk(current_task()->drive, current_task()->drive);
   vfs_change_disk(current_task()->drive);
+  env_init();
+  init_networkCTL();
+  init_network();
+
+
+  if (env_read("network") == NULL) {
+    printf("would you like to enable network?(y/n)\n");
+    switch (getch()) {
+      case 'y':
+      case 'Y':
+        env_write("network", "enable");
+        break;
+      default:
+        env_write("network", "disable");
+        break;
+    }
+  }
+  if (strcmp(env_read("network"), "enable") == 0) {
+    init_card();
+  }
   init_ok_flag = 1;
   /*到这里 系统的初始化才真正结束*/
   font = (unsigned char*)"/other/font.bin";
@@ -21,9 +40,13 @@ void shell(void) {
   ascfont = fp->buffer;
   fp = fopen("/other/hzk16", "r");
   hzkfont = fp->buffer;
-  fp = fopen("/path.sys", "r");
-  Path_Addr = (uint32_t)fp->buffer;
+retry:
+  if (!(Path_Addr = env_read("path"))) {
+    env_write("path", "");
+    goto retry;
+  }
   clear();
+
   printf("Please choose your boot mode:\n");
   printf("1. TextMode 80 * 25\n");
   printf("2. HighTextMode 128 * 48\n");

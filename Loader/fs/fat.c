@@ -131,7 +131,7 @@ void file_savefile(int clustno, int size, char *buf, int *fat,
     // 分配Fat（这里需要在写盘前分配）
     for (int size1 = size; size1 > ((clustall + 1) * get_dm(vfs).ClustnoBytes);
          size1 -= get_dm(vfs).ClustnoBytes) {
-      for (int i = 0; i != get_dm(current_task()->nfs).FatMaxTerms; i++) {
+      for (int i = 0; i != get_dm(NowTask()->nfs).FatMaxTerms; i++) {
         if (!ff[i]) {
           fat[old_clustno] = i;
           old_clustno = i;
@@ -171,7 +171,7 @@ void file_savefile(int clustno, int size, char *buf, int *fat,
          size1 > size; size1 -= get_dm(vfs).ClustnoBytes) {
       fat[i] = 0;
       ff[i] = false;
-      for (int j = 0; j != get_dm(current_task()->nfs).FatMaxTerms; j++)
+      for (int j = 0; j != get_dm(NowTask()->nfs).FatMaxTerms; j++)
         if (fat[j] == i)
           i = j;
     }
@@ -483,7 +483,7 @@ void mkdir(char *dictname, int last_clust, vfs_t *vfs) {
   model[2].update_date =
       get_fat_date(get_year(), get_mon_hex(), get_day_of_month());
   model[2].update_time = get_fat_time(get_hour_hex(), get_min_hex());
-  for (int i = 0; i != get_dm(current_task()->nfs).FatMaxTerms; i++) {
+  for (int i = 0; i != get_dm(NowTask()->nfs).FatMaxTerms; i++) {
     if (!get_dm(vfs).fat[i]) {
       model[2].clustno_low = i;
       int end = clustno_end(get_dm(vfs).type);
@@ -727,7 +727,7 @@ void mkfile(char *name, vfs_t *vfs) {
     finfo->ext[i - 8] = s[i];
   }
   finfo->type = 0x20;
-  for (int i = 0; i != get_dm(current_task()->nfs).FatMaxTerms; i++) {
+  for (int i = 0; i != get_dm(NowTask()->nfs).FatMaxTerms; i++) {
     if (!get_dm(vfs).fat[i]) {
       finfo->clustno_low = i & 0xffff;
       finfo->clustno_high = i >> 16;
@@ -749,7 +749,7 @@ void mkfile(char *name, vfs_t *vfs) {
 int changedict(char *dictname, vfs_t *vfs) {
   // cd命令的依赖函数
   strtoupper(dictname);
-  struct TASK *task = current_task();
+  struct TASK *task = NowTask();
 
   if (strcmp(dictname, "/") == 0) {
     while (vfs->path->ctl->all != 0) {
@@ -803,7 +803,7 @@ int changedict(char *dictname, vfs_t *vfs) {
 int rename(char *src_name, char *dst_name, vfs_t *vfs) {
   strtoupper(src_name);
   strtoupper(dst_name);
-  struct TASK *task = current_task();
+  struct TASK *task = NowTask();
   char name[9], ext[4];
   int i;
   clean(name, 9);
@@ -1154,7 +1154,7 @@ bool Fat_ReadFile(struct vfs_t *vfs, char *path, char *buffer) {
   }
 }
 bool Fat_WriteFile(struct vfs_t *vfs, char *path, char *buffer, int size) {
-  struct TASK *task = current_task();
+  struct TASK *task = NowTask();
   struct FAT_FILEINFO *finfo = Get_File_Address(path, vfs);
   // printf("finfo = %08x\n",finfo);
   file_savefile(get_clustno(finfo->clustno_high, finfo->clustno_low), size,

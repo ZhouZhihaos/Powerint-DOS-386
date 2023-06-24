@@ -10,7 +10,8 @@
 #include <net.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <stddef.h>
+#include <ctypes.h>
 // gdtidt.c
 void set_segmdesc(struct SEGMENT_DESCRIPTOR* sd,
                   unsigned int limit,
@@ -197,11 +198,11 @@ int fifo8_put(struct FIFO8* fifo, unsigned char data);
 int fifo8_get(struct FIFO8* fifo);
 int fifo8_status(struct FIFO8* fifo);
 // list.c
-void AddVal(int val, struct List* Obj);
-struct List* FindForCount(int count, struct List* Obj);
-void DeleteVal(int count, struct List* Obj);
+void AddVal(uintptr_t val, struct List* Obj);
+struct List* FindForCount(size_t count, struct List* Obj);
+void DeleteVal(size_t count, struct List* Obj);
 struct List* NewList();
-void Change(int count, struct List* Obj, int val);
+void Change(size_t count, struct List* Obj, uintptr_t val);
 int GetLastCount(struct List* Obj);
 void DeleteList(struct List* Obj);
 // init.c

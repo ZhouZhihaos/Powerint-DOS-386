@@ -4,6 +4,7 @@
 void UInt2BinAscii(unsigned int num, char *buf);
 #define LONG_MAX 0x7fffffff
 #define LONG_MIN (-LONG_MAX - 1)
+
 // strcmp
 int strcmp(const char *s1, const char *s2) {
   while (*s1 == *s2) {
@@ -876,4 +877,23 @@ int strincmp(const char *s1, const char *s2, size_t n) {
   free(rs1);
   free(rs2);
   return result;
+}
+unsigned long int strtoul(const char *nptr, char **endptr, int base) {
+    unsigned long int result = 0;
+    while (*nptr != '\0') {
+        if (*nptr >= '0' && *nptr <= '9') {
+            result = result * base + (*nptr - '0');
+        } else if (*nptr >= 'a' && *nptr <= 'z') {
+            result = result * base + (*nptr - 'a' + 10);
+        } else if (*nptr >= 'A' && *nptr <= 'Z') {
+            result = result * base + (*nptr - 'A' + 10);
+        } else {
+            break;
+        }
+        nptr++;
+    }
+    if (endptr != NULL) {
+        *endptr = (char *) nptr;
+    }
+    return result;
 }

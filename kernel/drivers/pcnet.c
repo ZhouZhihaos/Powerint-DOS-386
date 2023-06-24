@@ -178,9 +178,7 @@ static void init_Card_all() {
   ClearMaskIrq(0);
 
   // 初始化ARP表
-  for (uint8_t i = 1; i != 0; i++) {
-    IPParseMAC((ip & 0xffffff00) | i);
-  }
+
 
   // DNSParseIP("baidu.com");
 

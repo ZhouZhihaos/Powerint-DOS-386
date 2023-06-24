@@ -2,8 +2,8 @@
 #include <cmd.h>
 #include <dos.h>
 #include <fcntl.h>
+#include <mst.h>
 #include "../zlib/zlib.h"
-
 void showPage(void);
 void show_photo(char* path, vram_t* vr, int xsize);
 /* 一些函数或结构体声明 */
@@ -24,7 +24,16 @@ extern struct ide_device {
   unsigned char Model[41];      // Model in string.
 } ide_devices[4];
 unsigned char* ramdisk;
-
+typedef struct BaseAddressRegister {
+  int prefetchable;
+  uint8_t* address;
+  uint32_t size;
+  int type;
+} BaseAddressRegister;
+BaseAddressRegister GetBaseAddressRegister(uint8_t bus,
+                                           uint8_t device,
+                                           uint8_t function,
+                                           uint8_t bar);
 /* vdisk的RW测试函数 */
 void TestRead(char drive,
               unsigned char* buffer,
@@ -256,6 +265,20 @@ CHECK_OK:
     chat_gui();
   } else if (stricmp("NETGOBANG", cmdline) == 0) {
     netgobang();
+  } else if (strincmp("READPCI ", cmdline, 8) == 0) {
+    char* endptr;
+    uint32_t bus = strtol(cmdline + 8, &endptr, 16);
+    printk("endptr = %s\n",endptr);
+    uint32_t slot = strtol(endptr, &endptr, 16);
+
+    uint32_t func = strtol(endptr, &endptr, 16);
+
+    printf("looking for %02x %02x %02x\n", bus, slot, func);
+    for (int i = 0; i < 6; i++) {
+      printf("BAR%d:%08x ", i,
+             GetBaseAddressRegister(bus, slot, func, i).address);
+    }
+    printf("\n");
   } else if (strincmp("CDISK ", cmdline, 6) == 0) {
     if (Get_Argc(cmdline) != 2) {
       printf("arg error.\n");
@@ -822,8 +845,10 @@ CHECK_OK:
     dup = ascii2num(*(char*)(cmdline + 9));
     beep(point, notes, dup);
   } else if (stricmp("REBOOT", cmdline) == 0) {
+    env_save();
     io_out8(0xcf9, 0x0e);
   } else if (stricmp("HALT", cmdline) == 0) {
+    env_save();
     running_mode = POWERINTDOS;
     acpi_shutdown();
     SwitchToText8025_BIOS();

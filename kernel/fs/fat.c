@@ -835,12 +835,13 @@ int format(char drive) {
   // C盘——IDE/SATA硬盘主分区
   // D,E,F...盘——IDE/USB/SATA存储介质/分区/虚拟磁盘
   FILE *fp = fopen("/boot.bin", "r"); // or \boot.bin
-  if (fp == 0) {
+  FILE *fp_32 = fopen("/boot32.bin", "r");
+  if (fp == 0 || fp_32 == 0) {
     return 0;
   }
-  void *read_in = page_malloc(fp->fileSize);
-  fread(read_in, fp->fileSize, 1, fp);
+  void *read_in = page_malloc(512);
   if (!(drive - 'A')) {
+    fread(read_in, fp->fileSize, 1, fp);
     write_floppy_for_ths(0, 0, 1, read_in, 1);
     unsigned int *fat = (unsigned int *)page_malloc(9 * 512);
     fat[0] = 0x00fffff0;
@@ -859,6 +860,7 @@ int format(char drive) {
       return 0;
     }
     if (disk_Size(drive) <= 2097152) { // 2MB及以下 fat12
+      fread(read_in, fp->fileSize, 1, fp);
       *(unsigned char *)(&((unsigned char *)read_in)[BPB_SecPerClus]) = 1;
       *(unsigned short *)(&((unsigned char *)read_in)[BPB_RootEntCnt]) = 224;
       *(unsigned short *)(&((unsigned char *)read_in)[BPB_TotSec16]) =
@@ -889,6 +891,7 @@ int format(char drive) {
       // page_free((void*)info, 256 * sizeof(short));
     } else if (disk_Size(drive) > 2097152 &&
                disk_Size(drive) <= 134217728) { // 2MB~128MB fat16
+      fread(read_in, fp->fileSize, 1, fp);
       unsigned int clustno_size =
           ((disk_Size(drive) - 1) / 65536 + 512) / 512 * 512;
       *(unsigned char *)(&((unsigned char *)read_in)[BPB_SecPerClus]) =
@@ -928,6 +931,7 @@ int format(char drive) {
       }
       page_free(null_sec, 512);
     } else if (disk_Size(drive) > 134217728) { // 128MB以上 fat32
+      fread(read_in, fp_32->fileSize, 1, fp_32);
       unsigned int clustno_size =
           (disk_Size(drive) - 1) / 268435456 * 512 + 512;
       *(unsigned short *)(&((unsigned char *)read_in)[BPB_RsvdSecCnt]) = 1;
@@ -975,8 +979,9 @@ int format(char drive) {
       page_free(null_sec, 512);
     }
   }
-  page_free(read_in, fp->fileSize);
+  page_free(read_in, 512);
   fclose(fp);
+  fclose(fp_32);
   return 1;
 }
 int attrib(char *filename, ftype type, struct vfs_t *vfs) {

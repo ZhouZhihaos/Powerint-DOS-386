@@ -12,6 +12,7 @@ STDPATH = ./std/
 FSPATH = ./fs/
 NETPATH = ./net/
 ZLIBPATH = ./zlib/
+MSTPATH = ./mst/
 RESPATH = ./res/
 INCPATH  = ./include/
 OUTPATH = ./obj/
@@ -49,7 +50,7 @@ OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUT
 				$(OUTPATH)trees.o $(OUTPATH)uncompr.o $(OUTPATH)zutil.o $(OUTPATH)ftp.o\
 			    $(OUTPATH)linux_style_file.o $(OUTPATH)netgobang.o $(OUTPATH)ide.o $(OUTPATH)net_syscall.o $(OUTPATH)ntp.o \
 				$(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o $(OUTPATH)GraphicMode.o \
-				$(OUTPATH)vfs.o
+				$(OUTPATH)vfs.o $(OUTPATH)build.o $(OUTPATH)mst.o $(OUTPATH)str.o
 
 # 默认动作
 
@@ -63,13 +64,15 @@ default :
 	$(MAKE) -C $(GUIPATH)
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(ZLIBPATH)
+	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
 	
 # 镜像文件生成
 
 $(OUTPATH)boot.bin : $(BOOTPATH)boot.asm Makefile
 	$(NASM) $(BOOTPATH)boot.asm -o $(OUTPATH)boot.bin
-
+$(OUTPATH)boot32.bin : $(BOOTPATH)boot32.asm Makefile
+	$(NASM) $(BOOTPATH)boot32.asm -o $(OUTPATH)boot32.bin
 $(OUTPATH)kernel.bim : $(OBJS_BOOTPACK) Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:$(OUTPATH)kernel.bim stack:3136k map:$(OUTPATH)kernel.map \
 		$(OBJS_BOOTPACK)
@@ -78,14 +81,15 @@ $(OUTPATH)kernel.bim : $(OBJS_BOOTPACK) Makefile
 $(OUTPATH)kernel.bin : $(OUTPATH)kernel.bim Makefile
 	$(BIM2HRB) $(OUTPATH)kernel.bim $(OUTPATH)kernel.bin 0
 
-Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin Makefile
+Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
 		copy from:$(LOADERPATH)dosldr.bin to:@: \
 		copy from:$(OUTPATH)kernel.bin to:@: \
 		copy from:$(RESPATH)autoexec.bat to:@: \
-		copy from:$(RESPATH)path.sys to:@: \
+		copy from:$(RESPATH)env.cfg to:@: \
 		copy from:$(OUTPATH)boot.bin to:@: \
+		copy from:$(OUTPATH)boot32.bin to:@: \
 		copy from:$(RESPATH)setup.bat to:@: \
 		copy from:$(APPSOUTPATH)setup1.bin to:@: \
 		copy from:$(APPSOUTPATH)creus.bin to:@: \
@@ -181,6 +185,7 @@ img_run :
 	$(MAKE) -C $(GUIPATH)
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(ZLIBPATH)
+	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
 	.\run.bat
 full :
@@ -194,6 +199,7 @@ full :
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(ZLIBPATH)
 	$(MAKE) -C $(APPSPATH)
+	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
 run:
 	.\run.bat

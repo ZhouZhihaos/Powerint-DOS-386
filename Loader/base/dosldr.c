@@ -3,7 +3,6 @@ struct TASK MainTask;
 void *malloc(int size);
 void *memcpy(void *s, const void *ct, size_t n);
 void DOSLDR_MAIN() {
-  printf("LOADER.\n");
   struct MEMMAN *memman = MEMMAN_ADDR;
   unsigned int memtotal;
   memtotal = memtest(0x00400000, 0xbfffffff);
@@ -24,24 +23,38 @@ void DOSLDR_MAIN() {
   char default_drive;
   unsigned int default_drive_number;
   if (!flags_once) {
-    if (*(unsigned char *)(0x7c00 + BS_DrvNum) >= 0x80) {
-      default_drive_number =
-          *(unsigned char *)(0x7c00 + BS_DrvNum) - 0x80 + 0x02;
-    } else {
-      default_drive_number = *(unsigned char *)(0x7c00 + BS_DrvNum);
+    if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
+        memcmp((void *)"FAT16   ", (void *)0x7c00 + BS_FileSysType, 8) == 0) {
+      if (*(unsigned char *)(0x7c00 + BS_DrvNum) >= 0x80) {
+        default_drive_number =
+            *(unsigned char *)(0x7c00 + BS_DrvNum) - 0x80 + 0x02;
+      } else {
+        default_drive_number = *(unsigned char *)(0x7c00 + BS_DrvNum);
+      }
+    } else if (memcmp((void *)"FAT32   ",
+                      (void *)0x7c00 + BPB_Fat32ExtByts + BS_FileSysType,
+                      8) == 0) {
+      if (*(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) >= 0x80) {
+        default_drive_number =
+            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) - 0x80 +
+            0x02;
+      } else {
+        default_drive_number =
+            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum);
+      }
     }
     default_drive = default_drive_number + 0x41;
     flags_once = true;
   }
-  current_task()->drive = default_drive;
-  current_task()->drive_number = default_drive_number;
-  vfs_mount_disk(current_task()->drive, current_task()->drive);
-  vfs_change_disk(current_task()->drive);
+  NowTask()->drive = default_drive;
+  NowTask()->drive_number = default_drive_number;
+  vfs_mount_disk(NowTask()->drive, NowTask()->drive);
+  vfs_change_disk(NowTask()->drive);
   printf("DOSLDR 386 v0.2\n");
   printf("Copyright zhouzhihao & min0911 2022\n");
   printf("memtotal=%dMB\n", memtotal / 1024 / 1024);
   char path[15] = " :\\kernel.bin";
-  path[0] = current_task()->drive;
+  path[0] = NowTask()->drive;
   printf("Load file:%s\n", path);
   FILE *fp = fopen(path, "rb");
   // printf("fp = %08x\n%d\n",fp, fp->size);
@@ -55,6 +68,6 @@ void DOSLDR_MAIN() {
   for (;;)
     ;
 }
-struct TASK *current_task() {
+struct TASK *NowTask() {
   return &MainTask;
 }

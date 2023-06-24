@@ -5,20 +5,32 @@
 #define InputOutput 1
 typedef struct BaseAddressRegister {
   int prefetchable;
-  uint8_t *address;
+  uint8_t* address;
   uint32_t size;
   int type;
 } BaseAddressRegister;
-uint32_t read_pci(uint8_t bus, uint8_t device, uint8_t function,
-              uint8_t registeroffset) {
+uint32_t read_pci(uint8_t bus,
+                  uint8_t device,
+                  uint8_t function,
+                  uint8_t registeroffset) {
   uint32_t id = 1 << 31 | ((bus & 0xff) << 16) | ((device & 0x1f) << 11) |
                 ((function & 0x07) << 8) | (registeroffset & 0xfc);
   io_out32(PCI_COMMAND_PORT, id);
   uint32_t result = io_in32(PCI_DATA_PORT);
   return result >> (8 * (registeroffset % 4));
 }
-void write_pci(uint8_t bus, uint8_t device, uint8_t function,
-           uint8_t registeroffset, uint32_t value) {
+uint32_t read_bar_n(uint8_t bus,
+                     uint8_t device,
+                     uint8_t function,
+                     uint8_t bar_n) {
+    uint32_t bar_offset = 0x10 + 4 * bar_n;
+    return read_pci(bus, device, function, bar_offset);
+}
+void write_pci(uint8_t bus,
+               uint8_t device,
+               uint8_t function,
+               uint8_t registeroffset,
+               uint32_t value) {
   uint32_t id = 1 << 31 | ((bus & 0xff) << 16) | ((device & 0x1f) << 11) |
                 ((function & 0x07) << 8) | (registeroffset & 0xfc);
   io_out32(PCI_COMMAND_PORT, id);
@@ -28,12 +40,16 @@ uint32_t PCI_READ_COMMAND_STATUS(uint8_t bus, uint8_t slot, uint8_t func) {
   return read_pci(bus, slot, func, 0x04);
 }
 // write command status register
-void PCI_WRITE_COMMAND_STATUS(uint8_t bus, uint8_t slot, uint8_t func,
+void PCI_WRITE_COMMAND_STATUS(uint8_t bus,
+                              uint8_t slot,
+                              uint8_t func,
                               uint32_t value) {
   write_pci(bus, slot, func, 0x04, value);
 }
-BaseAddressRegister GetBaseAddressRegister(uint8_t bus, uint8_t device,
-                                           uint8_t function, uint8_t bar) {
+BaseAddressRegister GetBaseAddressRegister(uint8_t bus,
+                                           uint8_t device,
+                                           uint8_t function,
+                                           uint8_t bar) {
   BaseAddressRegister result;
 
   uint32_t headertype = read_pci(bus, device, function, 0x0e) & 0x7e;
@@ -46,13 +62,15 @@ BaseAddressRegister GetBaseAddressRegister(uint8_t bus, uint8_t device,
 
   if (result.type == MemoryMapping) {
     switch ((bar_value >> 1) & 0x3) {
-    case 0: // 32
-    case 1: // 20
-    case 2: // 64
-      break;
+      case 0:  // 32
+      case 1:  // 20
+      case 2:  // 64
+        break;
     }
+    result.address = (uint8_t*)(bar_value & ~0x3);
+    result.prefetchable = 0;
   } else {
-    result.address = (uint8_t *)(bar_value & ~0x3);
+    result.address = (uint8_t*)(bar_value & ~0x3);
     result.prefetchable = 0;
   }
   return result;
@@ -62,11 +80,11 @@ uint8_t PCI_Get_Drive_IRQ_LINE(uint8_t bus, uint8_t slot, uint8_t func) {
 }
 uint32_t PCI_Get_PORT_Base(uint8_t bus, uint8_t slot, uint8_t func) {
   extern int PCI_ADDR_BASE;
-  unsigned char *pci_drive = PCI_ADDR_BASE;
+  unsigned char* pci_drive = PCI_ADDR_BASE;
   for (;; pci_drive += 0x110 + 4) {
     if (pci_drive[0] == 0xff) {
       if (pci_drive[1] == bus && pci_drive[2] == slot && pci_drive[3] == func) {
-        uint32_t *PORT_POINT = pci_drive + 272;
+        uint32_t* PORT_POINT = pci_drive + 272;
         return *PORT_POINT;
       }
     } else {
@@ -75,15 +93,18 @@ uint32_t PCI_Get_PORT_Base(uint8_t bus, uint8_t slot, uint8_t func) {
   }
   return 0;
 }
-void PCI_GET_DEVICE(uint16_t vendor_id, uint16_t device_id, uint8_t *bus,
-                    uint8_t *slot, uint8_t *func) {
+void PCI_GET_DEVICE(uint16_t vendor_id,
+                    uint16_t device_id,
+                    uint8_t* bus,
+                    uint8_t* slot,
+                    uint8_t* func) {
   extern int PCI_ADDR_BASE;
-  unsigned char *pci_drive = PCI_ADDR_BASE;
+  unsigned char* pci_drive = PCI_ADDR_BASE;
   for (;; pci_drive += 0x110 + 4) {
     if (pci_drive[0] == 0xff) {
-      struct PCI_CONFIG_SPACE_PUCLIC *pci_config_space_puclic;
+      struct PCI_CONFIG_SPACE_PUCLIC* pci_config_space_puclic;
       pci_config_space_puclic =
-          (struct PCI_CONFIG_SPACE_PUCLIC *)(pci_drive + 0x0c);
+          (struct PCI_CONFIG_SPACE_PUCLIC*)(pci_drive + 0x0c);
       if (pci_config_space_puclic->VendorID == vendor_id &&
           pci_config_space_puclic->DeviceID == device_id) {
         *bus = pci_drive[1];
@@ -96,7 +117,9 @@ void PCI_GET_DEVICE(uint16_t vendor_id, uint16_t device_id, uint8_t *bus,
     }
   }
 }
-void PCI_CONFIGADDRESS(unsigned int Bus, unsigned int f, unsigned int equipment,
+void PCI_CONFIGADDRESS(unsigned int Bus,
+                       unsigned int f,
+                       unsigned int equipment,
                        unsigned int adder) {
   unsigned int cmd = 0;
   cmd = 0x80000000 + (unsigned int)adder + ((unsigned int)f << 8) +
@@ -107,9 +130,9 @@ void PCI_CONFIGADDRESS(unsigned int Bus, unsigned int f, unsigned int equipment,
 void init_PCI(unsigned int adder_Base) {
   unsigned int i, BUS, Equipment, F, ADDER, *i1;
   unsigned char *PCI_DATA = adder_Base, *PCI_DATA1;
-  for (BUS = 0; BUS < 256; BUS++) {                    //查询总线
-    for (Equipment = 0; Equipment < 32; Equipment++) { //查询设备
-      for (F = 0; F < 8; F++) {                        //查询功能
+  for (BUS = 0; BUS < 256; BUS++) {                     //查询总线
+    for (Equipment = 0; Equipment < 32; Equipment++) {  //查询设备
+      for (F = 0; F < 8; F++) {                         //查询功能
         PCI_CONFIGADDRESS(BUS, F, Equipment, 0);
         if (io_in32(PCI_DATA_PORT) != 0xFFFFFFFF) {
           //当前插槽有设备
@@ -120,14 +143,14 @@ void init_PCI(unsigned int adder_Base) {
             // printk("PCI_DATA:%x\n", PCI_DATA);
             // getch();
             PCI_DATA1 = PCI_DATA;
-            *PCI_DATA1 = 0xFF; //表占用标志
+            *PCI_DATA1 = 0xFF;  //表占用标志
             // printk("PCI:%x\n", &PCI_DATA[0]);
             PCI_DATA1++;
-            *PCI_DATA1 = BUS; //总线号
+            *PCI_DATA1 = BUS;  //总线号
             PCI_DATA1++;
-            *PCI_DATA1 = Equipment; //设备号
+            *PCI_DATA1 = Equipment;  //设备号
             PCI_DATA1++;
-            *PCI_DATA1 = F; //功能号
+            *PCI_DATA1 = F;  //功能号
             PCI_DATA1++;
             PCI_DATA1 = PCI_DATA1 + 8;
             // printk("BUS:%x\n", BUS);
@@ -224,8 +247,8 @@ void init_PCI(unsigned int adder_Base) {
   //函数执行完PCI_DATA就是PCI设备表的结束地址
 }
 void PCI_ClassCode_Print(
-    struct PCI_CONFIG_SPACE_PUCLIC *pci_config_space_puclic) {
-  unsigned char *pci_drive = (unsigned char *)pci_config_space_puclic - 12;
+    struct PCI_CONFIG_SPACE_PUCLIC* pci_config_space_puclic) {
+  unsigned char* pci_drive = (unsigned char*)pci_config_space_puclic - 12;
   printf("BUS:%02x ", pci_drive[1]);
   printf("EQU:%02x ", pci_drive[2]);
   printf("F:%02x ", pci_drive[3]);
