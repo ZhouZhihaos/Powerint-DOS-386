@@ -74,7 +74,7 @@ int run_bat(char* cmdline) {
   }
 }
 uint32_t app_num = 0;
-struct TASK *start_drv(char *cmdline) {
+struct TASK* start_drv(char* cmdline) {
   return NULL;
 }
 int cmd_app(char* cmdline) {
@@ -222,7 +222,8 @@ int cmd_app(char* cmdline) {
               有些代码的逻辑和运行汇编语言程序是一样的，
               这里只注释新的代码
       */
-
+      const int alloc_data_size = 230 * 1024 * 1024;
+      const int memman_size = alloc_data_size / 128 + 1;
       int now = current_task()->level;
       p = (char*)page_malloc(fsize);
       memcpy(p, fp->buffer, fsize);
@@ -240,13 +241,12 @@ int cmd_app(char* cmdline) {
       esp = *((int*)(p + 0x000c));
       datsiz = *((int*)(p + 0x0010));
       dathrb = *((int*)(p + 0x0014));
-      q = (char*)page_malloc(segsiz +
-                             512 * 1024 * 4 * 2 * 2 * 2 * 2);  //分配数据段的内存
+      q = (char*)page_malloc(segsiz + alloc_data_size);  //分配数据段的内存
       set_segmdesc(gdt + 3 + app_num * 2, fsize - 1, (int)p,
                    AR_CODE32_ER | 3 << 5);
-      set_segmdesc(gdt + 4 + app_num * 2,
-                   segsiz - 1 + 512 * 1024 * 4 * 2 * 2 * 2 * 2, (int)q,
+      set_segmdesc(gdt + 4 + app_num * 2, segsiz - 1 + alloc_data_size, (int)q,
                    AR_DATA32_RW | 3 << 5);
+     // printf("size = %08x\n", segsiz - 1 + alloc_data_size);
       for (i = 0; i < datsiz; i++) {
         // printf("%c",p[dathrb + i]);
         q[esp + i] = p[dathrb + i];  //这里通过头数据拷贝数据段数据
@@ -259,7 +259,7 @@ int cmd_app(char* cmdline) {
       char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* kbuf = (char*)page_kmalloc(4096);
       char* mbuf = (char*)page_kmalloc(4096);
-      char* memman = (char*)page_malloc(4 * 1024 * 4 * 2 * 2 * 2 * 2);
+      char* memman = (char*)page_malloc(memman_size);
       init_ok_flag = 0;
       struct TASK* this_task =
           AddUserTask(name, 1, ((3 + app_num * 2) * 8), 0x1b,
@@ -270,19 +270,19 @@ int cmd_app(char* cmdline) {
       this_task->cs_start = this_task->tss.cs;
       this_task->ss_start = this_task->tss.ss;
       this_task->alloc_addr = (int)((uint32_t)q + segsiz);
-      this_task->alloc_size = 512 * 1024 * 4 * 2 * 2 * 2 * 2;
+      this_task->alloc_size = alloc_data_size;
       this_task->memman = memman;
       this_task->app = 1;
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
       vfs_change_disk_for_task(current_task()->nfs->drive, this_task);
-      List *l;
-      char *path;
-      for (int i = 1; FindForCount(i,current_task()->nfs->path) != NULL; i++) {
+      List* l;
+      char* path;
+      for (int i = 1; FindForCount(i, current_task()->nfs->path) != NULL; i++) {
         l = FindForCount(i, current_task()->nfs->path);
         path = (char*)l->val;
-        this_task->nfs->cd(this_task->nfs,path);
+        this_task->nfs->cd(this_task->nfs, path);
       }
       this_task->line = current_task()->line;
       this_task->drive = current_task()->drive;
@@ -303,7 +303,7 @@ int cmd_app(char* cmdline) {
           io_cli();
           change_page_task_id(this_task->sel / 8 - 103, p, fsize);
           change_page_task_id(this_task->sel / 8 - 103, q,
-                              segsiz + 512 * 1024 * 4 * 2 * 2 * 2 * 2);
+                              segsiz + alloc_data_size);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, memman,
                               4 * 1024 * 4 * 2 * 2 * 2);
@@ -338,10 +338,10 @@ int cmd_app(char* cmdline) {
       page_kfree((int)mfifo, sizeof(struct FIFO8));
       page_kfree((int)kbuf, 4096);
       page_kfree((int)mbuf, 4096);
-      page_free(memman, 4 * 1024 * 4 * 2 * 2 * 2 * 2);
+      page_free(memman, memman_size);
       page_free(stack, 64 * 1024);
       page_free(p, fsize);
-      page_free(q, segsiz + 512 * 1024 * 4 * 2 * 2 * 2 * 2);
+      page_free(q, segsiz + alloc_data_size);
       print("\n");
     } else if (elf32Validate((Elf32_Ehdr*)fp->buffer)) {
       // printk("----------ProGram Running Malloc Info-----------");

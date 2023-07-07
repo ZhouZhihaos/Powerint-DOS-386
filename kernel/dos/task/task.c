@@ -669,6 +669,7 @@ void RunTask(struct TASK *task) {
   io_sti();
 }
 struct TASK *_fork(int b) {
+  int esp = current_task()->tss.esp;
   int ESP;
   asm("movl %%ebp,%0" : "=g"(ESP));
   int *eipa = &b;
@@ -684,7 +685,7 @@ struct TASK *_fork(int b) {
   int *eip = &b;
   int EIP = eip[-1];
   // printk("eip=%08x\n", EIP);
-  int esp = current_task()->tss.esp;
+  
 
   (void)(esp);
   int sz = current_task()->esp_start - ESP;

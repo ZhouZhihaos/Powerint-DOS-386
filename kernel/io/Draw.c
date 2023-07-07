@@ -258,9 +258,9 @@ void SDraw_Box(vram_t* vram,
                color_t color,
                int xsize) {
   int i, j;
-  for (i = x; i <= x1; i++) {
-    for (j = y; j <= y1; j++) {
-      SDraw_Px(vram, i, j, color, xsize);
+  for (i = x; i < x1; i++) {
+    for (j = y; j < y1; j++) {
+      vram[j*xsize+i] = color;
     }
   }
   return;
@@ -463,27 +463,4 @@ void Draw_Line(vram_t* Buffer,
     }
   }
   Buffer[x + y * xsize] = c;
-}
-uint32_t LCD_AlphaBlend(uint32_t foreground_color,
-                        uint32_t background_color,
-                        uint8_t alpha) {
-  uint16_t r = 0, g = 0, b = 0;
-  if ((foreground_color == 0xffffff) &&
-      (background_color == 0)) {  //默认的前景和背景色，不做alpha计算
-    r = alpha;
-    g = alpha;
-    b = alpha;
-  } else {
-    uint8_t* fg = (uint8_t*)&foreground_color;
-    uint8_t* bg = (uint8_t*)&background_color;
-
-    b = ((int)(*fg * alpha) + (int)*bg * (256 - alpha)) >> 8;
-    fg++;
-    bg++;
-    g = ((int)(*fg * alpha) + (int)*bg * (256 - alpha)) >> 8;
-    fg++;
-    bg++;
-    r = ((int)(*fg * alpha) + (int)*bg * (256 - alpha)) >> 8;
-  }
-  return argb(0, r, g, b);
 }

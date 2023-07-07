@@ -1,6 +1,7 @@
 TOOLPATH = ../tools/
 APPSPATH = ../apps/
 APPSOUTPATH = ../apps/out/
+BIDPATH = ../apps/build_tools_in_pdos/
 FAT12TOOLSPATH = ../fat12tools/
 BOOTPATH = ./boot/
 DOSPATH = ./dos/
@@ -48,9 +49,10 @@ OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUT
 				$(OUTPATH)gzread.o $(OUTPATH)gzwrite.o $(OUTPATH)infback.o \
 				$(OUTPATH)inffast.o $(OUTPATH)inflate.o $(OUTPATH)inftrees.o \
 				$(OUTPATH)trees.o $(OUTPATH)uncompr.o $(OUTPATH)zutil.o $(OUTPATH)ftp.o\
-			    $(OUTPATH)linux_style_file.o $(OUTPATH)netgobang.o $(OUTPATH)ide.o $(OUTPATH)net_syscall.o $(OUTPATH)ntp.o \
+			  $(OUTPATH)linux_style_file.o $(OUTPATH)netgobang.o $(OUTPATH)ide.o $(OUTPATH)net_syscall.o $(OUTPATH)ntp.o \
 				$(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o $(OUTPATH)GraphicMode.o \
-				$(OUTPATH)vfs.o $(OUTPATH)build.o $(OUTPATH)mst.o $(OUTPATH)str.o
+				$(OUTPATH)vfs.o $(OUTPATH)build.o $(OUTPATH)mst.o $(OUTPATH)str.o $(OUTPATH)pvector.o $(OUTPATH)psheet.o $(OUTPATH)pgui.o \
+				$(OUTPATH)box.o $(OUTPATH)pwindow.o $(OUTPATH)pbutton.o
 
 # 默认动作
 
@@ -99,7 +101,8 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 		-copy other/font.bin ../tools/font/font.bin \
 		-copy other/HZK16 ../tools/font/HZK16 \
 		-copy other/copy.bin $(APPSOUTPATH)copy.bin \
-		-copy other/uname.bin $(APPSOUTPATH)uname.bin
+		-copy other/uname.bin $(APPSOUTPATH)uname.bin \
+		-copy other/coin.wav $(RESPATH)coin.wav
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
 		copy from:$(APPSOUTPATH)uigobang.bin to:@: \
@@ -121,7 +124,6 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 		copy from:$(APPSOUTPATH)cale.bin to:@: \
 		copy from:$(APPSOUTPATH)bitz.bin to:@: \
 		copy from:$(APPSOUTPATH)editor.bin to:@: \
-		copy from:$(APPSOUTPATH)codeedit.bin to:@: \
 		copy from:$(APPSOUTPATH)calc.bin to:@: \
 		copy from:$(APPSOUTPATH)clock.bin to:@: \
 		copy from:$(APPSOUTPATH)Maze.bin to:@: \
@@ -133,8 +135,12 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 		copy from:$(APPSOUTPATH)spgame.bin to:@: \
 		copy from:$(APPSOUTPATH)ps2test.bin to:@: \
 		copy from:$(APPSOUTPATH)msttest.bin to:@: \
+		copy from:$(APPSOUTPATH)make.rul to:@: \
+		copy from:$(BIDPATH)nask.bin to:@: \
+		copy from:$(BIDPATH)obj2bim.bin to:@: \
+		copy from:$(APPSOUTPATH)bim2hrb.bin to:@: \
 		copy from:$(RESPATH)codeedit.ini to:@: \
-		copy from:$(RESPATH)editor.mst to:@: \
+		copy from:$(RESPATH)asm.lua to:@: \
 		imgout:$(IMGPATH)Disk2.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \

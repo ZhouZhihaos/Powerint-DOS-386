@@ -188,6 +188,7 @@ bool has_fpu_error() {
 }
 void ERROR7(uint32_t eip) {
   // printk("ERROR7.\n");
+  //printk("FPU!\n");
   if (current_task()->fpu_flag > 1 || current_task()->fpu_flag < 0) {
   //  printk("do nothing.\n");
   //  printk("%d\n", current_task()->fpu);

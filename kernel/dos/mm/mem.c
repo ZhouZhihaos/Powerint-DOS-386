@@ -46,5 +46,6 @@ void free(void *p) {
   if (p == NULL)
     return;
   int size = *(int *)((char *)p - sizeof(int));
+//  printk("size = %d\n",size);
   page_free((char *)p - sizeof(int), size + sizeof(int));
 }

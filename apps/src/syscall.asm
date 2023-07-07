@@ -275,17 +275,19 @@ pop	ebx
 ret
 
 api_ReadFile:
+push  eax
 push	ebx
 push	edx
 push	esi
 mov	eax,0x1a
 mov	ebx,0x02
-mov	edx,[ss:esp+16]
-mov	esi,[ss:esp+20]
+mov	edx,[ss:esp+20]
+mov	esi,[ss:esp+24]
 int	36h
 pop	esi
 pop	edx
 pop	ebx
+pop eax
 ret
 
 Draw_Box:

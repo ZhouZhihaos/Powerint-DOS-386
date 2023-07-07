@@ -120,12 +120,13 @@ void inthandler2c(int* esp) {
   io_out8(PIC1_OCW2, 0x64);
   io_out8(PIC0_OCW2, 0x62);
   data = io_in8(PORT_KEYDAT);
-  //printk("data=%02x\n", data);
+ // printk("data=%02x\n", data);
   if (mdec.sleep == 0) {
     for (int i = 1; i < tasknum + 1; i++) {
       struct TASK* task = GetTask(i);
       if (task->sleep == 1 || task->fifosleep == 1)
         continue;
+    //  printf("task:%s\n",task->name);
       fifo8_put(TaskGetMousefifo(task), data);
     }
   }

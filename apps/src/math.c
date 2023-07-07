@@ -546,173 +546,30 @@ double __cos(double x, double y)
 }
 static const double tiny = 1.0e-300;
 double sin(double x) {
-	double y[2];
-	uint32_t ix;
-	unsigned n;
-
-	/* High word of x. */
-	GET_HIGH_WORD(ix, x);
-	ix &= 0x7fffffff;
-
-	/* |x| ~< pi/4 */
-	if (ix <= 0x3fe921fb) {
-		if (ix < 0x3e500000) {  /* |x| < 2**-26 */
-			/* raise inexact if x != 0 and underflow if subnormal*/
-			FORCE_EVAL(ix < 0x00100000 ? x/0x1p120f : x+0x1p120f);
-			return x;
-		}
-		return __sin(x, 0.0, 0);
-	}
-
-	/* sin(Inf or NaN) is NaN */
-	if (ix >= 0x7ff00000)
-		return x - x;
-
-	/* argument reduction needed */
-	n = __rem_pio2(x, y);
-	switch (n&3) {
-	case 0: return  __sin(y[0], y[1], 1);
-	case 1: return  __cos(y[0], y[1]);
-	case 2: return -__sin(y[0], y[1], 1);
-	default:
-		return -__cos(y[0], y[1]);
-	}
+    double res;
+    __asm__("fsin"
+            : "=t"(res)
+            : "0"(x));
+    return res;
 }
 
+
+
+
 double cos(double x) {
-	double y[2];
-	uint32_t ix;
-	unsigned n;
-
-	GET_HIGH_WORD(ix, x);
-	ix &= 0x7fffffff;
-
-	/* |x| ~< pi/4 */
-	if (ix <= 0x3fe921fb) {
-		if (ix < 0x3e46a09e) {  /* |x| < 2**-27 * sqrt(2) */
-			/* raise inexact if x!=0 */
-			FORCE_EVAL(x + 0x1p120f);
-			return 1.0;
-		}
-		return __cos(x, 0);
-	}
-
-	/* cos(Inf or NaN) is NaN */
-	if (ix >= 0x7ff00000)
-		return x-x;
-
-	/* argument reduction */
-	n = __rem_pio2(x, y);
-	switch (n&3) {
-	case 0: return  __cos(y[0], y[1]);
-	case 1: return -__sin(y[0], y[1], 1);
-	case 2: return -__cos(y[0], y[1]);
-	default:
-		return  __sin(y[0], y[1], 1);
-	}
+    double res;
+    __asm__("fcos"
+            : "=t"(res)
+            : "0"(x));
+    return res;
 }
 
 double sqrt(double x) {
-  double z;
-  int32_t sign = (int)0x80000000;
-  int32_t ix0, s0, q, m, t, i;
-  uint32_t r, t1, s1, ix1, q1;
-
-  EXTRACT_WORDS(ix0, ix1, x);
-
-  /* take care of Inf and NaN */
-  if ((ix0 & 0x7ff00000) == 0x7ff00000) {
-    return x * x + x; /* sqrt(NaN)=NaN, sqrt(+inf)=+inf, sqrt(-inf)=sNaN */
-  }
-  /* take care of zero */
-  if (ix0 <= 0) {
-    if (((ix0 & ~sign) | ix1) == 0)
-      return x; /* sqrt(+-0) = +-0 */
-    if (ix0 < 0)
-      return (x - x) / (x - x); /* sqrt(-ve) = sNaN */
-  }
-  /* normalize x */
-  m = ix0 >> 20;
-  if (m == 0) { /* subnormal x */
-    while (ix0 == 0) {
-      m -= 21;
-      ix0 |= (ix1 >> 11);
-      ix1 <<= 21;
-    }
-    for (i = 0; (ix0 & 0x00100000) == 0; i++)
-      ix0 <<= 1;
-    m -= i - 1;
-    ix0 |= ix1 >> (32 - i);
-    ix1 <<= i;
-  }
-  m -= 1023; /* unbias exponent */
-  ix0 = (ix0 & 0x000fffff) | 0x00100000;
-  if (m & 1) { /* odd m, double x to make it even */
-    ix0 += ix0 + ((ix1 & sign) >> 31);
-    ix1 += ix1;
-  }
-  m >>= 1; /* m = [m/2] */
-
-  /* generate sqrt(x) bit by bit */
-  ix0 += ix0 + ((ix1 & sign) >> 31);
-  ix1 += ix1;
-  q = q1 = s0 = s1 = 0; /* [q,q1] = sqrt(x) */
-  r = 0x00200000;       /* r = moving bit from right to left */
-
-  while (r != 0) {
-    t = s0 + r;
-    if (t <= ix0) {
-      s0 = t + r;
-      ix0 -= t;
-      q += r;
-    }
-    ix0 += ix0 + ((ix1 & sign) >> 31);
-    ix1 += ix1;
-    r >>= 1;
-  }
-
-  r = sign;
-  while (r != 0) {
-    t1 = s1 + r;
-    t = s0;
-    if (t < ix0 || (t == ix0 && t1 <= ix1)) {
-      s1 = t1 + r;
-      if ((t1 & sign) == sign && (s1 & sign) == 0)
-        s0++;
-      ix0 -= t;
-      if (ix1 < t1)
-        ix0--;
-      ix1 -= t1;
-      q1 += r;
-    }
-    ix0 += ix0 + ((ix1 & sign) >> 31);
-    ix1 += ix1;
-    r >>= 1;
-  }
-
-  /* use floating add to find out rounding direction */
-  if ((ix0 | ix1) != 0) {
-    z = 1.0 - tiny; /* raise inexact flag */
-    if (z >= 1.0) {
-      z = 1.0 + tiny;
-      if (q1 == (uint32_t)0xffffffff) {
-        q1 = 0;
-        q++;
-      } else if (z > 1.0) {
-        if (q1 == (uint32_t)0xfffffffe)
-          q++;
-        q1 += 2;
-      } else
-        q1 += q1 & 1;
-    }
-  }
-  ix0 = (q >> 1) + 0x3fe00000;
-  ix1 = q1 >> 1;
-  if (q & 1)
-    ix1 |= sign;
-  ix0 += m << 20;
-  INSERT_WORDS(z, ix0, ix1);
-  return z;
+     double res;
+    __asm__("fsqrt"
+            : "=t"(res)
+            : "0"(x));
+    return res;
 }
 
 double abs(double x) {

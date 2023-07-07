@@ -769,24 +769,24 @@ void F2S(double d, char *str, int l) {
   // 5.55 => 0.555 => <1 = true and b = 1
   // 1.56 0.156,15.6,156
 }
-int _Znaj(uint32_t size) {
-  printk("_Znaj:%d\n", size);
-  return malloc(size);
-}
-void _ZdaPv(void *ptr) {
-  printk("_ZdaPv:%08x\n", ptr);
-  free(ptr);
-}
-//_ZdlPvj
+// int _Znaj(uint32_t size) {
+//   printk("_Znaj:%d\n", size);
+//   return malloc(size);
+// }
+// void _ZdaPv(void *ptr) {
+//   printk("_ZdaPv:%08x %08x\n", ptr,((uint32_t *)(ptr))[-1]);
+//   free(ptr);
+// }
+// //_ZdlPvj
 void _ZdlPvj(void *ptr, uint32_t size) {
   printk("_ZdlPvj %08x %d\n", ptr, size);
   free(ptr);
 }
-//_Znwj
-void *_Znwj(uint32_t size) {
-  printk("_Znwj:%d\n", size);
-  return malloc(size);
-}
+// //_Znwj
+// void *_Znwj(uint32_t size) {
+//   printk("_Znwj:%d\n", size);
+//   return malloc(size);
+// }
 char *strchr(const char *s, int c) {
   char *p = s;
   while (*p && *p != c) {

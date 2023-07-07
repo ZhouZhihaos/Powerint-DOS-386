@@ -1,6 +1,6 @@
 NASM = ../tools/nasm.exe
 OBJS_PACK = ./out/entry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
-			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj ./out/time.obj
+			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj ./out/time.obj ./out/posix.obj
 OBJS_GUI = ./out/WinEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 			./out/math.obj ./out/gui_syscall.obj ./out/libc.obj ./out/net_syscall.obj
 OBJS_PACK_CPP = ./out/CppEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
@@ -48,6 +48,7 @@ build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) game.bin gobang.bin
 	@python build.py c4 $(OBJS_PACK)
 	@python build.py image $(OBJS_PACK)
 	@python build.py uname $(OBJS_PACK)
+	@python build.py bim2hrb $(OBJS_PACK)
 	@python build.py msttest $(OBJS_PACK) $(MST_LIB)
 clean :
 	del out /s/q

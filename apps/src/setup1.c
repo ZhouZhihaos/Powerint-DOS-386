@@ -596,7 +596,7 @@ int main() {
     mkfile("env.cfg");
     Set_Loading(50);
     setState("Config --- Write path.sys");
-    Edit_File("env.cfg", "\"path\" = \"C:\\BIN;C:\\;", 21, 0);
+    Edit_File("env.cfg", "\"path\" = \"C:\\BIN;C:\\;\"", 22, 0);
     Set_Loading(100);
     OKMsg("Press Enter to Reboot Your computer.");
     system("reboot");

@@ -268,7 +268,7 @@ CHECK_OK:
   } else if (strincmp("READPCI ", cmdline, 8) == 0) {
     char* endptr;
     uint32_t bus = strtol(cmdline + 8, &endptr, 16);
-    printk("endptr = %s\n",endptr);
+    printk("endptr = %s\n", endptr);
     uint32_t slot = strtol(endptr, &endptr, 16);
 
     uint32_t func = strtol(endptr, &endptr, 16);
@@ -560,13 +560,14 @@ CHECK_OK:
     // struct TASK* task = AddUserTask("UsrTask", 1, 1146 * 8, usertasktest,
     // 1145*8,1145*8,(unsigned int)malloc(16*1024)+16*1024); task->tss.ss0 =
     // 1*8; task->tss.esp0 = malloc(16*1024)+16*1024; io_sti();
+
   } else if (strincmp("MOUNT ", cmdline, 6) == 0) {
     int c = mount(cmdline + 6);
     printf("mount file in %c:\\\n", c);
   } else if (strincmp("UNMOUNT ", cmdline, 8) == 0) {
     unmount(cmdline[8]);
   } else if (stricmp("SB16", cmdline) == 0) {
-    // wav_player_test();
+    wav_player_test();
   } else if (stricmp("DISKLS", cmdline) == 0) {
     extern vdisk vdisk_ctl[26];
 

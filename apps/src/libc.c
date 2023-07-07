@@ -1800,35 +1800,15 @@ double atan2(double y, double x)
 static const double_t toint = 1/EPS;
 
 double floor(double x) {
-  // 分离出x的符号、指数、尾数部分
-  unsigned long long sign = (unsigned long long)x >> 63;
-  unsigned long long exponent = ((unsigned long long)x >> 52) & 0x7ffull;
-  unsigned long long mantissa = (unsigned long long)x & 0xfffffffffffffull;
-
-  // 构造一个与x二进制表示相同且指数部分为0的浮点数t
-  unsigned long long t_exponent = exponent & 0x7ffull;
-  unsigned long long t_mantissa = 0;
-  if (exponent > 1023) {
-    t_exponent -= 1023;
+  int flag = 1;
+  if(fabs(x) == x) {
+    flag = 0;
   }
-  if (t_exponent > 52) {
-    t_mantissa = mantissa;
-  } else {
-    t_mantissa = mantissa >> (52 - t_exponent);
-  }
-  unsigned long long t_sign = 0;
-  if (sign) {
-    t_sign = 0x8000000000000000ull;
-  }
-  unsigned long long t = t_sign | (t_exponent << 52) | t_mantissa;
-
-  // 判断x是否小于t
-  unsigned long long xi = *(unsigned long long*)&x;
-  if (xi < t) {
-    double r = (x - 1);  // 如果小于，则返回x-1的整数部分
+  if (flag) {
+    double r = (x);  // 如果小于，则返回x-1的整数部分
     double s;
     modf(r, &s);
-    return s;
+    return s - 1;
   } else {
     double r = (x);  // 如果大于等于，则返回x的整数部分
     double s;
@@ -1837,35 +1817,15 @@ double floor(double x) {
   }
 }
 double ceil(double x) {
-  // 分离出x的符号、指数、尾数部分
-  unsigned long long sign = (unsigned long long)x >> 63;
-  unsigned long long exponent = ((unsigned long long)x >> 52) & 0x7ffull;
-  unsigned long long mantissa = (unsigned long long)x & 0xfffffffffffffull;
-
-  // 构造一个与x二进制表示相同且指数部分为0的浮点数t
-  unsigned long long t_exponent = exponent & 0x7ffull;
-  unsigned long long t_mantissa = 0;
-  if (exponent > 1023) {
-    t_exponent -= 1023;
+  int flag = 0;
+  if(fabs(x) == x) {
+    flag = 1;
   }
-  if (t_exponent > 52) {
-    t_mantissa = mantissa;
-  } else {
-    t_mantissa = mantissa >> (52 - t_exponent);
-  }
-  unsigned long long t_sign = 0;
-  if (sign) {
-    t_sign = 0x8000000000000000ull;
-  }
-  unsigned long long t = t_sign | (t_exponent << 52) | t_mantissa;
-
-  // 判断x是否小于t
-  unsigned long long xi = *(unsigned long long*)&x;
-  if (xi > t) {
-    double r = (x + 1);  // 如果小于，则返回x-1的整数部分
+  if (flag) {
+    double r = (x);  // 如果小于，则返回x-1的整数部分
     double s;
     modf(r, &s);
-    return s;
+    return s + 1;
   } else {
     double r = (x);  // 如果大于等于，则返回x的整数部分
     double s;

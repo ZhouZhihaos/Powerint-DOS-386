@@ -65,7 +65,7 @@ retry:
       break;
     } else if (choice == '3') {
       running_mode = POWERDESKTOP;
-      graphic();
+      c_pgui_main();
     }
   }
   if (fsz("AUTOEXEC.BAT") == -1) {
@@ -159,24 +159,24 @@ void com_input(char* ptr, int len) {
 void task_sr2() {
   // SleepTask(current_task());
 
-  for (;;) {
-  }
   // for (;;) {
-  //   printk("Debug> ");
-  //   char buf[150];
-  //   com_input(buf, 150);
-  //   printk("Recved Command:%s\n", buf);
-  //   if (strcmp("show_all", buf) == 0) {
-  //     for (int i = 1; GetTask(i) != 0; i++) {
-  //       printk("Task %s,Sleep=%d,%d lock=%d is_child=%d\n", GetTask(i)->name,
-  //              GetTask(i)->sleep, GetTask(i)->fifosleep, GetTask(i)->lock,
-  //              GetTask(i)->is_child);
-  //     }
-  //   } else {
-  //     printk("Bad Command\n");
-  //   }
-  //   // printk("Task Running.\n");
   // }
+  for (;;) {
+    printk("Debug> ");
+    char buf[150];
+    com_input(buf, 150);
+    printk("Recved Command:%s\n", buf);
+    if (strcmp("show_all", buf) == 0) {
+      for (int i = 1; GetTask(i) != 0; i++) {
+        printk("Task %s,Sleep=%d,%d lock=%d is_child=%d\n", GetTask(i)->name,
+               GetTask(i)->sleep, GetTask(i)->fifosleep, GetTask(i)->lock,
+               GetTask(i)->is_child);
+      }
+    } else {
+      printk("Bad Command\n");
+    }
+    // printk("Task Running.\n");
+  }
   // while (1) {
   //   if (IPCMessageStatus() != 0) {
   //     printk("Get Message.\n");

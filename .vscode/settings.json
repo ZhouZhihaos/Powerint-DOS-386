@@ -112,6 +112,7 @@
         "clang-diagnostic-void-pointer-to-int-cast"
     ],
     "Lua.diagnostics.globals": [
-        "gui"
+        "gui",
+        "exec"
     ]
 }
