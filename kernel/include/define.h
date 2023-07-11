@@ -8,7 +8,7 @@ typedef unsigned int vram_t;
 typedef vram_t color_t;
 
 /* dos.h */
-#define VERSION "0.7a" // Version of the program
+#define VERSION "0.7b" // Version of the program
 #define ADR_IDT 0x0026f800
 #define LIMIT_IDT 0x000007ff
 #define ADR_GDT 0x00270000
@@ -362,6 +362,7 @@ struct SHEET {
   struct SHTCTL *ctl;
   struct TASK *task;
   void (*Close)(); // 为NULL表示没有关闭函数
+  void *args;
 };
 struct SHTCTL {
   vram_t *vram;

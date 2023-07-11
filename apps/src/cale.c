@@ -37,13 +37,13 @@ void cal(int year, int month) {
       day = 28;
     }
   }
-  char* buf = api_malloc(128);
+  char* buf = malloc(128);
   sprintf(buf, "     %dyear,%dmonth", year, month);
   print(buf);
   api_free(buf, 128);
   print("\n");
   print("Sun Mon Tue Wed Thu Fri Sat\n");
-  buf = api_malloc(128);
+  buf = malloc(128);
   int week = 0;
 
   for (int i = 0; i < Week(year, month, 1); i++) {
@@ -74,7 +74,7 @@ void cal(int year, int month) {
   api_free(buf, 128);
 }
 int main(int argc, char** argv) {
-  char* buf = api_malloc(128);
+  char* buf = malloc(128);
   print("Year:");
   scan(buf, 128);
   int year = atoi(buf);

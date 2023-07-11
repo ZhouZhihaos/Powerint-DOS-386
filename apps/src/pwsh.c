@@ -96,7 +96,7 @@ void Click(int x,int y)
         {
             n++;
             goto_xy(y + 1, x + 10 / 2);
-			char *s = api_malloc(100);
+			char *s = malloc(100);
             sprintf(s,"TIMES:%d",n);
 			print(s);
         }
@@ -116,7 +116,7 @@ void System_Box(int x, int y)
     Text_Draw_Box(y + 1, x + 10 / 2, x + 1, y + 48, 0xf0);
     goto_xy(y + 1, x + 10 / 2);
     print("Command:");
-    char *com = api_malloc(48);
+    char *com = malloc(48);
     scan(com, 48);
     goto_xy(y + 1, x + 10 / 2 + 1);
     system(com);

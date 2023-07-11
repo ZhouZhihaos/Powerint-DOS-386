@@ -28,7 +28,7 @@ int PowerMain() {
     if(b_sz == 4) {
       GetMessage(&id, BUTTON_MSG_ID);
       if(id == add) {
-        char *str = api_malloc(sizeof(char)*16);
+        char *str = malloc(sizeof(char)*16);
         GetTextBoxText(str,text1);
         AddItem(listBox,str);
         api_free(str,sizeof(char)*16);

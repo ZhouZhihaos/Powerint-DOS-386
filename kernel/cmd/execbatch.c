@@ -443,6 +443,9 @@ int cmd_app(char* cmdline) {
       print("Isn't Powerint DOS 386 Execute File.\n\n");
     }
   end:
+    if(running_mode == POWERDESKTOP) {
+      SleepTaskFIFO(current_task());
+    }
     page_free(name, 300);  //将name字符指针所占用的内存释放
     return 1;
   }

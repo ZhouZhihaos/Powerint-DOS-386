@@ -90,17 +90,7 @@ void shell_handler() {
   }
 }
 struct tty* now_tty() {
-  extern struct List* tty_list;
-  struct tty* n;
-  for (int j = 1; FindForCount(j, tty_list) != 0; j++) {
-    n = (struct tty*)FindForCount(j, tty_list)->val;
-    if ((now_tty_TextMode(n) && running_mode == POWERINTDOS) ||
-        (now_tty_HighTextMode(n) && running_mode == HIGHTEXTMODE) ||
-        (now_tty_GraphicMode(n) && running_mode == POWERDESKTOP)) {
-      return n;
-    }
-  }
-  return NULL;
+  return current_task()->TTY;
 }
 
 void task_sr1() {

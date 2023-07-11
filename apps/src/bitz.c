@@ -19,7 +19,7 @@ void Bitz(char* filename) {
   
   int size = filesize(filename);
   //printf("%s",filename);
-  unsigned char* file_buffer = (unsigned char*)api_malloc(size);
+  unsigned char* file_buffer = (unsigned char*)malloc(size);
   api_ReadFile(filename, file_buffer);
 
   print(
@@ -29,7 +29,7 @@ void Bitz(char* filename) {
   int i;
   int l = 0;
   for (i = 0; i < size; i++) {
-    char* buffer = api_malloc(15);
+    char* buffer = malloc(15);
     sprintf(buffer, "%02x ", file_buffer[i]);
     print(buffer);
     if ((i + 1) % 16 == 0) {
@@ -53,7 +53,7 @@ void Bitz(char* filename) {
       }
       printf("%08x ", i + 1);
     }
-    api_free(buffer, 15);
+    free(buffer);
   }
   //剩下的
   i--;
@@ -71,5 +71,5 @@ void Bitz(char* filename) {
       putch('.');
     }
   }
-  api_free(file_buffer, size);
+  free(file_buffer);
 }

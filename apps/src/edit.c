@@ -10,7 +10,7 @@ void AddVal(int val, struct List* Obj) {
   while (Obj->next != NULL) {
     Obj = Obj->next;
   }
-  Obj->next = (struct List*)api_malloc(sizeof(struct List));
+  Obj->next = (struct List*)malloc(sizeof(struct List));
   Obj = Obj->next;
   Obj->next = NULL;
   Obj->val = val;
@@ -59,14 +59,14 @@ void InsertVal(int count, int val, struct List* Obj) {
     // 是尾节点
     AddVal(val, Obj);
   } else {
-    struct List* Will = (struct List*)api_malloc(sizeof(struct List));
+    struct List* Will = (struct List*)malloc(sizeof(struct List));
     Will->val = val;
     Will->next = FindForCount(count, Obj)->next;
     FindForCount(count, Obj)->next = Will;
   }
 }
 struct List* NewList() {
-  struct List* Obj = (struct List*)api_malloc(sizeof(struct List));
+  struct List* Obj = (struct List*)malloc(sizeof(struct List));
   Obj->val = 0x123456;  // 头结点数据不可用
   Obj->next = NULL;
   return Obj;
@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
   system("cls");
   MainNode = NewList();
   if (filesize(argv[1]) != -1) {
-    char* buf = (char*)api_malloc(filesize(argv[1]));
+    char* buf = (char*)malloc(filesize(argv[1]));
     api_ReadFile(argv[1], buf);
     loadFile(buf, filesize(argv[1]));
     api_free(buf, filesize(argv[1]));
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
       //结束
       system("cls");
       //打印列表
-      char* p = api_malloc(GetLastCount(MainNode) + 1);
+      char* p = malloc(GetLastCount(MainNode) + 1);
       int len = 0;
       for (int i = 1; FindForCount(i, MainNode) != NULL; i++) {
         p[i - 1] = (FindForCount(i, MainNode)->val);

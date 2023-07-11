@@ -1,7 +1,7 @@
 #include <string.h>
 #include <syscall.h>
 #define All_Kernel_files_count 8
-#define All_App_files_count 37
+#define All_App_files_count 42
 #define All_Res_files_count 23
 #define Line_X 205
 #define Line_Y 186
@@ -238,6 +238,36 @@ int main() {
     // 3
     setState("Copy Apps --- Copy file: bin/winver.bin");
     Copy("A:\\WINVER.BIN", "bin/winver.bin");
+    CopyFilesCount++;
+    Set_Loading(
+        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
+              100.0));
+        setState("Copy Apps --- Copy file: bin/nask.bin");
+    Copy("A:\\NASK.BIN", "bin/nask.bin");
+    CopyFilesCount++;
+    Set_Loading(
+        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
+              100.0));
+                  setState("Copy Apps --- Copy file: bin/obj2bim.bin");
+    Copy("A:\\OBJ2BIM.BIN", "bin/obj2bim.bin");
+    CopyFilesCount++;
+    Set_Loading(
+        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
+              100.0));
+                  setState("Copy Apps --- Copy file: bin/bim2hrb.bin");
+    Copy("A:\\BIM2HRB.BIN", "bin/bim2hrb.bin");
+    CopyFilesCount++;
+    Set_Loading(
+        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
+              100.0));
+                  setState("Copy Apps --- Copy file: bin/bim2hrb.bin");
+    Copy("A:\\PLIB.LIB", "PLIB.LIB");
+    CopyFilesCount++;
+    Set_Loading(
+        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
+              100.0));
+                  setState("Copy Apps --- Copy file: make.rul");
+    Copy("A:\\MAKE.RUL", "make.rul");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *

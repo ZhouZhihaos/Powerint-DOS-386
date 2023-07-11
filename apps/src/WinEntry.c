@@ -9,13 +9,13 @@ void Main()
         printf("This program can not run in DOS mode.\n");
         exit();
     }
-    char *buf = api_malloc(1024);
+    char *buf = malloc(1024);
     char **argv;
     GetCmdline(buf);
-    argv = api_malloc(sizeof(char*)*(Get_Argc(buf)+1));
+    argv = malloc(sizeof(char*)*(Get_Argc(buf)+1));
     for(int i = 0;i<=Get_Argc(buf);i++)
     {
-        argv[i] = api_malloc(128);
+        argv[i] = malloc(128);
     }
     for(int i=0;i<=Get_Argc(buf);i++)
     {

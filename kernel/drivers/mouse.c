@@ -1,8 +1,9 @@
+#include <dos.h>
 #include <drivers.h>
-
 #define KEYCMD_SENDTO_MOUSE 0xd4
 #define MOUSECMD_ENABLE 0xf4
 typedef unsigned char byte;
+struct TASK* mouse_use_task = NULL;
 void mouse_wait(byte a_type)  // unsigned char
 {
   unsigned int _time_out = 100000;  // unsigned int
@@ -64,11 +65,13 @@ void enable_mouse(struct MOUSE_DEC* mdec) {
 }
 
 void mouse_sleep(struct MOUSE_DEC* mdec) {
+  mouse_use_task = NULL;
   mdec->sleep = 1;
   return;
 }
 
 void mouse_ready(struct MOUSE_DEC* mdec) {
+  mouse_use_task = current_task();
   mdec->sleep = 0;
   return;
 }
@@ -120,15 +123,19 @@ void inthandler2c(int* esp) {
   io_out8(PIC1_OCW2, 0x64);
   io_out8(PIC0_OCW2, 0x62);
   data = io_in8(PORT_KEYDAT);
- // printk("data=%02x\n", data);
-  if (mdec.sleep == 0) {
-    for (int i = 1; i < tasknum + 1; i++) {
-      struct TASK* task = GetTask(i);
-      if (task->sleep == 1 || task->fifosleep == 1)
-        continue;
-    //  printf("task:%s\n",task->name);
-      fifo8_put(TaskGetMousefifo(task), data);
-    }
+  // printk("data=%02x\n", data);
+  if (mouse_use_task != NULL) {
+    fifo8_put(TaskGetMousefifo(mouse_use_task), data);
+    RunTask(mouse_use_task);
   }
+  // if (mdec.sleep == 0) {
+  //   for (int i = 1; i < tasknum + 1; i++) {
+  //     struct TASK* task = GetTask(i);
+  //     if (task->sleep == 1 || task->fifosleep == 1)
+  //       continue;
+  //     //  printf("task:%s\n",task->name);
+  //     fifo8_put(TaskGetMousefifo(task), data);
+  //   }
+  // }
   return;
 }

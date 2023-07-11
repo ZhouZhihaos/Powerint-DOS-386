@@ -1,4 +1,5 @@
 NASM = ../tools/nasm.exe
+LIBMAKER = ../tools/golib00.exe
 OBJS_PACK = ./out/entry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj ./out/time.obj ./out/posix.obj
 OBJS_GUI = ./out/WinEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
@@ -7,6 +8,7 @@ OBJS_PACK_CPP = ./out/CppEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.ob
 			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj
 MST_LIB = ./out/mst.obj ./out/list.obj
 build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) game.bin gobang.bin memz.bin Makefile
+	$(LIBMAKER) $(OBJS_PACK) out:./out/plib.lib
 	@python build.py bainian $(OBJS_PACK)
 	@python build.py test $(OBJS_PACK)
 	@python build.py uigobang $(OBJS_GUI)

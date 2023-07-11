@@ -152,29 +152,30 @@ void page_map(void *target, void *start, void *end) {
   io_sti();
 }
 void *page_malloc_lessthan4kb(int size) {
-  if (size >= 4 * 1024) // "less than 4 kb"
-    return page_kmalloc(size);
-  struct TASK *task = current_task();
-  char *memman = task->memman;
-  int alloc_addr = task->alloc_addr;
-  int alloc_size = task->alloc_size;
-  if (memman == NULL || alloc_addr == 0) // 你没有alloc_addr和memman还来？
-    return page_malloc_one();               // 一个页给你滚蛋
-  size = (size - 1) / 128 + 1;
-  for (int i = 0, j = 0; i != alloc_size / 128; i++) {
-    if (j == size) {
-      for (int k = j; k != 0; k--) {
-        memman[i - k] = 0xff;
-      }
-      return (void *)((i - j) * 128 + alloc_addr);
-    }
-    if (memman[i] == 0x00) {
-      j++;
-    } else {
-      j = 0;
-    }
-  }
-  return page_malloc_one(); // 没位置给你了 一个页对不起
+  // if (size >= 4 * 1024) // "less than 4 kb"
+  //   return page_kmalloc(size);
+  // struct TASK *task = current_task();
+  // char *memman = task->memman;
+  // int alloc_addr = task->alloc_addr;
+  // int alloc_size = task->alloc_size;
+  // if (memman == NULL || alloc_addr == 0) // 你没有alloc_addr和memman还来？
+  //   return page_malloc_one();               // 一个页给你滚蛋
+  // size = (size - 1) / 128 + 1;
+  // for (int i = 0, j = 0; i != alloc_size / 128; i++) {
+  //   if (j == size) {
+  //     for (int k = j; k != 0; k--) {
+  //       memman[i - k] = 0xff;
+  //     }
+  //     return (void *)((i - j) * 128 + alloc_addr);
+  //   }
+  //   if (memman[i] == 0x00) {
+  //     j++;
+  //   } else {
+  //     j = 0;
+  //   }
+  // }
+  // return page_malloc_one(); // 没位置给你了 一个页对不起
+  return page_kmalloc(size);
 }
 void page_free_lessthan4kb(void *p, int size) {
   if (size > 4 * 1024) {

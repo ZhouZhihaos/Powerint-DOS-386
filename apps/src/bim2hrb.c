@@ -6,7 +6,7 @@ int getnum(const UCHAR* p);
 int get32(const UCHAR* p);
 void put32(UCHAR* p, int i);
 
-#define MAXSIZ 256*1024
+#define MAXSIZ 4*1024*1024
 
 int main(int argc, UCHAR** argv) {
   UCHAR* fbuf = malloc(MAXSIZ);

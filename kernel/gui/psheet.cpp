@@ -15,6 +15,7 @@ PSheetBase::PSheetBase(struct SHTCTL* ctl,
                        int init_y,
                        int col_ent) {  // 创建，非窗口内窗口
   this->sht = sheet_alloc(ctl);
+  this->sht->args = this;
   this->vram = (vram_t*)malloc(xsize * ysize * sizeof(vram_t));
   this->draw_vram = (vram_t*)malloc(xsize * ysize * sizeof(vram_t));
   sheet_setbuf(this->sht, this->vram, xsize, ysize, col_ent);
@@ -25,6 +26,7 @@ PSheetBase::PSheetBase(struct SHTCTL* ctl,
   this->mode = 1;
   this->stl = shtctl_init(this->vram, xsize, ysize);
   this->outermost_sht = sheet_alloc(this->stl);
+  this->outermost_sht->args = this;
   this->reg_flag = 0;
   sheet_setbuf(this->outermost_sht, this->draw_vram, this->x_size, this->y_size,
                0x12ffffff);
@@ -48,8 +50,10 @@ PSheetBase::PSheetBase(PSheetBase* ps,
   this->vram = (vram_t*)malloc(xsize * ysize * sizeof(vram_t));
   this->draw_vram = (vram_t*)malloc(xsize * ysize * sizeof(vram_t));
   this->sht = ps->add(this, this->vram, col_ent);
+  this->sht->args = this;
   this->stl = shtctl_init(this->vram, xsize, ysize);
   this->outermost_sht = sheet_alloc(this->stl);
+  this->outermost_sht->args = this;
   this->reg_flag = 0;
   sheet_setbuf(this->outermost_sht, this->draw_vram, this->x_size, this->y_size,
                0x12ffffff);
@@ -89,12 +93,14 @@ PSheetBase::~PSheetBase() {
         break;
       }
     }
-    this->get_father()->refresh(vx0, vy0, this->get_xsize() + vx0, this->get_ysize() + vy0);
+    this->get_father()->refresh(vx0, vy0, this->get_xsize() + vx0,
+                                this->get_ysize() + vy0);
   }
 }
 void PSheetBase::slide(int sx, int sy) {
+  io_cli();
   if (mode == 2) {
-    printk("slide %d %d\n", sx, sy);
+    // printk("slide %d %d\n", sx, sy);
     int old_x = this->now_x, old_y = this->now_y;
     sheet_slide(this->sht, sx, sy);
     this->now_x = sx;
@@ -102,11 +108,49 @@ void PSheetBase::slide(int sx, int sy) {
     this->get_father()->refresh(old_x, old_y, old_x + this->x_size,
                                 old_y + this->y_size);
     this->refresh(0, 0, this->x_size, this->y_size);
+    for (int i = 0; i < this->get_father()->pbox.get_size(); i++) {
+      if (this->get_father()->pbox[i].ps == this) {
+        this->get_father()->pbox[i].x -= old_x;
+        this->get_father()->pbox[i].x += now_x;
+        this->get_father()->pbox[i].x1 -= old_x;
+        this->get_father()->pbox[i].x1 += now_x;
+        this->get_father()->pbox[i].y -= old_y;
+        this->get_father()->pbox[i].y += now_y;
+        this->get_father()->pbox[i].y1 -= old_y;
+        this->get_father()->pbox[i].y1 += now_y;
+      }
+    }
+    for (int i = 0; i < this->get_father()->pbox_right.get_size(); i++) {
+      if (this->get_father()->pbox_right[i].ps == this) {
+        this->get_father()->pbox_right[i].x -= old_x;
+        this->get_father()->pbox_right[i].x += now_x;
+        this->get_father()->pbox_right[i].x1 -= old_x;
+        this->get_father()->pbox_right[i].x1 += now_x;
+        this->get_father()->pbox_right[i].y -= old_y;
+        this->get_father()->pbox_right[i].y += now_y;
+        this->get_father()->pbox_right[i].y1 -= old_y;
+        this->get_father()->pbox_right[i].y1 += now_y;
+      }
+    }
+    for (int i = 0; i < this->get_father()->pbox_stay.get_size(); i++) {
+      if (this->get_father()->pbox_stay[i].ps == this) {
+        this->get_father()->pbox_stay[i].x -= old_x;
+        this->get_father()->pbox_stay[i].x += now_x;
+        this->get_father()->pbox_stay[i].x1 -= old_x;
+        this->get_father()->pbox_stay[i].x1 += now_x;
+        this->get_father()->pbox_stay[i].y -= old_y;
+        this->get_father()->pbox_stay[i].y += now_y;
+        this->get_father()->pbox_stay[i].y1 -= old_y;
+        this->get_father()->pbox_stay[i].y1 += now_y;
+      }
+    }
   } else if (mode == 1) {
+    // printk("z %d %d\n",sx,sy);
     sheet_slide(this->sht, sx, sy);
     this->now_x = sx;
     this->now_y = sy;
   }
+  io_sti();
 }
 struct SHEET* PSheetBase::add(PSheetBase* ps, vram_t* vbuf, int col_ent) {
   struct SHEET* res = sheet_alloc(stl);  // 因为需要使用窗口内的窗口
@@ -190,7 +234,6 @@ void psheet_onclick_callback(PSheetBase* ps, int x, int y, uint32_t val) {
     ny = b.y;
     nx1 = b.x1;
     ny1 = b.y1;
-
     if (x >= nx && x <= nx1 && y >= ny && y <= ny1) {
       b.callback(b.ps, x - nx, y - ny, b.val);
       if (b.ps->get_father() != b.ps) {
@@ -405,5 +448,21 @@ PSheetBase* PSheetBase::get_right_last() {
     return this->get_father()->p_right_last;
   } else {
     return right_last;
+  }
+}
+void PSheetBase::register_key_press(void (*key_press)(char ch, uint32_t val),
+                                    uint32_t val) {
+  if (mode == 2) {
+    this->get_father()->register_key_press(key_press, val);
+  } else if (mode == 1) {
+    PKey k;
+    k.callback = key_press;
+    k.val = val;
+    this->pkey.push_back(k);
+  }
+}
+void PSheetBase::key_press_handle(char ch) {
+  for (int i = 0; i < this->pkey.get_size(); i++) {
+    this->pkey[i].callback(ch, this->pkey[i].val);
   }
 }

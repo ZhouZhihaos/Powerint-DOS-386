@@ -140,7 +140,7 @@ int main(int argc,char **argv)
 	char c;
 	i = t = sum = 0;
 	char v[100] = {0};
-	char *str = (char *)api_malloc(sizeof(char)*200);
+	char *str = (char *)malloc(sizeof(char)*200);
 	scan(str, 200);
 	for(i = 0; str[i] != '\0'; i ++) {
 		if(i == 0 && str[i] == '-') {
@@ -238,7 +238,7 @@ int main(int argc,char **argv)
 		}
 	}
 	api_free(str,200); //释放内存空间
-	char *buf = api_malloc(100);
+	char *buf = malloc(100);
 	while(symbol.top != -1) {
     //     sprintf(buf,"%d",symbol.top);
 		// print(buf);

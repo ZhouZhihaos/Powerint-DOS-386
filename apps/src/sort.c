@@ -36,7 +36,7 @@ int main(int argc,char **argv) // entry
     {
         printf("You no input the array.\n");
     }
-    int *array = api_malloc(argc * sizeof(int)); // array of argc
+    int *array = malloc(argc * sizeof(int)); // array of argc
     
     for (int i = 1; i < argc; i++)
     {
@@ -45,7 +45,7 @@ int main(int argc,char **argv) // entry
     //进行排序
     quickSort(array, 0, argc-1);
     //打印排序结果
-	char *buf = api_malloc(100);
+	char *buf = malloc(100);
     for (int i = 0; i < argc; i++)
     {
         printf("%d\n", array[i]);

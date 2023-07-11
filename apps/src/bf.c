@@ -3,8 +3,8 @@
 #include <arg.h>
 int main(int argc,char **argv)
 {
-    char *s = (char *)api_malloc(sizeof(char) * 30000);
-    char *code = (char *)api_malloc(sizeof(char) * 5000);
+    char *s = (char *)malloc(sizeof(char) * 30000);
+    char *code = (char *)malloc(sizeof(char) * 5000);
     int len = 0;
     int stack[100];
     int stack_len = 0;
@@ -18,7 +18,7 @@ int main(int argc,char **argv)
         len = strlen(code);
     }else if(argc==2)
     {
-        char *filename = api_malloc(sizeof(char) * 100);
+        char *filename = malloc(sizeof(char) * 100);
         strcpy(filename,argv[1]);
         if(api_ReadFile(filename,code)==0)
         {

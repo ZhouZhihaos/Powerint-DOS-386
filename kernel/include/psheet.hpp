@@ -11,11 +11,16 @@ struct PBox {
   uint32_t val;
   void (*callback)(PSheetBase* ps, int x, int y, uint32_t val);
 };
+struct PKey {
+  uint32_t val;
+  void (*callback)(char ch,uint32_t val);
+};
 class PSheetBase {
  public:
   PVector<PBox> pbox;
   PVector<PBox> pbox_right;
   PVector<PBox> pbox_stay;
+  PVector<PKey> pkey;
   PSheetBase* p_left_last;
   PSheetBase* p_stay_last;
   PSheetBase* p_right_last;
@@ -61,7 +66,8 @@ class PSheetBase {
   PSheetBase* get_left_last();
   int get_xsize();
   int get_ysize();
-
+  void register_key_press(void (*key_press)(char ch,uint32_t val),uint32_t val);
+  void key_press_handle(char ch);
  protected:
   struct SHTCTL* stl;  // 只需要存自己的ctl就行了
   PVector<PSheetBase*> p_sheet;

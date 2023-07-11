@@ -9,7 +9,7 @@ GLOBAL mkdir,mkfile,Edit_File,SwitchTo320X200X256_BIOS,SwitchToText8025_BIOS
 GLOBAL TaskForever,SendMessage,GetMessage,MessageLength,NowTaskID
 GLOBAL exit,key_press_status,key_up_status,get_key_press,get_key_up
 GLOBAL timer_alloc,timer_settime,timer_out,timer_free,clock,start_keyboard_message
-GLOBAL haveMsg,PhyMemGetByte,GetMessageAll,PhyMemSetByte,format
+GLOBAL haveMsg,PhyMemGetByte,GetMessageAll,PhyMemSetByte,format,api_heapsize
 GLOBAL get_hour_hex,get_min_hex,get_sec_hex,get_day_of_month,get_day_of_week,get_mon_hex,get_year,AddThread,init_float
 GLOBAL TaskLock,TaskUnlock,SubThread,set_mode,VBEDraw_Px,VBEGet_Px,VBEGetBuffer,VBESetBuffer,roll,VBEDraw_Box
 [SECTION .text]
@@ -240,18 +240,14 @@ pop	ecx
 ret
 
 api_free:
-push	eax
-push	ecx
+ret
+api_heapsize:
 push	edx
 mov	eax,0x09
-mov	edx,[ss:esp+16]
-mov	ecx,[ss:esp+20]
 int	36h
+mov eax,edx
 pop	edx
-pop	ecx
-pop	eax
 ret
-
 system:
 push edx
 push eax

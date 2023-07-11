@@ -167,20 +167,22 @@ void file_savefile(int clustno, int size, char *buf, int *fat,
       clustall *
           get_dm(vfs).ClustnoBytes) { // 新大小 < (旧大小 / 簇大小) * 簇大小
     // 分配Fat（中间情况没必要分配）
-    int i;
-    for (int size1 = clustall * get_dm(vfs).ClustnoBytes, i = old_clustno;
-         size1 > size; size1 -= get_dm(vfs).ClustnoBytes) {
+    int i = old_clustno;
+    for (int size1 = clustall * get_dm(vfs).ClustnoBytes; size1 > size;
+         size1 -= get_dm(vfs).ClustnoBytes) {
       fat[i] = 0;
       ff[i] = false;
-      for (int j = 0; j != get_dm(current_task()->nfs).FatMaxTerms; j++)
-        if (fat[j] == i)
+      for (int j = 0; j != get_dm(current_task()->nfs).FatMaxTerms; j++) {
+        if (fat[j] == i) {
           i = j;
+        }
+      }
     }
     old_clustno = i;
     fat[old_clustno] = end;
     ff[old_clustno] = true;
   }
-  file_savefat(fat, vfs);
+  file_savefat(fat, 0, get_dm(vfs).FatMaxTerms, vfs);
 }
 void file_saveinfo(struct FAT_FILEINFO *directory, vfs_t *vfs) {
   if (directory == get_dm(vfs).root_directory) {
@@ -202,8 +204,59 @@ void file_saveinfo(struct FAT_FILEINFO *directory, vfs_t *vfs) {
     }
   }
 }
-void file_savefat(int *fat, vfs_t *vfs) {
-  write_fat(get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat1Address, fat,
+void file_savefat(int *fat, int clustno, int length, vfs_t *vfs) {
+  unsigned char *img = get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat1Address;
+  unsigned char *img1 = get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat2Address;
+  int size, sec;
+  if (get_dm(vfs).type == 12) {
+    if (clustno % 2 != 0) {
+      clustno--;
+      length++;
+    }
+    for (int i = 0; i <= (length / 3 + 1) * 2; i += 2) {
+      img[(clustno + i) * 3 / 2 + 0] = fat[clustno + i + 0] & 0xff;
+      img[(clustno + i) * 3 / 2 + 1] =
+          (fat[(clustno + i) + 0] >> 8 | fat[clustno + i + 1] << 4) & 0xff;
+      img[(clustno + i) * 3 / 2 + 2] = (fat[clustno + i + 1] >> 4) & 0xff;
+      img1[(clustno + i) * 3 / 2 + 0] = fat[clustno + i + 0] & 0xff;
+      img1[(clustno + i) * 3 / 2 + 1] =
+          (fat[(clustno + i) + 0] >> 8 | fat[clustno + i + 1] << 4) & 0xff;
+      img1[(clustno + i) * 3 / 2 + 2] = (fat[clustno + i + 1] >> 4) & 0xff;
+    }
+    size = length * 3 / 2;
+    sec = clustno * 3 / 2;
+  } else if (get_dm(vfs).type == 16) {
+    for (int i = 0; i <= length; i++) {
+      img[(clustno + i) * 2 + 0] = fat[clustno + i] & 0xff;
+      img[(clustno + i) * 2 + 1] = (fat[clustno + i] >> 8) & 0xff;
+      img1[(clustno + i) * 2 + 0] = fat[clustno + i] & 0xff;
+      img1[(clustno + i) * 2 + 1] = (fat[clustno + i] >> 8) & 0xff;
+    }
+    size = length * 2 - 1;
+    sec = clustno * 2;
+  } else if (get_dm(vfs).type == 32) {
+    for (int i = 0; i <= length; i++) {
+      img[(clustno + i) * 4 + 0] = fat[clustno + i] & 0xff;
+      img[(clustno + i) * 4 + 1] = (fat[clustno + i] >> 8) & 0xff;
+      img[(clustno + i) * 4 + 2] = (fat[clustno + i] >> 16) & 0xff;
+      img[(clustno + i) * 4 + 3] = fat[clustno + i] >> 24;
+      img1[(clustno + i) * 4 + 0] = fat[clustno + i] & 0xff;
+      img1[(clustno + i) * 4 + 1] = (fat[clustno + i] >> 8) & 0xff;
+      img1[(clustno + i) * 4 + 2] = (fat[clustno + i] >> 16) & 0xff;
+      img1[(clustno + i) * 4 + 3] = fat[clustno + i] >> 24;
+    }
+    size = length * 4 - 1;
+    sec = clustno * 4;
+  }
+  Disk_Write((get_dm(vfs).Fat1Address + sec) / get_dm(vfs).SectorBytes,
+             size / get_dm(vfs).SectorBytes + 1,
+             get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat1Address,
+             vfs->disk_number);
+  Disk_Write((get_dm(vfs).Fat2Address + sec) / get_dm(vfs).SectorBytes,
+             size / get_dm(vfs).SectorBytes + 1,
+             get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat2Address,
+             vfs->disk_number);
+  /*write_fat(get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat1Address, fat,
             get_dm(vfs).FatMaxTerms, get_dm(vfs).type);
   write_fat(get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat2Address, fat,
             get_dm(vfs).FatMaxTerms, get_dm(vfs).type);
@@ -212,11 +265,11 @@ void file_savefat(int *fat, vfs_t *vfs) {
                  get_dm(vfs).SectorBytes,
              get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat2Address,
              vfs->disk_number);
-  Disk_Write(get_dm(vfs).Fat1Address / get_dm(vfs).SectorBytes,
+  Disk_Write(get_dm(vfs).Fat2Address / get_dm(vfs).SectorBytes,
              (get_dm(vfs).Fat2Address - get_dm(vfs).Fat1Address) /
                  get_dm(vfs).SectorBytes,
              get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat2Address,
-             vfs->disk_number);
+             vfs->disk_number);*/
 }
 struct FAT_FILEINFO *file_search(char *name, struct FAT_FILEINFO *finfo,
                                  int max) {
@@ -555,7 +608,9 @@ void mkdir(char *dictname, int last_clust, vfs_t *vfs) {
       }
     }
   }
-  file_savefat(get_dm(vfs).fat, vfs);
+  file_savefat(get_dm(vfs).fat,
+               get_clustno(model[2].clustno_high, model[2].clustno_low), 1,
+               vfs);
 
   void *directory_alloc = page_malloc(get_dm(vfs).ClustnoBytes);
   Disk_Read((get_dm(vfs).FileDataAddress +
@@ -601,13 +656,16 @@ int del(char *cmdline, vfs_t *vfs) {
   // char* buf = malloc(finfo->size);
   // memset(buf, 0, finfo->size);
   // Fat_WriteFile(vfs, name, buf, finfo->size);
+  file_savefile(get_clustno(finfo->clustno_high, finfo->clustno_low), 0, NULL,
+                get_dm(vfs).fat, get_dm(vfs).FatClustnoFlags, vfs);
   finfo->name[0] = 0xe5;
   get_dm(vfs).fat[get_clustno(finfo->clustno_high, finfo->clustno_low)] = 0;
   get_dm(vfs)
       .FatClustnoFlags[get_clustno(finfo->clustno_high, finfo->clustno_low)] =
       false;
   file_saveinfo(Get_dictaddr(name, vfs), vfs);
-  file_savefat(get_dm(vfs).fat, vfs);
+  file_savefat(get_dm(vfs).fat,
+               get_clustno(finfo->clustno_high, finfo->clustno_low), 1, vfs);
   return 1;
 }
 int deldir(char *path, vfs_t *vfs) {
@@ -681,7 +739,8 @@ int deldir(char *path, vfs_t *vfs) {
       .FatClustnoFlags[get_clustno(finfo->clustno_high, finfo->clustno_low)] =
       false;
   file_saveinfo(Get_dictaddr(path, vfs), vfs);
-  file_savefat(get_dm(vfs).fat, vfs);
+  file_savefat(get_dm(vfs).fat,
+               get_clustno(finfo->clustno_high, finfo->clustno_low), 1, vfs);
   return 1;
 }
 void mkfile(char *name, vfs_t *vfs) {
@@ -744,7 +803,8 @@ void mkfile(char *name, vfs_t *vfs) {
       get_fat_date(get_year(), get_mon_hex(), get_day_of_month());
   finfo->size = 0;
   file_saveinfo(Get_dictaddr(path, vfs), vfs);
-  file_savefat(get_dm(vfs).fat, vfs);
+  file_savefat(get_dm(vfs).fat,
+               get_clustno(finfo->clustno_high, finfo->clustno_low), 1, vfs);
   return;
 }
 int changedict(char *dictname, vfs_t *vfs) {

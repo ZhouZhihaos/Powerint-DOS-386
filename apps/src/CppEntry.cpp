@@ -4,16 +4,17 @@
 #undef true
 #undef false
 int main(int argc,char **argv);
+extern "C" void init_mem();
 extern "C" void Main()
 {
-
-    char *buf = api_malloc(1024);
+    init_mem();
+    char *buf = (char *)malloc(1024);
     char **argv;
     GetCmdline(buf);
-    argv = (char **)api_malloc(sizeof(char*)*(Get_Argc(buf)+1));
+    argv = (char **)malloc(sizeof(char*)*(Get_Argc(buf)+1));
     for(int i = 0;i<=Get_Argc(buf);i++)
     {
-        argv[i] = api_malloc(128);
+        argv[i] = (char *)malloc(128);
     }
     for(int i=0;i<=Get_Argc(buf);i++)
     {

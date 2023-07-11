@@ -67,7 +67,27 @@ int input_char_inSM() {
   int i;
   struct TASK* task = current_task();
   struct SHEET* sht_win = (struct SHEET*)task->TTY->reserved[1];
+  struct TASK* cons = (struct TASK*)task->TTY->reserved[1];
   extern struct SHTCTL* shtctl;
+
+  if (running_mode == POWERDESKTOP) {
+  //  printk("%08x %08x\n",cons,current_task());
+    while (1)
+      if ((fifo8_status(TaskGetKeyfifo(cons)) ==
+           0) &&  // 我们称此行为为偷菜行为（
+          !current_task()->forever) {
+            
+      } else {
+        // 返回扫描码
+     //   printk("yes.\n");
+        i = fifo8_get(TaskGetKeyfifo(cons));  // 从FIFO缓冲区中取出扫描码
+        if (i != -1) {
+          break;
+        }
+      }
+
+    return i;
+  }
   while (1) {
     if ((fifo8_status(TaskGetKeyfifo(current_task())) == 0) ||
         (running_mode == POWERDESKTOP && current_task()->app &&
@@ -97,6 +117,9 @@ int input_char_inSM() {
 }
 int kbhit() {
   // printk("kbhit : %d\n", fifo8_status(current_task()->keyfifo));
+  struct TASK* cons = (struct TASK*)current_task()->TTY->reserved[1];
+  if(running_mode == POWERDESKTOP)
+    return fifo8_status(cons->keyfifo);
   return fifo8_status(current_task()->keyfifo) !=
          0;  // 进程的键盘FIFO缓冲区是否为空
 }
@@ -143,8 +166,8 @@ void inthandler21(int* esp) {
     io_sti();
     return;
   }
-  if(e0_flag) {
-    if(data > 0x80) {
+  if (e0_flag) {
+    if (data > 0x80) {
       e0_flag = 0;
     }
   }
@@ -228,7 +251,7 @@ void inthandler21(int* esp) {
       // 如果进程正在休眠
       continue;
     // 一般进程
-   // printk("Send packet to %s ID %d\n",task->name,Get_Tid(task));
+    // printk("Send packet to %s ID %d\n",task->name,Get_Tid(task));
     fifo8_put(TaskGetKeyfifo(task), data + e0_flag);
     // printk(
     //    "TASKNUM:%d TASK NAME:%s TASK ID:%d TASK FIFO:%08x STATUS:%d

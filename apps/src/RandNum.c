@@ -14,7 +14,7 @@ int main(int argc,char **argv)
     int num = myrand() % 100;
     while (1)
     {
-        char *buf = api_malloc(128);
+        char *buf = malloc(128);
         print("Input:");
         scan(buf,128);
         int input = atoi(buf);

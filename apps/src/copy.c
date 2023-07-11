@@ -4,10 +4,10 @@
 #include <string.h>
 int main(int argc,char **argv)
 {
-    char *buf = api_malloc(1000);
+    char *buf = malloc(1000);
     GetCmdline(buf);
-    char *arg = api_malloc(1000);
-    char *arg2 = api_malloc(1000);
+    char *arg = malloc(1000);
+    char *arg2 = malloc(1000);
     if(Get_Argc(buf) < 2)
     {
         print("Usage: copy <source> <destination>\n");

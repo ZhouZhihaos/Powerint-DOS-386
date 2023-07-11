@@ -5,6 +5,7 @@
 #include <dos.h>
 volatile int floppy_int_count = 0;
 void floppy_int(void);
+struct TASK* floppy_use = NULL;
 typedef struct DrvGeom {
   unsigned char heads;
   unsigned char tracks;
@@ -60,46 +61,53 @@ static void Read(char drive,
                  unsigned char* buffer,
                  unsigned int number,
                  unsigned int lba) {
-  fdc_rw(lba,buffer,1,number);
+  floppy_use = current_task();
+  fdc_rw(lba, buffer, 1, number);
+  floppy_use = NULL;
 }
 static void Write(char drive,
                   unsigned char* buffer,
                   unsigned int number,
                   unsigned int lba) {
-  fdc_rw(lba,buffer,0,number);
+  floppy_use = current_task();
+  fdc_rw(lba, buffer, 0, number);
+  floppy_use = NULL;
 }
 void init_floppy() {
   sendbyte(
-      CMD_VERSION); //发送命令（获取软盘版本），如果收到回应，说明软盘正在工作
+      CMD_VERSION);  //发送命令（获取软盘版本），如果收到回应，说明软盘正在工作
   if (getbyte() == -1) {
     printf("floppy: no floppy drive found");
     printf("No fount FDC");
     return;
   }
   //设置软盘驱动器的中断服务程序
-  struct GATE_DESCRIPTOR *idt = (struct GATE_DESCRIPTOR *)ADR_IDT;
+  struct GATE_DESCRIPTOR* idt = (struct GATE_DESCRIPTOR*)ADR_IDT;
   set_gatedesc(idt + 0x26, (int)floppy_int, 2 * 8, AR_INTGATE32);
-  ClearMaskIrq(0x6); //清除IRQ6的中断
+  ClearMaskIrq(0x6);  //清除IRQ6的中断
   printf("FLOPPY DISK:RESETING\n");
-  reset(); //重置软盘驱动器
+  reset();  //重置软盘驱动器
   printf("FLOPPY DISK:reset over!\n");
-  sendbyte(CMD_VERSION);               //获取软盘版本
-  printf("FDC_VER:0x%x\n", getbyte()); //并且输出到屏幕上
+  sendbyte(CMD_VERSION);                //获取软盘版本
+  printf("FDC_VER:0x%x\n", getbyte());  //并且输出到屏幕上
   vdisk vd;
-  strcpy(vd.DriveName,"floppy");
+  strcpy(vd.DriveName, "floppy");
   vd.Read = Read;
-  vd.Write =Write;
+  vd.Write = Write;
   vd.size = 1474560;
   vd.flag = 1;
   register_vdisk(vd);
 }
-void flint(int *esp) {
+void flint(int* esp) {
   /**
    * 软盘中断服务程序（C语言），这个中断的入口在nasmfunc.asm中
    * */
   floppy_int_count =
-      1; // 设置中断计数器为1，代表中断已经发生（或者是系统已经收到了中断）
-  io_out8(0x20, 0x20); // 发送EOI信号，告诉PIC，我们已经处理完了这个中断
+      1;  // 设置中断计数器为1，代表中断已经发生（或者是系统已经收到了中断）
+  if(floppy_use) {
+    RunTask(floppy_use);
+  }
+  io_out8(0x20, 0x20);  // 发送EOI信号，告诉PIC，我们已经处理完了这个中断
 }
 void reset(void) {
   /* 停止软盘电机并禁用IRQ和DMA传输 */
@@ -116,7 +124,7 @@ void reset(void) {
   io_out8(FDC_DOR, 0x0c);
 
   /* 重置软盘驱动器将会引发一个中断了，我们需要进行处理 */
-  wait_floppy_interrupt(); //等待软盘驱动器的中断发生
+  wait_floppy_interrupt();  //等待软盘驱动器的中断发生
   /* 指定软盘驱动器定时（不使用在实模式时BIOS设定的操作） */
   sendbyte(CMD_SPECIFY);
   sendbyte(0xdf); /* SRT = 3ms, HUT = 240ms */
@@ -126,7 +134,7 @@ void reset(void) {
   recalibrate();
 
   dchange =
-      0; //清除“磁盘更改”状态（将dchange设置为false，让别的函数知道磁盘更改状态已经被清楚了）
+      0;  //清除“磁盘更改”状态（将dchange设置为false，让别的函数知道磁盘更改状态已经被清楚了）
 }
 void motoron(void) {
   if (!motor) {
@@ -134,7 +142,7 @@ void motoron(void) {
     io_out8(FDC_DOR, 0x1c);
     for (int i = 0; i < 80000; i++)
       ;
-    motor = 1; //设置电机状态为true
+    motor = 1;  //设置电机状态为true
   }
 }
 
@@ -172,7 +180,7 @@ int seek(int track) {
   sendbyte(track); /* 要seek到的磁道号 */
 
   /* 发送完之后，软盘理应会送来一个中断 */
-  wait_floppy_interrupt(); // 所以我们需要等待软盘中断
+  wait_floppy_interrupt();  // 所以我们需要等待软盘中断
 
   /* 然后我们等待软盘seek（大约15ms） */
   // sleep(1); // 注意：这里单位是hz，1hz=10ms，所以sleep(1)就是sleep(10)
@@ -181,20 +189,20 @@ int seek(int track) {
     ;
   /* 检查一下成功了没有 */
   if ((sr0 != 0x20) || (fdc_track != track))
-    return 0; // 没成功
+    return 0;  // 没成功
   else
-    return 1; // 成功了
+    return 1;  // 成功了
 }
-void sendbyte(int byte) // 向软盘控制器发送一个字节
+void sendbyte(int byte)  // 向软盘控制器发送一个字节
 {
-  volatile int msr; // 注意：这里是volatile，这样可以保证msr的值不会被优化掉
-  int tmo; // 超时计数器
+  volatile int msr;  // 注意：这里是volatile，这样可以保证msr的值不会被优化掉
+  int tmo;  // 超时计数器
 
-  for (tmo = 0; tmo < 128; tmo++) // 这里我们只给128次尝试的机会
+  for (tmo = 0; tmo < 128; tmo++)  // 这里我们只给128次尝试的机会
   {
     msr = io_in8(FDC_MSR);
     if ((msr & 0xc0) ==
-        0x80) // 如果软盘驱动器的状态寄存器的低6位是0x80，说明软盘能够接受新的数据
+        0x80)  // 如果软盘驱动器的状态寄存器的低6位是0x80，说明软盘能够接受新的数据
     {
       // 哈，程序如果执行到这里，可不就说明软盘驱动器可以接受新的数据了吗？
       // 那就发送呗
@@ -205,14 +213,14 @@ void sendbyte(int byte) // 向软盘控制器发送一个字节
   }
 }
 int getbyte() {
-  int msr; // 软盘驱动器状态寄存器
-  int tmo; // 软盘驱动器状态寄存器的超时计数器
+  int msr;  // 软盘驱动器状态寄存器
+  int tmo;  // 软盘驱动器状态寄存器的超时计数器
 
-  for (tmo = 0; tmo < 128; tmo++) // 这里我们只给128次尝试的机会
+  for (tmo = 0; tmo < 128; tmo++)  // 这里我们只给128次尝试的机会
   {
     msr = io_in8(FDC_MSR);
     if ((msr & 0xd0) ==
-        0xd0) // 如果软盘控制器的状态寄存器的低五位是0xd0，说明我们能够从软盘DATA寄存器中读取
+        0xd0)  // 如果软盘控制器的状态寄存器的低五位是0xd0，说明我们能够从软盘DATA寄存器中读取
     {
       // 能读取了？那就读取吧，读完再返回回去
       return io_in8(FDC_DATA);
@@ -224,14 +232,14 @@ int getbyte() {
 void wait_floppy_interrupt() {
   while (!floppy_int_count)
     ;
-  statsz = 0; // 清空状态
+  statsz = 0;  // 清空状态
   while (
       (statsz < 7) &&
       (io_in8(FDC_MSR) &
        (1
-        << 4))) //  状态寄存器的低四位是1（TRUE，所以这里不用写==），说明软盘驱动器没发送完所有的数据，当我们获取完所有的数据（状态变量=7），就可以跳出循环了
+        << 4)))  //  状态寄存器的低四位是1（TRUE，所以这里不用写==），说明软盘驱动器没发送完所有的数据，当我们获取完所有的数据（状态变量=7），就可以跳出循环了
   {
-    status[statsz++] = getbyte(); // 获取数据
+    status[statsz++] = getbyte();  // 获取数据
   }
 
   /* 获取中断状态 */
@@ -242,22 +250,23 @@ void wait_floppy_interrupt() {
   floppy_int_count = 0;
   return;
 }
-void block2hts(int block, int *track, int *head, int *sector) {
+void block2hts(int block, int* track, int* head, int* sector) {
   *track = (block / 18) / 2;
   *head = (block / 18) % 2;
   *sector = block % 18 + 1;
 }
-void hts2block(int track, int head, int sector, int *block) {
+void hts2block(int track, int head, int sector, int* block) {
   *block = track * 18 * 2 + head * 18 + sector;
 }
-int fdc_rw(int block, unsigned char *blockbuff, int read,
+int fdc_rw(int block,
+           unsigned char* blockbuff,
+           int read,
            unsigned long nosectors) {
   int head, track, sector, tries, copycount = 0;
-  unsigned char *p_tbaddr =
-      (char
-           *)0x80000; // 512byte
-                      // 缓冲区（大家可以放心，我们再page.c已经把这里设置为占用了）
-  unsigned char *p_blockbuff = blockbuff; // r/w的数据缓冲区
+  unsigned char* p_tbaddr =
+      (char*)0x80000;  // 512byte
+                       // 缓冲区（大家可以放心，我们再page.c已经把这里设置为占用了）
+  unsigned char* p_blockbuff = blockbuff;  // r/w的数据缓冲区
 
   /* 获取block对应的ths */
   block2hts(block, &track, &head, &sector);
@@ -330,7 +339,7 @@ int fdc_rw(int block, unsigned char *blockbuff, int read,
   if (read && blockbuff) {
     /* 复制数据 */
     p_blockbuff = blockbuff;
-    p_tbaddr = (char *)0x80000;
+    p_tbaddr = (char*)0x80000;
     for (copycount = 0; copycount < (nosectors * 512); copycount++) {
       *p_blockbuff = *p_tbaddr;
       p_blockbuff++;
@@ -340,12 +349,16 @@ int fdc_rw(int block, unsigned char *blockbuff, int read,
 
   return (tries != 3);
 }
-int fdc_rw_ths(int track, int head, int sector, unsigned char *blockbuff,
-               int read, unsigned long nosectors) {
+int fdc_rw_ths(int track,
+               int head,
+               int sector,
+               unsigned char* blockbuff,
+               int read,
+               unsigned long nosectors) {
   // 跟上面的大同小异
   int tries, copycount = 0;
-  unsigned char *p_tbaddr = (char *)0x80000;
-  unsigned char *p_blockbuff = blockbuff;
+  unsigned char* p_tbaddr = (char*)0x80000;
+  unsigned char* p_blockbuff = blockbuff;
 
   motoron();
 
@@ -406,7 +419,7 @@ int fdc_rw_ths(int track, int head, int sector, unsigned char *blockbuff,
 
   if (read && blockbuff) {
     p_blockbuff = blockbuff;
-    p_tbaddr = (char *)0x80000;
+    p_tbaddr = (char*)0x80000;
     for (copycount = 0; copycount < (nosectors * 512); copycount++) {
       *p_blockbuff = *p_tbaddr;
       p_blockbuff++;
@@ -416,7 +429,7 @@ int fdc_rw_ths(int track, int head, int sector, unsigned char *blockbuff,
 
   return (tries != 3);
 }
-int read_block(int block, unsigned char *blockbuff, unsigned long nosectors) {
+int read_block(int block, unsigned char* blockbuff, unsigned long nosectors) {
   int track = 0, sector = 0, head = 0, track2 = 0, result = 0, loop = 0;
   block2hts(block, &track, &head, &sector);
   block2hts(block + nosectors, &track2, &head, &sector);
@@ -430,19 +443,24 @@ int read_block(int block, unsigned char *blockbuff, unsigned long nosectors) {
 }
 
 /* 写一个扇区 */
-int write_block(int block, unsigned char *blockbuff, unsigned long nosectors) {
+int write_block(int block, unsigned char* blockbuff, unsigned long nosectors) {
   return fdc_rw(block, blockbuff, 0, nosectors);
 }
-int write_floppy_for_ths(int track, int head, int sec, unsigned char *blockbuff,
+int write_floppy_for_ths(int track,
+                         int head,
+                         int sec,
+                         unsigned char* blockbuff,
                          unsigned long nosec) {
   int res = fdc_rw_ths(track, head, sec, blockbuff, 0, nosec);
 }
 #define N(H, L) ((uint16_t)(H) << 8 | (uint16_t)(L))
-void bios_fdc_rw(int block, unsigned char *blockbuff, int read,
+void bios_fdc_rw(int block,
+                 unsigned char* blockbuff,
+                 int read,
                  unsigned long nosectors) {
   int head, track, sector, tries, copycount = 0;
-  unsigned char *p_tbaddr = (char *)0x7e00; // 512byte
-  unsigned char *p_blockbuff = blockbuff;   // r/w的数据缓冲区
+  unsigned char* p_tbaddr = (char*)0x7e00;  // 512byte
+  unsigned char* p_blockbuff = blockbuff;   // r/w的数据缓冲区
   /* 获取block对应的ths */
   block2hts(block, &track, &head, &sector);
   if (!read) {

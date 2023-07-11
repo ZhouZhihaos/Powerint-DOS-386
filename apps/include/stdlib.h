@@ -22,7 +22,6 @@ void PrintChineseChar(int x, int y, int color, unsigned short cChar);
 void PrintChineseStr(int x, int y, int color, unsigned char *cStr);
 void print(char *str);
 void scan(char *str, int length);
-char *api_malloc(int size);
 void api_free(void *ptr, int size);
 void system(char *command);
 int filesize(char *filename);

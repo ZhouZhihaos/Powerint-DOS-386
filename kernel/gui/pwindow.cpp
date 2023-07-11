@@ -18,6 +18,7 @@ void Draw_Circle(vram_t* vram, int xsize, int x, int y, int r, color_t col) {
   }
 }
 void window_drop(PSheetBase* ps, int x, int y, uint32_t val) {
+ // printk("a?\n");
   if (ps->get_left_last() == ps) {
     int rx = ps->get_sht()->vx0 + mdec.x;
     int ry = ps->get_sht()->vy0 + mdec.y;

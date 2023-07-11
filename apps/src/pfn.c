@@ -21,7 +21,7 @@ void clean(char* s, int l) {
   }
 }
 int main(int argc, char** argv) {
-  char* buf = api_malloc(128);
+  char* buf = malloc(128);
   for (int i = 1;; i++) {
     if (is_pfn(i)) {
       sprintf(buf, "%d", i);

@@ -103,7 +103,8 @@
         "math.h": "c",
         "stb_image.h": "c",
         "stb_image_resize.h": "c",
-        "mst.h": "c"
+        "mst.h": "c",
+        "stdlib.h": "c"
     },
     "cSpell.words": [],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [

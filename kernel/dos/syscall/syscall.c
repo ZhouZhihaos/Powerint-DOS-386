@@ -69,7 +69,7 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
   /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
   /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
   if (eax == 0x01) {
-    reg[EDX] = 0x302e3761;
+    reg[EDX] = 0x302e3762;
   } else if (eax == 0x02) {
     printchar((edx & 0x000000ff));
   } else if (eax == 0x03) {
@@ -99,45 +99,9 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
   } else if (eax == 0x06) {
     sleep(edx);
   } else if (eax == 0x08) {
-    int size = (ecx - 1) / 128 + 1;
-    for (int i = 0, j = 0; i != alloc_size / 128; i++) {
-      if (j == size) {
-        for (int k = j; k != 0; k--) {
-          memman[i - k] = 0xff;
-        }
-        // for (int l = 0; l != 128; l++) {
-        //   unsigned char c = (unsigned)memman[l];
-        //   printk("%02x ", c);
-        // }
-        reg[EDX] = (i - j) * 128 + (alloc_addr - ds_base);
-        return;
-      }
-      if (memman[i] == 0x00) {
-        j++;
-      } else {
-        j = 0;
-      }
-    }
-    printk("malloc error\n");
-    reg[EDX] = 0;
+    reg[EDX] = (alloc_addr - ds_base);
   } else if (eax == 0x09) {
-    ecx = ((ecx - 1) + 128) / 128;
-    int ad = (edx & 0xfffffff0) - (alloc_addr - ds_base);
-    edx = ad / 128;
-    if (edx > alloc_size / 128)
-      return;
-    for (int i = edx; i < ecx + edx; i++) {
-      memman[i] = 0x00;
-    }
-    // printk("DS_BASE:%08x ALLOC_ADDR:%08x FREE:%08x ~ %08x\n", ds_base,
-    //        alloc_addr, ad + (alloc_addr - ds_base),
-    //        ad + (alloc_addr - ds_base) + ecx * 128);
-    // for (int j = 0; j != 128; j++) {
-    //  unsigned char c = (unsigned)memman[j];
-    //  printk("%02x ", c);
-    // }
-    // printk("\n");
-    clean((char *)(ad + alloc_addr), ecx * 128);
+    reg[EDX] = alloc_size;
   } else if (eax == 0x0c) {
     Text_Draw_Box(ecx, ebx, esi, edx, (unsigned char)edi);
   } else if (eax == 0x0e) {
@@ -316,6 +280,10 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       page_kfree(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val,
                  255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
+      extern struct TASK* mouse_use_task;
+      if(mouse_use_task == task) {
+        mouse_sleep(&mdec);
+      }
     }
     DeleteList(vfs_now->path);
     page_kfree((int)vfs_now, sizeof(vfs_t));
