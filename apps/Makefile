@@ -57,7 +57,6 @@ clean :
 
 ./out/%.obj : ./src/%.c Makefile
 	@gcc -m32 -I./include -nostdinc -nostdlib -fno-builtin -ffreestanding -fno-stack-protector -Qn -fno-pic -fno-pie -fno-asynchronous-unwind-tables -mpreferred-stack-boundary=2 -fomit-frame-pointer -mno-mmx -mno-sse -mfpmath=387 -Os -w -c ./src/$*.c -o ./out/$*.obj
-	@i686-elf-gcc -m32 -I./include -nostdlib -fno-builtin -ffreestanding -fno-stack-protector -Qn -fno-pic -fno-pie -fno-asynchronous-unwind-tables -mpreferred-stack-boundary=2 -fomit-frame-pointer -mno-mmx -mno-sse -mfpmath=387 -Os -w -c ./src/$*.c -o ./out/$*.o
 ./out/%.obj : ./src/%.cpp Makefile
 	@gcc -m32 -I./include -nostdinc -nostdlib -fno-builtin -ffreestanding -fno-stack-protector -Qn -fno-pic -fno-pie -fno-asynchronous-unwind-tables -mpreferred-stack-boundary=2 -fomit-frame-pointer -mno-mmx -mno-sse -mfpmath=387 -Os -w -c ./src/$*.cpp -o ./out/$*.obj
 %.bin : ./src/%.asm Makefile

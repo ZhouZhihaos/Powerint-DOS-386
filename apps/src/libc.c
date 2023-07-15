@@ -1529,6 +1529,19 @@ int memman_free_4k(struct MEMMAN* man, unsigned int addr, unsigned int size) {
   i = memman_free(man, addr, size);
   return i;
 }
+unsigned int memman_alloc_2k(struct MEMMAN* man, unsigned int size) {
+  unsigned int a;
+  size = (size + 0x7ff) & 0xfffff800;
+  a = memman_alloc(man, size);
+  return a;
+}
+
+int memman_free_2k(struct MEMMAN* man, unsigned int addr, unsigned int size) {
+  int i;
+  size = (size + 0x7ff) & 0xfffff800;
+  i = memman_free(man, addr, size);
+  return i;
+}
 struct MEMMAN* mm;
 void init_mem() {
   start = api_malloc(1);
@@ -1541,7 +1554,7 @@ void init_mem() {
 }
 void* malloc(int size) {
   if (flag) {
-    void* p = memman_alloc_4k(mm, size + sizeof(int));
+    void* p = memman_alloc_2k(mm, size + sizeof(int));
     if (p == NULL)
       return NULL;
     *(int*)p = size;
@@ -1554,7 +1567,7 @@ void free(void* p) {
   if (p == NULL)
     return;
   int size = *(int*)((char*)p - sizeof(int));
-  memman_free_4k(mm, (char*)p - sizeof(int), size + sizeof(int));
+  memman_free_2k(mm, (char*)p - sizeof(int), size + sizeof(int));
 }
 int _Znaj(uint32_t size) {
   // printk("_Znaj:%d\n", size);

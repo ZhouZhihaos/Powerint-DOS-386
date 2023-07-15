@@ -275,6 +275,19 @@ int memman_free_4k(struct MEMMAN* man, unsigned int addr, unsigned int size) {
   i = memman_free(man, addr, size);
   return i;
 }
+unsigned int memman_alloc_2048b(struct MEMMAN* man, unsigned int size) {
+  unsigned int a;
+  size = (size + 0x7ff) & 0xfffff800;
+  a = memman_alloc(man, size);
+  return a;
+}
+
+int memman_free_2048b(struct MEMMAN* man, unsigned int addr, unsigned int size) {
+  int i;
+  size = (size + 0x7ff) & 0xfffff800;
+  i = memman_free(man, addr, size);
+  return i;
+}
 void init_mem(struct TASK* task) {
   if (task->alloc_addr == 0 || task->alloc_size == 0) {
     return;
@@ -287,7 +300,7 @@ void init_mem(struct TASK* task) {
 }
 void* page_malloc_lessthan4kb(int size) {
   if (current_task()->mm != NULL) {
-    void* p = memman_alloc_4k(current_task()->mm, size);
+    void* p = memman_alloc_2048b(current_task()->mm, size);
     return p;
   }
   return page_kmalloc(size);
@@ -297,7 +310,7 @@ void page_free_lessthan4kb(void* p, int size) {
     page_kfree(p, size);
     return;
   }
-  memman_free_4k(current_task()->mm, (int)p, size);
+  memman_free_2048b(current_task()->mm, (int)p, size);
 }
 void* page_malloc(int size) {
  // printk("malloc --- %d\n", size);
