@@ -1003,6 +1003,7 @@ CHECK_OK:
       if (!vfs_mount_disk(cmdline[0], cmdline[0])) {
         printf("Disk not ready!\n");
       } else {
+        
         vfs_change_disk(cmdline[0]);
       }
     } else {

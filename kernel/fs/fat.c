@@ -354,12 +354,14 @@ struct FAT_FILEINFO *Get_File_Address(char *path1, vfs_t *vfs) {
   int drive_number = vfs->disk_number;
   // printk("Get_File_Address :%s\n", path1);
   char *path = (char *)page_malloc(strlen(path1) + 1);
+  char *bmp = path;
   strcpy(path, path1);
   strtoupper(path);
   if (strncmp("/", path, 1) == 0) {
     path += 1;
     bmpDict = get_dm(vfs).root_directory;
   }
+  // printk("strlen(path) = %d\n",strlen(path));
   if (path[0] == '\\' || path[0] == '/') {
     //跳过反斜杠和正斜杠
     for (int i = 0; i < strlen(path); i++) {
@@ -369,12 +371,16 @@ struct FAT_FILEINFO *Get_File_Address(char *path1, vfs_t *vfs) {
       }
     }
   }
+  // printk("strlen(path) = %d\n",strlen(path));
   char *temp_name = (char *)page_malloc(128);
+  // printf("%08x %08x\n", path, temp_name);
   struct FAT_FILEINFO *finfo;
   int i = 0;
   while (1) {
     int j;
+    // printk("strlen(path) = %d\n",strlen(path));
     for (j = 0; i < strlen(path); i++, j++) {
+   //    printk("i = %d %c %d\n",i,path[i],strlen(path));
       if (path[i] == '\\' || path[i] == '/') {
         temp_name[j] = '\0';
         // printk("Got It:%s,ALL:%s\n", temp_name, path);
@@ -382,18 +388,19 @@ struct FAT_FILEINFO *Get_File_Address(char *path1, vfs_t *vfs) {
         break;
       }
       temp_name[j] = path[i];
+      // sleep(100);
     }
     finfo = dict_search(temp_name, bmpDict, get_dm(vfs).RootMaxFiles);
     if (finfo == 0) {
       if (path[i] != '\0') {
         page_free((int)temp_name, 128);
-        page_free((int)path, strlen(path1) + 1);
+        page_free((int)bmp, strlen(path1) + 1);
         return 0;
       }
       finfo = file_search(temp_name, bmpDict, get_dm(vfs).RootMaxFiles);
       if (finfo == 0) {
         page_free((int)temp_name, 128);
-        page_free((int)path, strlen(path1) + 1);
+        page_free((int)bmp, strlen(path1) + 1);
         return 0;
       } else {
         goto END;
@@ -425,7 +432,7 @@ struct FAT_FILEINFO *Get_File_Address(char *path1, vfs_t *vfs) {
 END:
   // printk("file_search:%s finfo:%08x\n", temp_name, finfo);
   page_free((int)temp_name, 128);
-  page_free((int)path, strlen(path1) + 1);
+  page_free((int)bmp, strlen(path1) + 1);
   return finfo;
 }
 struct FAT_FILEINFO *Get_dictaddr(char *path1, vfs_t *vfs) {
@@ -433,6 +440,7 @@ struct FAT_FILEINFO *Get_dictaddr(char *path1, vfs_t *vfs) {
   struct FAT_FILEINFO *bmpDict = get_now_dir(vfs);
   int drive_number = vfs->disk_number;
   char *path = (char *)page_malloc(strlen(path1) + 1);
+  char *bmp = path;
   strcpy(path, path1);
   strtoupper(path);
   if (strncmp("/", path, 1) == 0) {
@@ -511,7 +519,7 @@ struct FAT_FILEINFO *Get_dictaddr(char *path1, vfs_t *vfs) {
   }
 END:
   page_free((int)temp_name, 128);
-  page_free((int)path, strlen(path1) + 1);
+  page_free((int)bmp, strlen(path1) + 1);
   // printf("bmpDict=%08x root=%08x\n", bmpDict,
   //       get_dm(vfs).root_directory);
   return bmpDict;

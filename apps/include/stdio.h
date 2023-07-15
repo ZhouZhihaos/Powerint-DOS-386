@@ -46,7 +46,7 @@ int feof(FILE *stream);
 int ferror(FILE *stream);
 int getc(FILE *stream);
 int sscanf(const char * s, const char * fmt, ...);
-
+int snprintf(char * s, unsigned n, const char *fmt, ...);
 #ifdef __cplusplus
 }
 #endif

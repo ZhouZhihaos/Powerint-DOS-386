@@ -79,6 +79,8 @@ void VBEDraw_Box(int x, int y, int x1, int y1, int color);
 void roll(int ysize);
 char get_cons_color();
 void set_cons_color(uint8_t c);
+
+void qsort (void *, size_t, size_t, int (*)(const void *, const void *));
 #ifdef __cplusplus
 }
 #endif

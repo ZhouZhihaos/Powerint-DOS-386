@@ -7,7 +7,7 @@ GLOBAL Draw_Box,Draw_Px,Text_Draw_Box
 GLOBAL input_char_inSM,beep,RAND,GetCmdline,Get_System_Version,Copy,_kbhit
 GLOBAL mkdir,mkfile,Edit_File,SwitchTo320X200X256_BIOS,SwitchToText8025_BIOS
 GLOBAL TaskForever,SendMessage,GetMessage,MessageLength,NowTaskID
-GLOBAL exit,key_press_status,key_up_status,get_key_press,get_key_up
+GLOBAL exit,key_press_status,key_up_status,get_key_press,get_key_up,sbrk
 GLOBAL timer_alloc,timer_settime,timer_out,timer_free,clock,start_keyboard_message
 GLOBAL haveMsg,PhyMemGetByte,GetMessageAll,PhyMemSetByte,format,api_heapsize
 GLOBAL get_hour_hex,get_min_hex,get_sec_hex,get_day_of_month,get_day_of_week,get_mon_hex,get_year,AddThread,init_float
@@ -944,4 +944,13 @@ get_key_press:
 get_key_up:
 	mov eax,0x34
 	int 36h
+	ret
+sbrk:
+	push ebx
+	push eax
+	mov ebx,[esp+4+8]
+	mov eax,0x35
+	int 0x36
+	pop eax
+	pop ebx
 	ret

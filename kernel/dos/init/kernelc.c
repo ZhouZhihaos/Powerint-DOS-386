@@ -32,6 +32,7 @@ void shell(void) {
   }
   if (strcmp(env_read("network"), "enable") == 0) {
     init_card();
+    //for(;;);
   }
   init_ok_flag = 1;
   /*到这里 系统的初始化才真正结束*/

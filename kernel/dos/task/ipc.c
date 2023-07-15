@@ -24,10 +24,10 @@ int SendIPCMessage(int to_tid, void *data, unsigned int size, char type) {
   int now = to_task->IPC_header.now;
   ClearMaskIrq(0);
   if (type == synchronous) { // 同步
-    ChangeLevel(this_task, 3);
+    change_level(this_task, 3);
     while (to_task->IPC_header.now != now - 1)
       ;
-    ChangeLevel(this_task, levelold);
+    change_level(this_task, levelold);
   }
   return 0;
 }
@@ -172,10 +172,10 @@ int SendIPCMessageTID(int to_tid,        // 收信人
   ClearMaskIrq(0);
   // sleep(10);
   if (type == synchronous) { // 同步
-    ChangeLevel(this_task, 3);
+    change_level(this_task, 3);
     while (to_task->IPC_header.now != now - 1)
       ;
-    ChangeLevel(this_task, levelold);
+    change_level(this_task, levelold);
   }
   return 0;
 }

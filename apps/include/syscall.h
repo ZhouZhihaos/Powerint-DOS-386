@@ -85,6 +85,7 @@ uint8_t key_up_status();
 uint8_t get_key_press();
 uint8_t get_key_up();
 unsigned api_heapsize();
+void sbrk(unsigned size);
 #ifdef __cplusplus
 }
 #endif

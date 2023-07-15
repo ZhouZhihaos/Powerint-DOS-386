@@ -25,12 +25,12 @@ extern struct SHEET* close_tid;
 void Button_handle() {
   // printk("app button--TID--%d\n", button_cl->tid);
   // io_cli();
-  SendIPCMessageTID(Get_Tid(button_cl->task), -1, &button_cl,
+  SendIPCMessageTID(get_tid(button_cl->task), -1, &button_cl,
                     sizeof(unsigned int), asynchronous);
   // io_sti();
 }
 void Window_Close_Handler() {
-  SendIPCMessageTID(Get_Tid(close_tid->task), -2, &close_tid,
+  SendIPCMessageTID(get_tid(close_tid->task), -2, &close_tid,
                     sizeof(unsigned int), asynchronous);
 }
 enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };

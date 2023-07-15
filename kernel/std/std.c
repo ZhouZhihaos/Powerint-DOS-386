@@ -1,12 +1,12 @@
+#include <dos.h>
 #include <stdio.h>
 #include <string.h>
-#include <dos.h>
-void UInt2BinAscii(unsigned int num, char *buf);
+void UInt2BinAscii(unsigned int num, char* buf);
 #define LONG_MAX 0x7fffffff
 #define LONG_MIN (-LONG_MAX - 1)
 
 // strcmp
-int strcmp(const char *s1, const char *s2) {
+int strcmp(const char* s1, const char* s2) {
   while (*s1 == *s2) {
     if (*s1 == '\0')
       return 0;
@@ -16,29 +16,29 @@ int strcmp(const char *s1, const char *s2) {
   return *s1 - *s2;
 }
 // strcpy
-char *strcpy(char *dest, const char *src) {
-  char *tmp = dest;
+char* strcpy(char* dest, const char* src) {
+  char* tmp = dest;
   while ((*dest++ = *src++) != '\0')
     ;
   return tmp;
 }
 // strncpy
-char *strncpy(char *dest, const char *src, size_t n) {
-  char *tmp = dest;
+char* strncpy(char* dest, const char* src, size_t n) {
+  char* tmp = dest;
   while (n-- > 0 && (*dest++ = *src++) != '\0')
     ;
   return tmp;
 }
 // strlen
-size_t strlen(const char *s) {
+size_t strlen(const char* s) {
   size_t len = 0;
   while (s[len])
     len++;
   return len;
 }
 // strcat
-char *strcat(char *dest, const char *src) {
-  char *tmp = dest;
+char* strcat(char* dest, const char* src) {
+  char* tmp = dest;
   while (*dest)
     dest++;
   while ((*dest++ = *src++) != '\0')
@@ -46,8 +46,8 @@ char *strcat(char *dest, const char *src) {
   return tmp;
 }
 // strncat
-char *strncat(char *dest, const char *src, size_t n) {
-  char *tmp = dest;
+char* strncat(char* dest, const char* src, size_t n) {
+  char* tmp = dest;
   while (*dest)
     dest++;
   while (n-- > 0 && (*dest++ = *src++) != '\0')
@@ -55,14 +55,11 @@ char *strncat(char *dest, const char *src, size_t n) {
   return tmp;
 }
 // memset
-void *memset(void *s, int c, size_t n) {
-  unsigned char *p = s;
-  while (n-- > 0)
-    *p++ = c;
-  return s;
+void* memset(void* s, int c, size_t n) {
+  return __builtin_memset(s,c,n);
 }
 // strtol
-long strtol(const char *nptr, char **endptr, int base) {
+long strtol(const char* nptr, char** endptr, int base) {
   long acc = 0;
   int c;
   unsigned long cutoff;
@@ -134,11 +131,11 @@ long strtol(const char *nptr, char **endptr, int base) {
   } else if (neg)
     acc = -acc;
   if (endptr != 0)
-    *endptr = (char *)(any ? nptr : (char *)nptr - 1);
+    *endptr = (char*)(any ? nptr : (char*)nptr - 1);
   return (acc);
 }
 // memcmp
-int memcmp(const void *s1, const void *s2, size_t n) {
+int memcmp(const void* s1, const void* s2, size_t n) {
   const unsigned char *p1 = s1, *p2 = s2;
   while (n-- > 0) {
     if (*p1 != *p2)
@@ -148,11 +145,17 @@ int memcmp(const void *s1, const void *s2, size_t n) {
   return 0;
 }
 // memcpy
-void *memcpy(void *s, const void *ct, size_t n) {
-
-  while (n--)
-    *(char *)s++ = *(char *)ct++;
-  return s;
+void* memcpy(void* s, const void* ct, size_t n) {
+  // size_t t = n / sizeof(size_t);
+  // n = n % sizeof(size_t);
+  // while (t--) {
+  //   *(size_t*)s = *(size_t*)ct;
+  //   s += sizeof(size_t);
+  //   ct += sizeof(size_t);
+  // }
+  // while (n--)
+  //   *(char*)s++ = *(char*)ct++;
+  return __builtin_memcpy(s,ct,n);
 }
 // isspace
 int isspace(int c) {
@@ -160,15 +163,21 @@ int isspace(int c) {
           c == '\v');
 }
 // isdigit
-int isdigit(int c) { return (c >= '0' && c <= '9'); }
+int isdigit(int c) {
+  return (c >= '0' && c <= '9');
+}
 // isalpha
-int isalpha(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+int isalpha(int c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
 // isupper
-int isupper(int c) { return (c >= 'A' && c <= 'Z'); }
+int isupper(int c) {
+  return (c >= 'A' && c <= 'Z');
+}
 // strncmp
-int strncmp(const char *s1, const char *s2, size_t n) {
-  const unsigned char *p1 = (const unsigned char *)s1,
-                      *p2 = (const unsigned char *)s2;
+int strncmp(const char* s1, const char* s2, size_t n) {
+  const unsigned char *p1 = (const unsigned char*)s1,
+                      *p2 = (const unsigned char*)s2;
   while (n-- > 0) {
     if (*p1 != *p2)
       return *p1 - *p2;
@@ -208,13 +217,13 @@ int strncmp(const char *s1, const char *s2, size_t n) {
 static char str_buf[BUF_SIZE];
 static char num_str_buf[BUF_SIZE];
 
-static char *int32_to_str_dec(int32_t num, int flag, int width) {
+static char* int32_to_str_dec(int32_t num, int flag, int width) {
   int32_t num_tmp = num;
-  char *p = num_str_buf;
-  char *q = NULL;
+  char* p = num_str_buf;
+  char* q = NULL;
   int len = 0;
-  char *str_first = NULL;
-  char *str_end = NULL;
+  char* str_first = NULL;
+  char* str_end = NULL;
   char ch = 0;
 
   memset(num_str_buf, 0, sizeof(num_str_buf));
@@ -288,15 +297,17 @@ static char *int32_to_str_dec(int32_t num, int flag, int width) {
   return str_first;
 }
 
-static char *int64_to_str_dec(int64_t num, int flag, int width) { return 0; }
+static char* int64_to_str_dec(int64_t num, int flag, int width) {
+  return 0;
+}
 
-static char *uint32_to_str_hex(uint32_t num, int flag, int width) {
+static char* uint32_to_str_hex(uint32_t num, int flag, int width) {
   uint32_t num_tmp = num;
-  char *p = num_str_buf;
-  char *q = NULL;
+  char* p = num_str_buf;
+  char* q = NULL;
   int len = 0;
-  char *str_first = NULL;
-  char *str_end = NULL;
+  char* str_first = NULL;
+  char* str_end = NULL;
   char ch = 0;
 
   memset(num_str_buf, 0, sizeof(num_str_buf));
@@ -305,7 +316,7 @@ static char *uint32_to_str_hex(uint32_t num, int flag, int width) {
                       '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
   char dic_upper[] = {'0', '1', '2', '3', '4', '5', '6', '7',
                       '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-  char *dic = (flag & FLAG_LOWER) ? dic_lower : dic_upper;
+  char* dic = (flag & FLAG_LOWER) ? dic_lower : dic_upper;
 
   str_first = num_str_buf;
 
@@ -368,13 +379,13 @@ static char *uint32_to_str_hex(uint32_t num, int flag, int width) {
   return str_first;
 }
 
-static char *uint64_to_str_hex(uint64_t num, int flag, int width) {
+static char* uint64_to_str_hex(uint64_t num, int flag, int width) {
   uint64_t num_tmp = num;
-  char *p = num_str_buf;
-  char *q = NULL;
+  char* p = num_str_buf;
+  char* q = NULL;
   int len = 0;
-  char *str_first = NULL;
-  char *str_end = NULL;
+  char* str_first = NULL;
+  char* str_end = NULL;
   char ch = 0;
 
   memset(num_str_buf, 0, sizeof(num_str_buf));
@@ -383,7 +394,7 @@ static char *uint64_to_str_hex(uint64_t num, int flag, int width) {
                       '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
   char dic_upper[] = {'0', '1', '2', '3', '4', '5', '6', '7',
                       '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-  char *dic = (flag & FLAG_LOWER) ? dic_lower : dic_upper;
+  char* dic = (flag & FLAG_LOWER) ? dic_lower : dic_upper;
 
   str_first = num_str_buf;
 
@@ -434,13 +445,13 @@ static char *uint64_to_str_hex(uint64_t num, int flag, int width) {
   return str_first;
 }
 
-static char *uint32_to_str_oct(uint32_t num, int flag, int width) {
+static char* uint32_to_str_oct(uint32_t num, int flag, int width) {
   uint32_t num_tmp = num;
-  char *p = num_str_buf;
-  char *q = NULL;
+  char* p = num_str_buf;
+  char* q = NULL;
   int len = 0;
-  char *str_first = NULL;
-  char *str_end = NULL;
+  char* str_first = NULL;
+  char* str_end = NULL;
   char ch = 0;
 
   memset(num_str_buf, 0, sizeof(num_str_buf));
@@ -502,8 +513,8 @@ static char *uint32_to_str_oct(uint32_t num, int flag, int width) {
   return str_first;
 }
 
-static char *insert_str(char *buf, const char *str) {
-  char *p = buf;
+static char* insert_str(char* buf, const char* str) {
+  char* p = buf;
 
   while (*str) {
     *p++ = *str++;
@@ -512,14 +523,14 @@ static char *insert_str(char *buf, const char *str) {
   return p;
 }
 
-int vsprintf(char *buf, const char *fmt, va_list args) {
-  char *str = buf;
+int vsprintf(char* buf, const char* fmt, va_list args) {
+  char* str = buf;
   int flag = 0;
   int int_type = INT_TYPE_INT;
   int tot_width = 0;
   int sub_width = 0;
   char buf2[64] = {0};
-  char *s = NULL;
+  char* s = NULL;
   char ch = 0;
   int8_t num_8 = 0;
   uint8_t num_u8 = 0;
@@ -530,7 +541,7 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
   int64_t num_64 = 0;
   uint64_t num_u64 = 0;
 
-  for (const char *p = fmt; *p; p++) {
+  for (const char* p = fmt; *p; p++) {
     if (*p != '%') {
       *str++ = *p;
       continue;
@@ -590,116 +601,116 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
 
   LOOP_switch:
     switch (*p) {
-    case 'h':
-      p++;
-      if (int_type >= INT_TYPE_MIN) {
-        int_type >>= 1;
-        goto LOOP_switch;
-      } else {
-        *str++ = '%';
+      case 'h':
+        p++;
+        if (int_type >= INT_TYPE_MIN) {
+          int_type >>= 1;
+          goto LOOP_switch;
+        } else {
+          *str++ = '%';
+          break;
+        }
+      case 'l':
+        p++;
+        if (int_type <= INT_TYPE_MAX) {
+          int_type <<= 1;
+          goto LOOP_switch;
+        } else {
+          *str++ = '%';
+          break;
+        }
+      case 's':
+        s = va_arg(args, char*);
+        str = insert_str(str, s);
         break;
-      }
-    case 'l':
-      p++;
-      if (int_type <= INT_TYPE_MAX) {
-        int_type <<= 1;
-        goto LOOP_switch;
-      } else {
-        *str++ = '%';
+      case 'c':
+        ch = (char)(va_arg(args, int) & 0xFF);
+        *str++ = ch;
         break;
-      }
-    case 's':
-      s = va_arg(args, char *);
-      str = insert_str(str, s);
-      break;
-    case 'c':
-      ch = (char)(va_arg(args, int) & 0xFF);
-      *str++ = ch;
-      break;
-    case 'd':
-      switch (int_type) {
-      case INT_TYPE_CHAR:
-        num_8 = (int8_t)va_arg(args, int32_t);
-        str = insert_str(str, int32_to_str_dec(num_8, flag, tot_width));
+      case 'd':
+        switch (int_type) {
+          case INT_TYPE_CHAR:
+            num_8 = (int8_t)va_arg(args, int32_t);
+            str = insert_str(str, int32_to_str_dec(num_8, flag, tot_width));
+            break;
+          case INT_TYPE_SHORT:
+            num_16 = (int16_t)va_arg(args, int32_t);
+            str = insert_str(str, int32_to_str_dec(num_16, flag, tot_width));
+            break;
+          case INT_TYPE_INT:
+            num_32 = va_arg(args, int32_t);
+            str = insert_str(str, int32_to_str_dec(num_32, flag, tot_width));
+            break;
+          case INT_TYPE_LONG:
+            num_64 = va_arg(args, int64_t);
+            str = insert_str(str, int64_to_str_dec(num_64, flag, tot_width));
+            break;
+          case INT_TYPE_LONG_LONG:
+            num_64 = va_arg(args, int64_t);
+            str = insert_str(str, int64_to_str_dec(num_64, flag, tot_width));
+            break;
+        }
         break;
-      case INT_TYPE_SHORT:
-        num_16 = (int16_t)va_arg(args, int32_t);
-        str = insert_str(str, int32_to_str_dec(num_16, flag, tot_width));
+      case 'x':
+        flag |= FLAG_LOWER;
+      case 'X':
+        switch (int_type) {
+          case INT_TYPE_CHAR:
+            num_u8 = (uint8_t)va_arg(args, uint32_t);
+            str = insert_str(str, uint32_to_str_hex(num_u8, flag, tot_width));
+            break;
+          case INT_TYPE_SHORT:
+            num_u16 = (uint16_t)va_arg(args, uint32_t);
+            str = insert_str(str, uint32_to_str_hex(num_u16, flag, tot_width));
+            break;
+          case INT_TYPE_INT:
+            num_u32 = va_arg(args, uint32_t);
+            str = insert_str(str, uint32_to_str_hex(num_u32, flag, tot_width));
+            break;
+          case INT_TYPE_LONG:
+            num_u64 = va_arg(args, uint64_t);
+            str = insert_str(str, uint64_to_str_hex(num_u64, flag, tot_width));
+            break;
+          case INT_TYPE_LONG_LONG:
+            num_u64 = va_arg(args, uint64_t);
+            str = insert_str(str, uint64_to_str_hex(num_u64, flag, tot_width));
+            break;
+        }
         break;
-      case INT_TYPE_INT:
-        num_32 = va_arg(args, int32_t);
-        str = insert_str(str, int32_to_str_dec(num_32, flag, tot_width));
-        break;
-      case INT_TYPE_LONG:
-        num_64 = va_arg(args, int64_t);
-        str = insert_str(str, int64_to_str_dec(num_64, flag, tot_width));
-        break;
-      case INT_TYPE_LONG_LONG:
-        num_64 = va_arg(args, int64_t);
-        str = insert_str(str, int64_to_str_dec(num_64, flag, tot_width));
-        break;
-      }
-      break;
-    case 'x':
-      flag |= FLAG_LOWER;
-    case 'X':
-      switch (int_type) {
-      case INT_TYPE_CHAR:
-        num_u8 = (uint8_t)va_arg(args, uint32_t);
-        str = insert_str(str, uint32_to_str_hex(num_u8, flag, tot_width));
-        break;
-      case INT_TYPE_SHORT:
-        num_u16 = (uint16_t)va_arg(args, uint32_t);
-        str = insert_str(str, uint32_to_str_hex(num_u16, flag, tot_width));
-        break;
-      case INT_TYPE_INT:
+      case 'o':
         num_u32 = va_arg(args, uint32_t);
-        str = insert_str(str, uint32_to_str_hex(num_u32, flag, tot_width));
+        str = insert_str(str, uint32_to_str_oct(num_u32, flag, tot_width));
         break;
-      case INT_TYPE_LONG:
-        num_u64 = va_arg(args, uint64_t);
-        str = insert_str(str, uint64_to_str_hex(num_u64, flag, tot_width));
-        break;
-      case INT_TYPE_LONG_LONG:
-        num_u64 = va_arg(args, uint64_t);
-        str = insert_str(str, uint64_to_str_hex(num_u64, flag, tot_width));
-        break;
-      }
-      break;
-    case 'o':
-      num_u32 = va_arg(args, uint32_t);
-      str = insert_str(str, uint32_to_str_oct(num_u32, flag, tot_width));
-      break;
-    case 'b':
+      case 'b':
 
-      switch (int_type) {
-      case INT_TYPE_CHAR:
-        num_u8 = (uint8_t)va_arg(args, uint32_t);
-        UInt2BinAscii((uint32_t)num_u8, buf2);
-        str = insert_str(str, buf2);
+        switch (int_type) {
+          case INT_TYPE_CHAR:
+            num_u8 = (uint8_t)va_arg(args, uint32_t);
+            UInt2BinAscii((uint32_t)num_u8, buf2);
+            str = insert_str(str, buf2);
+            break;
+          case INT_TYPE_SHORT:
+            num_u16 = (uint16_t)va_arg(args, uint32_t);
+            UInt2BinAscii((uint32_t)num_u16, buf2);
+            str = insert_str(str, buf2);
+            break;
+          case INT_TYPE_INT:
+            num_u32 = va_arg(args, uint32_t);
+            UInt2BinAscii((uint32_t)num_u32, buf2);
+            str = insert_str(str, buf2);
+            break;
+          default:
+            str = insert_str(str, "invalid int type");
+            break;
+        }
         break;
-      case INT_TYPE_SHORT:
-        num_u16 = (uint16_t)va_arg(args, uint32_t);
-        UInt2BinAscii((uint32_t)num_u16, buf2);
-        str = insert_str(str, buf2);
-        break;
-      case INT_TYPE_INT:
-        num_u32 = va_arg(args, uint32_t);
-        UInt2BinAscii((uint32_t)num_u32, buf2);
-        str = insert_str(str, buf2);
+      case '%':
+        *str++ = '%';
         break;
       default:
-        str = insert_str(str, "invalid int type");
+        *str++ = '%';
+        *str++ = *p;
         break;
-      }
-      break;
-    case '%':
-      *str++ = '%';
-      break;
-    default:
-      *str++ = '%';
-      *str++ = *p;
-      break;
     }
   }
   *str = '\0';
@@ -707,19 +718,19 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
   return str - buf;
 }
 // sprintf
-int sprintf(char *buf, const char *fmt, ...) {
+int sprintf(char* buf, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
   int len = vsprintf(buf, fmt, args);
   va_end(args);
   return len;
 }
-void strrev(char *s) {
+void strrev(char* s) {
   if (NULL == s)
     return;
 
-  char *pBegin = s;
-  char *pEnd = s + strlen(s) - 1;
+  char* pBegin = s;
+  char* pEnd = s + strlen(s) - 1;
 
   char pTemp;
 
@@ -731,7 +742,7 @@ void strrev(char *s) {
     ++pBegin, --pEnd;
   }
 }
-int printf(const char *format, ...) {
+int printf(const char* format, ...) {
   int len;
   va_list ap;
   va_start(ap, format);
@@ -741,25 +752,25 @@ int printf(const char *format, ...) {
   va_end(ap);
   return len;
 }
-void F2S(double d, char *str, int l) {
-  int n = (int)d; //去掉小数点
+void F2S(double d, char* str, int l) {
+  int n = (int)d;  //去掉小数点
   int b = 0;
   int i, j;
-  double m = d; //
-  char *buf;
+  double m = d;  //
+  char* buf;
   buf = malloc(128);
   sprintf(str, "%d", n);
   i = strlen(str);
-  str[i] = '.'; //小数点
+  str[i] = '.';  //小数点
   str[i + 1] = 0;
   while (d > 1.0) {
     d /= 10.0;
     b++;
   }
   for (i = 0; i < l; i++) {
-    m *= 10; //扩大
+    m *= 10;  //扩大
   }
-  n = (int)m; //放弃其他小数点
+  n = (int)m;  //放弃其他小数点
   sprintf(buf, "%d", n);
   for (i = b, j = strlen(str); i < strlen(buf); i++, j++) {
     str[j] = buf[i];
@@ -778,7 +789,7 @@ void F2S(double d, char *str, int l) {
 //   free(ptr);
 // }
 // //_ZdlPvj
-void _ZdlPvj(void *ptr, uint32_t size) {
+void _ZdlPvj(void* ptr, uint32_t size) {
   printk("_ZdlPvj %08x %d\n", ptr, size);
   free(ptr);
 }
@@ -787,8 +798,8 @@ void _ZdlPvj(void *ptr, uint32_t size) {
 //   printk("_Znwj:%d\n", size);
 //   return malloc(size);
 // }
-char *strchr(const char *s, int c) {
-  char *p = s;
+char* strchr(const char* s, int c) {
+  char* p = s;
   while (*p && *p != c) {
     p++;
   }
@@ -797,9 +808,9 @@ char *strchr(const char *s, int c) {
   }
   return NULL;
 }
-char *strrchr(const char *s1, int ch) {
-  char *s2;
-  char *s3;
+char* strrchr(const char* s1, int ch) {
+  char* s2;
+  char* s3;
   s2 = strchr(s1, ch);
   while (s2 != NULL) {
     s3 = strchr(s2 + 1, ch);
@@ -811,19 +822,19 @@ char *strrchr(const char *s1, int ch) {
   }
   return NULL;
 }
-void *memmove(void *dest, const void *src, int n) {
+void* memmove(void* dest, const void* src, int n) {
   /*因为char类型为1字节，所以将数据转化为char*
   进行操作。并不是因为操作的对象是字符串*/
-  char *pdest = (char *)dest;
-  const char *psrc = (const char *)src;
+  char* pdest = (char*)dest;
+  const char* psrc = (const char*)src;
   assert(dest);
   assert(src);
-  if (pdest <= psrc && pdest >= psrc + n) //正常情况下从前向后拷贝
+  if (pdest <= psrc && pdest >= psrc + n)  //正常情况下从前向后拷贝
   {
     while (n--) {
       *pdest = *psrc;
     }
-  } else //当出现内存覆盖时从后向前拷贝
+  } else  //当出现内存覆盖时从后向前拷贝
   {
     while (n--) {
       *(pdest + n) = *(psrc + n);
@@ -831,10 +842,10 @@ void *memmove(void *dest, const void *src, int n) {
   }
   return dest;
 }
-int vsnprintf(char *str, unsigned int size, const char *format, va_list ap) {
+int vsnprintf(char* str, unsigned int size, const char* format, va_list ap) {
   return vsprintf(str, format, ap);
 }
-int snprintf(char *str, size_t size, const char *format, ...) {
+int snprintf(char* str, size_t size, const char* format, ...) {
   va_list args;
   va_start(args, format);
   int len = vsprintf(str, format, args);
@@ -846,54 +857,54 @@ void assert(int expression) {
     printk("AN ERROR\n");
   }
 }
-void *memchr(const void *s, int c, size_t n) {
-  unsigned char *p = (unsigned char *)s;
+void* memchr(const void* s, int c, size_t n) {
+  unsigned char* p = (unsigned char*)s;
   for (; n-- > 0; ++p) {
     if (*p == c)
-      return (void *)p;
+      return (void*)p;
   }
   return NULL;
 }
-int stricmp(const char *s1, const char *s2) {
-  char *rs1 = malloc(strlen(s1)+1);
-  char *rs2 = malloc(strlen(s2)+1);
-  strcpy(rs1,s1);
-  strcpy(rs2,s2);
+int stricmp(const char* s1, const char* s2) {
+  char* rs1 = malloc(strlen(s1) + 1);
+  char* rs2 = malloc(strlen(s2) + 1);
+  strcpy(rs1, s1);
+  strcpy(rs2, s2);
   strtoupper(rs1);
   strtoupper(rs2);
-  int result = strcmp(rs1,rs2);
+  int result = strcmp(rs1, rs2);
   free(rs1);
   free(rs2);
   return result;
 }
-int strincmp(const char *s1, const char *s2, size_t n) {
-  char *rs1 = malloc(strlen(s1)+1);
-  char *rs2 = malloc(strlen(s2)+1);
-  strcpy(rs1,s1);
-  strcpy(rs2,s2);
+int strincmp(const char* s1, const char* s2, size_t n) {
+  char* rs1 = malloc(strlen(s1) + 1);
+  char* rs2 = malloc(strlen(s2) + 1);
+  strcpy(rs1, s1);
+  strcpy(rs2, s2);
   strtoupper(rs1);
   strtoupper(rs2);
-  int result = strncmp(rs1,rs2,n);
+  int result = strncmp(rs1, rs2, n);
   free(rs1);
   free(rs2);
   return result;
 }
-unsigned long int strtoul(const char *nptr, char **endptr, int base) {
-    unsigned long int result = 0;
-    while (*nptr != '\0') {
-        if (*nptr >= '0' && *nptr <= '9') {
-            result = result * base + (*nptr - '0');
-        } else if (*nptr >= 'a' && *nptr <= 'z') {
-            result = result * base + (*nptr - 'a' + 10);
-        } else if (*nptr >= 'A' && *nptr <= 'Z') {
-            result = result * base + (*nptr - 'A' + 10);
-        } else {
-            break;
-        }
-        nptr++;
+unsigned long int strtoul(const char* nptr, char** endptr, int base) {
+  unsigned long int result = 0;
+  while (*nptr != '\0') {
+    if (*nptr >= '0' && *nptr <= '9') {
+      result = result * base + (*nptr - '0');
+    } else if (*nptr >= 'a' && *nptr <= 'z') {
+      result = result * base + (*nptr - 'a' + 10);
+    } else if (*nptr >= 'A' && *nptr <= 'Z') {
+      result = result * base + (*nptr - 'A' + 10);
+    } else {
+      break;
     }
-    if (endptr != NULL) {
-        *endptr = (char *) nptr;
-    }
-    return result;
+    nptr++;
+  }
+  if (endptr != NULL) {
+    *endptr = (char*)nptr;
+  }
+  return result;
 }

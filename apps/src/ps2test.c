@@ -4,9 +4,9 @@
 #include <syscall.h>
 
 int main() {
-  char* p1 = malloc(4 * 1024 * 1024);
-  FILE* fp = fopen("bitz.bin", "r");
-  printf("fp->fileSize=%d\n", fp->fileSize);
-  fclose(fp);
+  malloc(4 * 1024 * 1024);
+  char* p = malloc(4 * 1024 * 1024);
+  *p = '1';
+  printf("%c\n",*p);
   return 0;
 }

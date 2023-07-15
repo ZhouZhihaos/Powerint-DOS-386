@@ -137,15 +137,14 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 		copy from:$(APPSOUTPATH)msttest.bin to:@: \
 		copy from:$(RESPATH)make.rul to:@: \
 		copy from:$(BIDPATH)nask.bin to:@: \
+		copy from:$(BIDPATH)test.bin to:@: \
 		copy from:$(BIDPATH)obj2bim.bin to:@: \
 		copy from:$(APPSOUTPATH)bim2hrb.bin to:@: \
 		copy from:$(APPSOUTPATH)plib.lib to:@: \
 		copy from:$(RESPATH)codeedit.ini to:@: \
 		copy from:$(RESPATH)asm.lua to:@: \
-		copy from:$(RESPATH)xml2lua.lua to:@: \
-		copy from:$(RESPATH)xmlp.lua to:@: \
-		copy from:$(RESPATH)people1.xml to:@: \
-		copy from:$(RESPATH)tree.lua to:@: \
+		copy from:$(RESPATH)student.lua to:@: \
+		copy from:$(RESPATH)json.lua to:@: \
 		copy from:$(RESPATH)hello.nas to:@: \
 		imgout:$(IMGPATH)Disk2.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \

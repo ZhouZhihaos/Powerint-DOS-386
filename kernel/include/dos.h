@@ -52,7 +52,7 @@ struct TASK* GetTaskForName(char* taskname);
 struct TASK* GetTask_NoSafe(int taskNum);
 void __SubTask(struct TASK* task);
 void SubTask(struct TASK* task);
-void ChangeLevel(struct TASK* task, int nlevel);
+void change_level(struct TASK* task, int nlevel);
 void RunTask(struct TASK* task);
 struct TASK* _fork(int b);
 #ifndef _TASK_C
@@ -77,6 +77,7 @@ int find_kpage(int line, int n);
 void* page_kmalloc(int size);
 void page_kfree(int p, int size);
 void page_map(void* target, void* start, void* end);
+void init_mem(struct TASK *task);
 void* page_malloc_lessthan4kb(int size);
 void page_free_lessthan4kb(void* p, int size);
 void* page_malloc(int size);

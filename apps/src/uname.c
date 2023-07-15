@@ -18,7 +18,7 @@ void show_creator() {
 void show_copy() {
   printf("Copyright (C) 2022-2023 zhouzhihao & min0911_\nAll right reserved\n");
 }
-void start() {
+void start_tips() {
   printf("P.D.O.S -CHECK: MODE GUI?=>");
   int color = get_cons_color();
   set_cons_color(0x0a);
@@ -56,7 +56,7 @@ int main(int argc,char **argv) {
         return 1;
     }
   }
-  start();
+  start_tips();
   if(flag & SHOWCOPYRIGHT) {
     show_copy();
   }

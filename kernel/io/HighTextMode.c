@@ -216,11 +216,10 @@ void AddShell_HighTextMode() {
   fifo8_init(kfifo, 4096, kbuf);
   fifo8_init(mfifo, 4096, mbuf);
   TaskSetFIFO(ntask, kfifo, mfifo);
-  char *memman = (char *)page_kmalloc(4 * 1024);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
-  ntask->memman = memman;
   ntask->alloc_addr = alloc_addr;
   ntask->alloc_size = 512 * 1024;
+  init_mem(ntask);
   ntask->fifosleep = 3;
   int fg = tty_set(ntask, ntty);
   //  printk("set vram = %08x\n",ntty->vram);

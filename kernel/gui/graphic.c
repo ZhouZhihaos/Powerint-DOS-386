@@ -155,10 +155,9 @@ void graphic(void) {
   fifo8_init(cmdline_mfifo, 128, cmdline_mbuf);
   TaskSetFIFO(Task_cmdline, cmdline_kfifo, cmdline_mfifo);
   int alloc_addr = (int)page_malloc(512 * 1024);
-  char *memman = (char *)page_malloc(4 * 1024);
   Task_cmdline->alloc_addr = alloc_addr;
   Task_cmdline->alloc_size = 512 * 1024;
-  Task_cmdline->memman = memman;
+  init_mem(Task_cmdline);
   sht_win->task = Task_cmdline;
   mouse_ready(&mdec);
   struct TIMER *timer;
@@ -336,19 +335,19 @@ void graphic(void) {
                     //}
                     // printk("%s:mouse:%d,%d\n",sht->task->name,x,y);
                     unsigned int xy = x << 16 | y;
-                    SendIPCMessageTID(Get_Tid(sht->task), -3, &xy, 4,
+                    SendIPCMessageTID(get_tid(sht->task), -3, &xy, 4,
                                       asynchronous);
-                    AddVal(Get_Tid(sht->task), list_ipc);
+                    AddVal(get_tid(sht->task), list_ipc);
                     if (old->task != current_task()) {
                       SleepTaskFIFO(old->task);
                       if (sht != old) {
                         // printf("Change -> %s\n",old->task->name);
-                        ChangeLevel(old->task, 3);
+                        change_level(old->task, 3);
                       }
                     }
                     WakeUp(sht->task);
                     if (sht->task != current_task()) {
-                      ChangeLevel(sht->task, 1);
+                      change_level(sht->task, 1);
                     }
                     for (int j = 1; GetTask(j) != 0; j++) {
                       struct TASK *t = GetTask(j);

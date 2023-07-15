@@ -1,15 +1,16 @@
 #include <dos.h>
+
 void kbd_press(uint8_t dat, uint32_t task) {
   fifo8_put(GetTask(task)->Pkeyfifo, dat);
 }
 void kbd_up(uint8_t dat, uint32_t task) {
   fifo8_put(GetTask(task)->Ukeyfifo, dat);
 }
-void *aligned_malloc(size_t size, int alignment) {
+void* aligned_malloc(size_t size, int alignment) {
   // 分配足够的内存, 这里的算法很经典, 早期的STL中使用的就是这个算法
 
   // 首先是维护FreeBlock指针占用的内存大小
-  const int pointerSize = sizeof(void *);
+  const int pointerSize = sizeof(void*);
 
   // alignment - 1 + pointerSize这个是FreeBlock内存对齐需要的内存大小
   // 前面的例子sizeof(T) = 20, __alignof(T) = 16,
@@ -19,10 +20,10 @@ void *aligned_malloc(size_t size, int alignment) {
   const int requestedSize = size + alignment - 1 + pointerSize;
 
   // 分配的实际大小就是20000 + 19 = 20019
-  void *raw = malloc(requestedSize);
+  void* raw = malloc(requestedSize);
 
   // 这里实Pool真正为对象实例分配的内存地址
-  uint32_t *start = (uint32_t)raw + pointerSize;
+  uint32_t* start = (uint32_t)raw + pointerSize;
   // 向上舍入操作
   // 解释一下, __ALIGN - 1指明的是实际内存对齐的粒度
   // 例如__ALIGN = 8时, 我们只需要7就可以实际表示8个数(0~7)
@@ -39,32 +40,36 @@ void *aligned_malloc(size_t size, int alignment) {
   // 这个表达式与下面给出的等价
   // ((((bytes) + _ALIGN - 1) * _ALIGN) / _ALIGN)
   // 但是SGI STL使用的方法效率非常高
-  void *aligned =
-      (void *)(((uint32_t)start + alignment - 1) & ~(alignment - 1));
+  void* aligned = (void*)(((uint32_t)start + alignment - 1) & ~(alignment - 1));
 
   // 这里维护一个指向malloc()真正分配的内存
-  *(void **)((uint32_t *)aligned - pointerSize) = raw;
+  *(void**)((uint32_t*)aligned - pointerSize) = raw;
 
   // 返回实例对象真正的地址
   return aligned;
 }
 
-void aligned_free(void *aligned_ptr) {
+void aligned_free(void* aligned_ptr) {
   if (aligned_ptr) {
-    free(((uint32_t *)aligned_ptr)[-1]);
+    free(((uint32_t*)aligned_ptr)[-1]);
   }
 }
 enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };
-void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
+void inthandler36(int edi,
+                  int esi,
+                  int ebp,
+                  int esp,
+                  int ebx,
+                  int edx,
+                  int ecx,
                   int eax) {
   // PowerintDOS API
-  struct TASK *task = current_task();
+  struct TASK* task = current_task();
   int cs_base = task->cs_base;
   int ds_base = task->ds_base;
-  int alloc_addr = task->alloc_addr; // malloc地址
+  int alloc_addr = task->alloc_addr;  // malloc地址
   int alloc_size = task->alloc_size;
-  char *memman = task->memman;
-  uint32_t *reg = &eax + 1; /* eax后面的地址*/
+  uint32_t* reg = &eax + 1; /* eax后面的地址*/
                             /*强行改写通过PUSHAD保存的值*/
   /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
   /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
@@ -87,15 +92,16 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       } else if (ebx == 0x06) {
         Draw_Px(ecx, edx, esi);
       } else if (ebx == 0x07) {
-        Draw_Str(ecx, edx, (char *)esi + ds_base, edi);
+        Draw_Str(ecx, edx, (char*)esi + ds_base, edi);
       } else if (ebx == 0x08) {
-        PrintChineseStr(ecx, edx, edi, (unsigned char *)esi + ds_base);
+        PrintChineseStr(ecx, edx, edi, (unsigned char*)esi + ds_base);
       }
     }
   } else if (eax == 0x04) {
     gotoxy(edx, ecx);
   } else if (eax == 0x05) {
-    print((char *)edx + ds_base);
+    //printf("get it! %08x\n",edx);
+    print((char*)edx + ds_base);
   } else if (eax == 0x06) {
     sleep(edx);
   } else if (eax == 0x08) {
@@ -112,7 +118,7 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
   } else if (eax == 0x0f) {
     if (running_mode == POWERDESKTOP) {
       extern int gmx, gmy;
-      struct SHEET *sht_win = (struct SHEET *)task->TTY->reserved[1];
+      struct SHEET* sht_win = (struct SHEET*)task->TTY->reserved[1];
       for (;;) {
         if ((mdec.btn & 0x01) != 0) {
           reg[ECX] = (gmx - sht_win->vx0 - 5) / 8;
@@ -138,13 +144,13 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
         }
       }
     } else if (running_mode == POWERINTDOS) {
-      struct TASK *task = current_task();
+      struct TASK* task = current_task();
       int i, mx1 = task->mx, my1 = task->my, bufx = task->mx * 8,
              bufy = task->my * 16;
       int bx = mx1;
       int by = my1;
       int bmp =
-          *(char *)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
+          *(char*)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
       mouse_ready(&mdec);
       for (;;) {
         if (fifo8_status(TaskGetMousefifo(task)) == 0) {
@@ -182,8 +188,6 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
             bufx += mdec.x;
             bufy += mdec.y;
 
-
-
             if (bufx > (task->TTY->xsize - 1) * 8) {
               bufx = (task->TTY->xsize - 1) * 8;
             } else if (bufx < 0) {
@@ -196,21 +200,21 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
             }
             task->mx = bufx / 8;
             task->my = bufy / 16;
-            *(char *)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
-                      1) = bmp;
-            bmp = *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                            task->mx * 2 + 1);
-            *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                      task->mx * 2 + 1) = ~bmp;
-          //  mouse_sleep(&mdec);
-          //  sleep(50);
+            *(char*)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
+                     1) = bmp;
+            bmp = *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                           task->mx * 2 + 1);
+            *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                     task->mx * 2 + 1) = ~bmp;
+            //  mouse_sleep(&mdec);
+            //  sleep(50);
             mouse_ready(&mdec);
           }
         }
       }
       mouse_sleep(&mdec);
-      *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                task->mx * 2 + 1) = bmp;
+      *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+               task->mx * 2 + 1) = bmp;
       task->mx = mx1;
       task->my = my1;
     }
@@ -220,23 +224,23 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     } else if (ebx == 0x02) {
       reg[EDX] = input_char_inSM();
     } else if (ebx == 0x03) {
-      input((char *)(edx + ds_base), ecx);
+      input((char*)(edx + ds_base), ecx);
     }
   } else if (eax == 0x19) {
-    command_run((char *)(edx + ds_base));
+    command_run((char*)(edx + ds_base));
   } else if (eax == 0x1a) {
     if (ebx == 0x01) {
-      int fsize = vfs_filesize((char *)(edx + ds_base));
+      int fsize = vfs_filesize((char*)(edx + ds_base));
       if (fsize != -1) {
         reg[EDX] = fsize;
       } else {
         reg[EDX] = -1;
       }
     } else if (ebx == 0x02) {
-      int fsize = vfs_filesize((char *)(ds_base + edx));
-      FILE *fp = fopen((char *)(ds_base + edx), "r");
-      char *p = (char *)fp->buffer;
-      char *q = (char *)ds_base + esi;
+      int fsize = vfs_filesize((char*)(ds_base + edx));
+      FILE* fp = fopen((char*)(ds_base + edx), "r");
+      char* p = (char*)fp->buffer;
+      char* q = (char*)ds_base + esi;
       int i;
       if (fp != 0) {
         for (i = 0; i != fsize; i++) {
@@ -248,30 +252,30 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
         reg[EAX] = 1;
       }
     } else if (ebx == 0x03) {
-      char *FilePath = (char *)(ds_base + edx);
+      char* FilePath = (char*)(ds_base + edx);
       vfs_createfile(FilePath);
     } else if (ebx == 0x04) {
-      char *FilePath = (char *)(ds_base + edx);
+      char* FilePath = (char*)(ds_base + edx);
       char buf[270];
       sprintf(buf, "mkdir %s", FilePath);
       command_run(buf);
     } else if (ebx == 0x05) {
       printk("EDIT_FILE\n");
-      char *FilePath = (char *)(ds_base + edx);
-      char *Ptr = (char *)ds_base + esi;
+      char* FilePath = (char*)(ds_base + edx);
+      char* Ptr = (char*)ds_base + esi;
       int length = ecx;
       int offset = edi;
       EDIT_FILE(FilePath, Ptr, length, offset);
     }
   } else if (eax == 0x1b) {
     int i;
-    char *bes = (char *)(edx + ds_base);
+    char* bes = (char*)(edx + ds_base);
     for (i = 0; i < strlen(task->line); i++) {
       bes[i] = task->line[i];
     }
     bes[i] = 0;
   } else if (eax == 0x1c) {
-    reg[EAX] = Copy((char *)(edx + ds_base), (char *)(esi + ds_base));
+    reg[EAX] = Copy((char*)(edx + ds_base), (char*)(esi + ds_base));
   } else if (eax == 0x1d) {
     reg[EAX] = kbhit();
   } else if (eax == 0x1e) {
@@ -281,7 +285,7 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
                  255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
       extern struct TASK* mouse_use_task;
-      if(mouse_use_task == task) {
+      if (mouse_use_task == task) {
         mouse_sleep(&mdec);
       }
     }
@@ -291,7 +295,7 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     app_num--;
     printk("at the last\n");
     task->running = 0;
-    WakeUp(GetTask(1)); // 别睡了，起来干活
+    WakeUp(GetTask(1));  // 别睡了，起来干活
     SleepTask(current_task());
     while (1)
       ;
@@ -301,7 +305,7 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       if (ebx == 0x01) {
         reg[EAX] = SwitchVBEMode(ecx);
       } else if (ebx == 0x02) {
-        reg[EAX] = check_vbe_mode(ecx, (struct VBEINFO *)VBEINFO_ADDRESS);
+        reg[EAX] = check_vbe_mode(ecx, (struct VBEINFO*)VBEINFO_ADDRESS);
       } else if (ebx == 0x05) {
         reg[EAX] = set_mode(ecx, edx, 32);
       }
@@ -320,9 +324,9 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     if (ebx == 0x03) {
       task->forever = 1;
     } else if (ebx == 0x04) {
-      SendIPCMessage(ecx, (void *)(ds_base + edx), esi, asynchronous);
+      SendIPCMessage(ecx, (void*)(ds_base + edx), esi, asynchronous);
     } else if (ebx == 0x05) {
-      GetIPCMessage((void *)(ds_base + edx), ecx);
+      GetIPCMessage((void*)(ds_base + edx), ecx);
     } else if (ebx == 0x06) {
       reg[EAX] = IPCMessageLength(ecx);
     } else if (ebx == 0x07) {
@@ -330,17 +334,16 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     } else if (ebx == 0x08) {
       reg[EAX] = haveMsg();
     } else if (ebx == 0x09) {
-      getMsgAll((void *)(ds_base + edx));
+      getMsgAll((void*)(ds_base + edx));
     } else if (ebx == 0x0a) {
-      io_cli(); // 防止任务提前运行
+      io_cli();  // 防止任务提前运行
       extern int init_ok_flag;
       init_ok_flag = 0;
-      struct TASK *t =
-          AddUserTask((char *)(ecx + ds_base), task->level, task->cs_start, edx,
+      struct TASK* t =
+          AddUserTask((char*)(ecx + ds_base), task->level, task->cs_start, edx,
                       task->ss_start, task->ss_start, esi);
       init_ok_flag = 1;
       t->alloc_addr = task->alloc_addr;
-      t->memman = task->memman;
       t->alloc_size = task->alloc_size;
       t->app = 1;
       t->forever = task->forever;
@@ -349,24 +352,24 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       t->cs_base = task->cs_base;
       t->ds_base = task->ds_base;
       t->nfs = task->nfs;
-      char *kfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
-      char *mfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
-      char *kbuf = (char *)page_kmalloc(4096);
-      char *mbuf = (char *)page_kmalloc(4096);
-      fifo8_init((struct FIFO8 *)kfifo, 4096, (unsigned char *)kbuf);
-      fifo8_init((struct FIFO8 *)mfifo, 4096, (unsigned char *)mbuf);
-      TaskSetFIFO(t, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
+      char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
+      char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
+      char* kbuf = (char*)page_kmalloc(4096);
+      char* mbuf = (char*)page_kmalloc(4096);
+      fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
+      fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
+      TaskSetFIFO(t, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
       t->is_child = 1;
       t->TTY = task->TTY;
       t->thread.father = task;
       // command_run("tl");
-      io_sti(); // 让任务运行
+      io_sti();  // 让任务运行
     } else if (ebx == 0x0b) {
       TaskLock();
     } else if (ebx == 0x0c) {
       TaskUnLock();
     } else if (ebx == 0x0d) {
-      SubTask((struct TASK *)ecx);
+      SubTask((struct TASK*)ecx);
     }
   } else if (eax == 0x23) {
     if (ebx == 0x01) {
@@ -380,9 +383,9 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       // printf("Task:%s timer init\n",task->name);
       io_cli();
       task->timer = timer_alloc();
-      task->timer->fifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+      task->timer->fifo = (struct FIFO8*)page_malloc(sizeof(struct FIFO8));
       task->timer->fifo->buf =
-          (unsigned char *)page_malloc(50 * sizeof(unsigned char));
+          (unsigned char*)page_malloc(50 * sizeof(unsigned char));
       fifo8_init(task->timer->fifo, 50, task->timer->fifo->buf);
       timer_init(task->timer, task->timer->fifo, 1);
       io_sti();
@@ -395,8 +398,8 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
         reg[EAX] = 0;
       }
     } else if (ebx == 0x03) {
-      page_free((void *)task->timer->fifo->buf, 50 * sizeof(unsigned char));
-      page_free((void *)task->timer->fifo, sizeof(struct FIFO8));
+      page_free((void*)task->timer->fifo->buf, 50 * sizeof(unsigned char));
+      page_free((void*)task->timer->fifo, sizeof(struct FIFO8));
       timer_free(task->timer);
     }
   } else if (eax == 0x25) {
@@ -420,31 +423,31 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     }
   } else if (eax == 0x27) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
       // printk("x =%d y=%d color =%08x\n", ebx, ecx, edx);
-      SDraw_Px((vram_t *)vbe->vram, ebx, ecx, edx, vbe->xsize);
+      SDraw_Px((vram_t*)vbe->vram, ebx, ecx, edx, vbe->xsize);
     }
   } else if (eax == 0x28) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *r = (vram_t *)vbe->vram;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* r = (vram_t*)vbe->vram;
       reg[EAX] = r[ebx * vbe->xsize + ecx];
     }
   } else if (eax == 0x29) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *r = (vram_t *)vbe->vram;
-      memcpy((void *)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* r = (vram_t*)vbe->vram;
+      memcpy((void*)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
     }
   } else if (eax == 0x2a) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *r = (vram_t *)vbe->vram;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* r = (vram_t*)vbe->vram;
       int x = ebx;
       int y = ecx;
       int w = edx;
       int h = esi;
-      unsigned int *buffer = (unsigned int *)(edi + ds_base);
+      unsigned int* buffer = (unsigned int*)(edi + ds_base);
       for (int i = x; i < x + w; i++) {
         for (int j = y; j < y + h; j++) {
           r[j * vbe->xsize + i] = buffer[(j - y) * w + (i - x)];
@@ -456,8 +459,8 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
       int a, c;
       a = 0;
       c = ebx;
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *vram_buffer = (vram_t *)vbe->vram;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* vram_buffer = (vram_t*)vbe->vram;
       for (; c <= vbe->ysize; c++, a++) {
         for (int i = 0; i < vbe->xsize; i++) {
           // VBEDraw_Px(i,a,VBEGet_Px(i,c));
@@ -468,10 +471,10 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     }
   } else if (eax == 0x2c) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
-      vram_t *vram_buffer = (vram_t *)vbe->vram;
+      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
+      vram_t* vram_buffer = (vram_t*)vbe->vram;
       (void)(vram_buffer);
-      SDraw_Box((vram_t *)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
+      SDraw_Box((vram_t*)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
     }
   } else if (eax == 0x2d) {
     reg[EAX] = NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
@@ -484,8 +487,8 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
   } else if (eax == 0x30) {
     current_task()->Pkeyfifo = malloc(sizeof(struct FIFO8));
     current_task()->Ukeyfifo = malloc(sizeof(struct FIFO8));
-    unsigned char *kbuf = (unsigned char *)page_kmalloc(4096);
-    unsigned char *mbuf = (unsigned char *)page_kmalloc(4096);
+    unsigned char* kbuf = (unsigned char*)page_kmalloc(4096);
+    unsigned char* mbuf = (unsigned char*)page_kmalloc(4096);
     fifo8_init(current_task()->Pkeyfifo, 4096, kbuf);
     fifo8_init(current_task()->Ukeyfifo, 4096, mbuf);
     current_task()->keyboard_press = kbd_press;
@@ -498,6 +501,17 @@ void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
     reg[EAX] = fifo8_get(current_task()->Pkeyfifo);
   } else if (eax == 0x34) {
     reg[EAX] = fifo8_get(current_task()->Ukeyfifo);
+  } else if (eax == 0x35) {
+     char* new_buf = (char*)page_malloc(task->gdt_data[1] + ebx);
+     memcpy(new_buf,task->gdt_data[2], task->gdt_data[1] + ebx);
+     page_free(task->gdt_data[2], task->gdt_data[1]);
+     task->gdt_data[2] = (uint32_t)new_buf;
+     task->gdt_data[1] = task->gdt_data[1] + ebx;
+     set_segmdesc(task->gdt_data[0], task->gdt_data[1], task->gdt_data[2],
+                  task->gdt_data[3]);
+     task->ds_base = (uint32_t)new_buf;
+     task->alloc_size = task->gdt_data[1];
+     task->alloc_addr = (int)new_buf;
   }
   return;
 }

@@ -142,4 +142,6 @@ typedef struct {
 } Elf32_Phdr;
 bool elf32Validate(Elf32_Ehdr* hdr);
 void elf32LoadData(Elf32_Ehdr* elfhdr, uint8_t* ptr);
+uint32_t elf32_get_max_vaddr(Elf32_Ehdr* hdr);
+uint32_t load_elf(uint8_t* p, Elf32_Ehdr* hdr);
 #endif

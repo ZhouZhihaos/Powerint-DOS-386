@@ -88,6 +88,7 @@ void init_card() {
         while (gateway == 0xFFFFFFFF && submask == 0xFFFFFFFF &&
                dns == 0xFFFFFFFF && ip == 0xFFFFFFFF)
           ;
+        
         char buf[100];
         sprintf(buf, "%x", ip);
         env_write("ip", buf);
@@ -97,13 +98,16 @@ void init_card() {
         env_write("submask", buf);
         sprintf(buf, "%x", dns);
         env_write("dns", buf);
+        
       } else {
         ip = strtoul(env_read("ip"),NULL,16);
         gateway = strtoul(env_read("gateway"),NULL,16);
         submask = strtoul(env_read("submask"),NULL,16);
         dns = strtoul(env_read("dns"),NULL,16);
       }
+      
       for (uint8_t i = 1; i != 0; i++) {
+        //printk("%d\n",i);
         IPParseMAC((ip & 0xffffff00) | i);
       }
       break;

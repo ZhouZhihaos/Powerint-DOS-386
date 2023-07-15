@@ -126,6 +126,7 @@ int cmd_app(char* cmdline) {
     }
     // 代码段的物理内存必须是连续的
     FILE* fp = fopen(name, "r");
+    printk("open ok!\n");
     extern int init_ok_flag;
     if (fp->buffer[0] ==
         'A')  // A=ASM,这是汇编语言编写的程序（不分代码段和数据段，所以我们将他们两个分开，以便我们编写代码）
@@ -142,6 +143,7 @@ int cmd_app(char* cmdline) {
                    AR_CODE32_ER | 3 << 5);  //设置他们的段描述符
       set_segmdesc(gdt + 4 + app_num * 2, fsize - 1 + 64 * 1024 + 512 * 1024,
                    (int)p, AR_DATA32_RW | 3 << 5);
+
       io_cli();
       int n = current_task()->level;
       init_ok_flag = 0;
@@ -166,8 +168,7 @@ int cmd_app(char* cmdline) {
       char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* kbuf = (char*)page_kmalloc(4096);
       char* mbuf = (char*)page_kmalloc(4096);
-      char* memman = (char*)page_malloc(4 * 1024);
-      this_task->memman = memman;
+      init_mem(this_task);
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
       TaskSetFIFO(this_task, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
@@ -178,14 +179,13 @@ int cmd_app(char* cmdline) {
       this_task->forever = 0;
       SleepTaskFIFO(current_task());
       io_sti();
-      ChangeLevel(current_task(), 3);
+      change_level(current_task(), 3);
       while (GetTaskForName(name) != 0) {
         if (this_task->forever == 1) {
           io_cli();
           change_page_task_id(this_task->sel / 8 - 103, p,
                               fsize + 64 * 1024 + 512 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
-          change_page_task_id(this_task->sel / 8 - 103, memman, 4 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, kfifo,
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, mfifo,
@@ -194,24 +194,23 @@ int cmd_app(char* cmdline) {
           change_page_task_id(this_task->sel / 8 - 103, mbuf, 4096);
           this_task->app = 0;
           io_sti();
-          ChangeLevel(this_task, 2);
+          change_level(this_task, 2);
           WakeUp(current_task());
           app_task_num = -1;
           print("\n");
-          ChangeLevel(current_task(), n);
+          change_level(current_task(), n);
           goto end;
         }
       }
       // task_sr1会帮我们结束程序
       // SubTask(GetTaskForName(name)); //程序退出咯
       WakeUp(current_task());
-      ChangeLevel(current_task(), n);
+      change_level(current_task(), n);
       app_task_num = -1;
       page_kfree((int)kfifo, sizeof(struct FIFO8));
       page_kfree((int)mfifo, sizeof(struct FIFO8));
       page_kfree((int)kbuf, 4096);
       page_kfree((int)mbuf, 4096);
-      page_free(memman, 4 * 1024);
       page_free(stack, 64 * 1024);
       page_free(p, fsize + 64 * 1024 + 512 * 1024);
       print("\n");
@@ -222,8 +221,8 @@ int cmd_app(char* cmdline) {
               有些代码的逻辑和运行汇编语言程序是一样的，
               这里只注释新的代码
       */
-      const int alloc_data_size = 230 * 1024 * 1024;
-      const int memman_size = alloc_data_size / 128 + 1;
+      uint32_t gdt_data[4];
+      const int alloc_data_size = 4 * 1024 * 1024;
       int now = current_task()->level;
       p = (char*)page_malloc(fsize);
       memcpy(p, fp->buffer, fsize);
@@ -246,20 +245,23 @@ int cmd_app(char* cmdline) {
                    AR_CODE32_ER | 3 << 5);
       set_segmdesc(gdt + 4 + app_num * 2, segsiz - 1 + alloc_data_size, (int)q,
                    AR_DATA32_RW | 3 << 5);
-     // printf("size = %08x\n", segsiz - 1 + alloc_data_size);
+      gdt_data[0] = gdt + 4 + app_num * 2;
+      gdt_data[1] = segsiz - 1 + alloc_data_size;
+      gdt_data[2] = (int)q;
+      gdt_data[3] = AR_DATA32_RW | 3 << 5;
+      // printf("size = %08x\n", segsiz - 1 + alloc_data_size);
       for (i = 0; i < datsiz; i++) {
         // printf("%c",p[dathrb + i]);
         q[esp + i] = p[dathrb + i];  //这里通过头数据拷贝数据段数据
       }
       int n = current_task()->level;
       (void)(n);
-      ChangeLevel(current_task(), 3);
+      change_level(current_task(), 3);
       io_cli();
       char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* kbuf = (char*)page_kmalloc(4096);
       char* mbuf = (char*)page_kmalloc(4096);
-      char* memman = (char*)page_malloc(memman_size);
       init_ok_flag = 0;
       struct TASK* this_task =
           AddUserTask(name, 1, ((3 + app_num * 2) * 8), 0x1b,
@@ -271,7 +273,8 @@ int cmd_app(char* cmdline) {
       this_task->ss_start = this_task->tss.ss;
       this_task->alloc_addr = (int)((uint32_t)q + segsiz);
       this_task->alloc_size = alloc_data_size;
-      this_task->memman = memman;
+      this_task->gdt_data = gdt_data;
+      // init_mem(this_task);
       this_task->app = 1;
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
@@ -295,26 +298,24 @@ int cmd_app(char* cmdline) {
       app_num++;
       this_task->forever = 0;
       SleepTaskFIFO(current_task());
-      int tid = Get_Tid(this_task);
+      int tid = get_tid(this_task);
       io_sti();
       while (GetTask(tid) == this_task && this_task->running) {
         // printk("App(%s):Run. --> %08x\n",name,GetTaskForName(name));
         if (this_task->forever == 1) {
           io_cli();
           change_page_task_id(this_task->sel / 8 - 103, p, fsize);
-          change_page_task_id(this_task->sel / 8 - 103, q,
-                              segsiz + alloc_data_size);
+          change_page_task_id(this_task->sel / 8 - 103, gdt_data[2],
+                              gdt_data[1]);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
-          change_page_task_id(this_task->sel / 8 - 103, memman,
-                              4 * 1024 * 4 * 2 * 2 * 2);
           change_page_task_id(this_task->sel / 8 - 103, kfifo,
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, mfifo,
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, kbuf, 4096);
           change_page_task_id(this_task->sel / 8 - 103, mbuf, 4096);
-          ChangeLevel(current_task(), now);
-          ChangeLevel(this_task, 2);
+          change_level(current_task(), now);
+          change_level(this_task, 2);
           this_task->app = 0;
           io_sti();
           WakeUp(current_task());
@@ -325,7 +326,7 @@ int cmd_app(char* cmdline) {
         }
       }
       printk("done.\n");
-      ChangeLevel(current_task(), now);
+      change_level(current_task(), now);
       //  SubTask(GetTaskForName(name));
       // printf("--- End ---\n");
       WakeUp(current_task());
@@ -338,58 +339,71 @@ int cmd_app(char* cmdline) {
       page_kfree((int)mfifo, sizeof(struct FIFO8));
       page_kfree((int)kbuf, 4096);
       page_kfree((int)mbuf, 4096);
-      page_free(memman, memman_size);
       page_free(stack, 64 * 1024);
       page_free(p, fsize);
-      page_free(q, segsiz + alloc_data_size);
+      page_free(gdt_data[2], gdt_data[1]);
+      // free(gdt_data);
       print("\n");
     } else if (elf32Validate((Elf32_Ehdr*)fp->buffer)) {
-      // printk("----------ProGram Running Malloc Info-----------");
-      p = (char*)page_malloc(fsize);
-      memcpy(p, fp->buffer, fsize);
+//  printk("----------ProGram Running Malloc Info-----------");
+#define ELF32_HEAP_SIZE (4 * 1024 * 1024)
+#define ELF32_STACK_SIZE (512 * 1024)
+
+      uint32_t gdt_data[4];
+      int now = current_task()->level;
+      uint32_t alloc_size = elf32_get_max_vaddr((Elf32_Ehdr*)fp->buffer) +
+                            ELF32_HEAP_SIZE + ELF32_STACK_SIZE;
+      p = (char*)page_malloc(alloc_size);
+      uint32_t entry = load_elf(p, (Elf32_Ehdr*)fp->buffer);
       fclose(fp);
-      Elf32_Ehdr* ehdr = (Elf32_Ehdr*)p;
-      segsiz = fsize;
-      q = (char*)page_malloc(segsiz + 512 * 1024 * 4 +
-                             512 * 1024);  //分配数据段的内存
-      set_segmdesc(gdt + 3 + app_num * 2, fsize - 1, (int)p,
+
+      q = p;  //分配数据段的内存
+      set_segmdesc(gdt + 3 + app_num * 2, alloc_size, (int)p,
                    AR_CODE32_ER | 3 << 5);
-      set_segmdesc(gdt + 4 + app_num * 2,
-                   segsiz - 1 + 512 * 1024 * 4 + 512 * 1024, (int)q,
+      set_segmdesc(gdt + 4 + app_num * 2, alloc_size, (int)q,
                    AR_DATA32_RW | 3 << 5);
-      // printf("[log]p(start)=%08x p(end)=%08x\n", p, p + finfo->size);
-      // printf("[log]q(start)=%08x q(end)=%08x\n", q,
-      //        q + segsiz + 512 * 1024 + 512 * 1024);
-      elf32LoadData(ehdr, (uint8_t*)q);
+      gdt_data[0] = gdt + 4 + app_num * 2;
+      gdt_data[1] = alloc_size;
+      gdt_data[2] = (int)q;
+      gdt_data[3] = AR_DATA32_RW | 3 << 5;
+      // printf("size = %08x\n", segsiz - 1 + alloc_data_size);
+
+      int n = current_task()->level;
+      (void)(n);
+      change_level(current_task(), 3);
       io_cli();
       char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
       char* kbuf = (char*)page_kmalloc(4096);
       char* mbuf = (char*)page_kmalloc(4096);
-      char* memman = (char*)page_malloc(4 * 1024 * 4);
-      // printk("kfifo:%08x,mfifo:%08x\n",kfifo,mfifo);
-      // printk("kbuf:%08x,mbuf:%08x\n",kbuf,mbuf);
-      // printk("p:%08x\n",p);
-      // printk("q:%08x\n",q);
-      // printf("%08x\n", memman);
       init_ok_flag = 0;
-      struct TASK* this_task =
-          AddUserTask(name, 2, ((3 + app_num * 2) * 8), ehdr->e_entry,
-                      ((4 + app_num * 2) * 8), ((4 + app_num * 2) * 8),
-                      segsiz + 512 * 1024 * 4 + 512 * 1024);
+      struct TASK* this_task = AddUserTask(name, 1, ((3 + app_num * 2) * 8),
+                                           entry, ((4 + app_num * 2) * 8),
+                                           ((4 + app_num * 2) * 8), alloc_size);
       init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
       this_task->cs_start = this_task->tss.cs;
       this_task->ss_start = this_task->tss.ss;
-      this_task->alloc_addr = (int)((uint32_t)q + segsiz);
-      this_task->alloc_size = 512 * 1024 * 4;
-      this_task->memman = memman;
+      this_task->alloc_addr =
+          (int)((uint32_t)q +
+                (alloc_size - ELF32_HEAP_SIZE - ELF32_STACK_SIZE));
+      this_task->alloc_size = ELF32_HEAP_SIZE;
+      this_task->gdt_data = gdt_data;
+      // init_mem(this_task);
       this_task->app = 1;
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
       this_task->tss.ss0 = 1 * 8;
-      this_task->nfs = current_task()->nfs;
+      vfs_change_disk_for_task(current_task()->nfs->drive, this_task);
+      List* l;
+      char* path;
+      for (int i = 1; FindForCount(i, current_task()->nfs->path) != NULL; i++) {
+        l = FindForCount(i, current_task()->nfs->path);
+        path = (char*)l->val;
+        this_task->nfs->cd(this_task->nfs, path);
+      }
+      this_task->line = current_task()->line;
       this_task->drive = current_task()->drive;
       this_task->drive_number = current_task()->drive_number;
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
@@ -400,50 +414,57 @@ int cmd_app(char* cmdline) {
       app_num++;
       this_task->forever = 0;
       SleepTaskFIFO(current_task());
+      int tid = get_tid(this_task);
       io_sti();
-      while (GetTaskForName(name) != 0) {
+      while (GetTask(tid) == this_task && this_task->running) {
+        // printk("App(%s):Run. --> %08x\n",name,GetTaskForName(name));
         if (this_task->forever == 1) {
           io_cli();
-          change_page_task_id(this_task->sel / 8 - 103, p, fsize);
-          change_page_task_id(this_task->sel / 8 - 103, q, segsiz + 512 * 1024);
+          change_page_task_id(this_task->sel / 8 - 103, gdt_data[2],
+                              gdt_data[1]);
           change_page_task_id(this_task->sel / 8 - 103, stack, 64 * 1024);
-          change_page_task_id(this_task->sel / 8 - 103, memman, 4 * 1024);
           change_page_task_id(this_task->sel / 8 - 103, kfifo,
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, mfifo,
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, kbuf, 4096);
           change_page_task_id(this_task->sel / 8 - 103, mbuf, 4096);
+          change_level(current_task(), now);
+          change_level(this_task, 2);
+          this_task->app = 0;
           io_sti();
           WakeUp(current_task());
           app_task_num = -1;
           print("\n");
+          printk("a task set forever.\n");
           goto end;
         }
       }
-      // SubTask(GetTaskForName(name));
+      printk("done.\n");
+      change_level(current_task(), now);
+      //  SubTask(GetTaskForName(name));
+      // printf("--- End ---\n");
       WakeUp(current_task());
       app_task_num = -1;
-      // printk("kfifo:%08x,mfifo:%08x\n",kfifo,mfifo);
-      // printk("kbuf:%08x,mbuf:%08x\n",kbuf,mbuf);
-      // printk("p:%08x\n",p);
-      // printk("q:%08x\n",q);
+      // printk("kfifo:%08x,mfifo:%08x\n", kfifo, mfifo);
+      // printk("kbuf:%08x,mbuf:%08x\n", kbuf, mbuf);
+      // printk("p:%08x\n", p);
+      // printk("q:%08x\n", q);
       page_kfree((int)kfifo, sizeof(struct FIFO8));
       page_kfree((int)mfifo, sizeof(struct FIFO8));
       page_kfree((int)kbuf, 4096);
       page_kfree((int)mbuf, 4096);
-      page_free(memman, 4 * 1024);
-      page_free(stack, 64 * 1024);
-      page_free(p, fsize);
-      page_free(q, segsiz + 512 * 1024 * 4 + 512 * 1024);
+      // page_free(stack, 64 * 1024);
+      page_free(gdt_data[2], gdt_data[1]);
+      // page_kfree(gdt_data,16);
+      // free(gdt_data);
       print("\n");
-      // printk("----------ProGram Running Malloc Info End-----------\n");
     } else {
       // 未知的文件类型
       print("Isn't Powerint DOS 386 Execute File.\n\n");
     }
   end:
-    if(running_mode == POWERDESKTOP) {
+    if (running_mode == POWERDESKTOP) {
       SleepTaskFIFO(current_task());
     }
     page_free(name, 300);  //将name字符指针所占用的内存释放

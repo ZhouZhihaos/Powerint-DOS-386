@@ -22,7 +22,7 @@ void disable_sb16(void);
 void init_mount_disk(void);
 int getReadyDisk();
 void Socket_all_init();
-void init_rootfs();
+void init_devfs();
 void init_vfs();
 void sysinit(void) {
   struct FIFO8 keyfifo, mousefifo;
@@ -61,7 +61,7 @@ void sysinit(void) {
   init_vdisk();
   init_vfs();
   init_floppy();
-  init_rootfs();
+  init_devfs();
   Register_fat_fileSys();
   memsize = memtest(0x00400000, 0xbfffffff);
   if (memsize / (1024 * 1024) < 32) {
@@ -88,17 +88,15 @@ void sysinit(void) {
   sr2 = AddTask("System retention2", 1, 2 * 8, (int)task_sr2, 1 * 8, 1 * 8,
                 (unsigned int)page_kmalloc(64 * 1024) + 64 * 1024);
   shell_task = AddTask("Shell", 1, 2 * 8, (int)shell, 1 * 8, 1 * 8,
-                       (unsigned int)page_kmalloc(128 * 1024) + 128 * 1024);
+                       (unsigned int)page_kmalloc(1024 * 1024) + 1024 * 1024);
   //给每个任务设置FIFO
   TaskSetFIFO(shell_task, &keyfifo, &mousefifo);
   TaskSetFIFO(sr1, &keyfifo_sr1, &mousefifo_sr1);
   TaskSetFIFO(sr2, &keyfifo_sr2, &mousefifo_sr2);
-  // 给Shell设置alloc_addr和memman配合lessthan4kb
-  int alloc_addr = (int)page_kmalloc(512 * 1024);
-  char* memman = (char*)page_kmalloc(4 * 1024);
+  int alloc_addr = (int)page_kmalloc(4 * 1024 * 1024);
   shell_task->alloc_addr = alloc_addr;
-  shell_task->alloc_size = 512 * 1024;
-  shell_task->memman = memman;
+  shell_task->alloc_size = 4 * 1024 * 1024;
+  init_mem(shell_task);
   srand(time());  // Init random seed
   while (fifo8_status(TaskGetKeyfifo(shell_task)) != 0)
     fifo8_get(TaskGetKeyfifo(shell_task));

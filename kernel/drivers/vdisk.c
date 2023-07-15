@@ -88,11 +88,11 @@ bool DriveSemaphoreTake(unsigned int drive_code) {
   if (drive_code >= 16) {
     return true;
   }
-  fifo8_put(&drive_fifo[drive_code], Get_Tid(current_task()));
+  fifo8_put(&drive_fifo[drive_code], get_tid(current_task()));
   // printk("FIFO: %d PUT: %d STATUS: %d\n", drive_code, Get_Tid(current_task()),
   //        fifo8_status(&drive_fifo[drive_code]));
   while (drive_buf[drive_code][drive_fifo[drive_code].q] !=
-         Get_Tid(current_task())) {
+         get_tid(current_task())) {
     // printk("Waiting....\n");
   }
   return true;
@@ -101,7 +101,7 @@ void DriveSemaphoreGive(unsigned int drive_code) {
   if (drive_code >= 16) {
     return;
   }
-  if (drive_buf[drive_code][drive_fifo[drive_code].q] != Get_Tid(current_task())) {
+  if (drive_buf[drive_code][drive_fifo[drive_code].q] != get_tid(current_task())) {
     // 暂时先不做处理 一般不会出现这种情况
     return;
   }

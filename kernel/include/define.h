@@ -3,7 +3,6 @@
 #include <ctypes.h>
 #include <stdarg.h>
 #include <stddef.h>
-
 typedef unsigned int vram_t;
 typedef vram_t color_t;
 
@@ -39,7 +38,7 @@ typedef struct List List;
 #define Panic_F(info, ...) Panic_Print(printf, info, ##__VA_ARGS__)
 #define WARNING_F(info, ...) WARNING_Print(printf, info, ##__VA_ARGS__)
 #define DEBUG_F(info, ...) DEBUG_Print(printf, info, ##__VA_ARGS__)
-#define Get_Tid(task) task->sel / 8 - 103
+#define get_tid(task) task->sel / 8 - 103
 #define POWERINTDOS 0
 #define POWERDESKTOP 1
 #define HIGHTEXTMODE 2
@@ -53,6 +52,14 @@ struct PAGE_INFO {
   unsigned flag : 2;
   unsigned task_id : 6;
 } __attribute__((packed));
+#define MEMMAN_FREES 4090
+struct FREEINFO {
+  unsigned int addr, size;
+};
+struct MEMMAN {
+  int frees, maxfrees, lostsize, losts;
+  struct FREEINFO free[MEMMAN_FREES];
+};
 struct SEGMENT_DESCRIPTOR {
   short limit_low, base_low;
   char base_mid, access_right;
@@ -131,7 +138,7 @@ struct TASK {
   int fifosleep;
   int cs_base, ds_base;
   int alloc_addr;
-  char *memman;
+  struct MEMMAN *mm;
   int alloc_size;
   struct IPC_Header IPC_header;
   struct TIMER *timer;
@@ -159,6 +166,7 @@ struct TASK {
   int fpu_flag;
   struct FIFO8 *Pkeyfifo, *Ukeyfifo;
   uint32_t fpu_use;
+  uint32_t *gdt_data;
 } __attribute__((packed));
 #define vfs_now current_task()->nfs
 #define PG_P 1

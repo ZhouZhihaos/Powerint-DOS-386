@@ -149,6 +149,24 @@ void pgui_shell() {
   for (;;)
     ;
 }
+void start(PButton* pbtn, uint32_t val) {
+  struct FIFO8* fifo = (struct FIFO8*)malloc(sizeof(struct FIFO8));
+  struct FIFO8* fifo2 = (struct FIFO8*)malloc(sizeof(struct FIFO8));
+  uint8_t* fifobuf = new uint8_t[32];
+  uint8_t* fifobuf2 = new uint8_t[32];
+  io_cli();
+  fifo8_init(fifo, 32, fifobuf);
+  fifo8_init(fifo2, 32, fifobuf2);
+  struct TASK* t = AddTask("cmdline", 1, 2 * 8, (int)pgui_shell, 1 * 8, 1 * 8,
+                           (int)page_malloc(32 * 1024) + 32 * 1024);
+  int alloc_addr = (int)page_kmalloc(512 * 1024);
+  t->alloc_addr = alloc_addr;
+  t->alloc_size = 512 * 1024;
+  init_mem(t);
+  TaskSetFIFO(t, fifo, fifo2);
+  SleepTaskFIFO(t);
+  io_sti();
+}
 void pgui_main() {
   set_mode(1024, 768, 32);
   click_left = new WindowBox();
@@ -180,28 +198,10 @@ void pgui_main() {
   w_btn = new PButton(wnd1, "start", 2, 28, 100, 20, 0, btn_click4);
   PTextBox* pt = new PTextBox(wnd, 2, 50, 200, 20);
   PButton* btn = new PButton(wnd, "sb16", 2, 28, 100, 20, 0, btn_click);
-  PButton* btn1 = new PButton(wnd, "halt", 103, 28, 100, 20, 0, btn_click1);
-  PButton* btn2 = new PButton(wnd, "reboot", 204, 28, 100, 20, 0, btn_click2);
+  PButton* btn1 = new PButton(wnd, "start", 103, 28, 100, 20, 0, start);
   PButton* btn3 =
       new PButton(wnd, "play", 203, 50, 100, 20, (uint32_t)pt, btn_click3);
 
-  struct FIFO8 fifo;
-  struct FIFO8 fifo2;
-  uint8_t fifobuf[32];
-  uint8_t fifobuf2[32];
-  io_cli();
-  fifo8_init(&fifo, 32, fifobuf);
-  fifo8_init(&fifo2, 32, fifobuf2);
-  struct TASK* t = AddTask("cmdline", 2, 2 * 8, (int)pgui_shell, 1 * 8, 1 * 8,
-                           (int)page_malloc(32 * 1024) + 32 * 1024);
-  char* memman = (char*)page_malloc(4 * 1024);
-  int alloc_addr = (int)page_malloc(512 * 1024);
-  t->memman = memman;
-  t->alloc_addr = alloc_addr;
-  t->alloc_size = 512 * 1024;
-  TaskSetFIFO(t, &fifo, &fifo2);
-  SleepTaskFIFO(t);
-  io_sti();
   mouse_ready(&mdec);
   handle();
 }

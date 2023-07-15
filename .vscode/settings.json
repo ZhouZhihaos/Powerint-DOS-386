@@ -104,7 +104,8 @@
         "stb_image.h": "c",
         "stb_image_resize.h": "c",
         "mst.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "elf.h": "c"
     },
     "cSpell.words": [],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
@@ -114,6 +115,7 @@
     ],
     "Lua.diagnostics.globals": [
         "gui",
-        "exec"
+        "exec",
+        "input"
     ]
 }

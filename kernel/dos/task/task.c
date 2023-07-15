@@ -338,7 +338,8 @@ struct TASK *AddTask(char *name, int level, int cs, int eip, int ds, int ss,
   task->ds_base = 0;
   task->cs_base = 0;
   task->alloc_addr = 0;
-  task->memman = 0;
+  task->alloc_size = 0;
+  task->mm = NULL;
   task->ss_start = 0;
   task->cs_start = 0;
   task->is_child = 0;
@@ -443,7 +444,8 @@ struct TASK *AddUserTask(char *name, int level, int cs, int eip, int ds, int ss,
   task->ds_base = 0;
   task->cs_base = 0;
   task->alloc_addr = 0;
-  task->memman = 0;
+  task->alloc_size = 0;
+  task->mm = NULL;
   task->ss_start = 0;
   task->cs_start = 0;
   task->is_child = 0;
@@ -638,7 +640,7 @@ void __SubTask(struct TASK *task) {
   ClearMaskIrq(0);
   // sleep(10);
 }
-void ChangeLevel(struct TASK *task, int nlevel) {
+void change_level(struct TASK *task, int nlevel) {
   if (task == NULL) {
     // 你找茬是吧，给个NULL进来
     return;
@@ -646,7 +648,7 @@ void ChangeLevel(struct TASK *task, int nlevel) {
   if (task->level == nlevel) {
     return;
   }
-  if (GetTask(Get_Tid(task)) != task) {
+  if (GetTask(get_tid(task)) != task) {
     return; // 防止修改一个不存在的进程
   }
   io_cli();
@@ -700,11 +702,10 @@ struct TASK *_fork(int b) {
       current_task()->name, current_task()->level, current_task()->tss.cs, EIP,
       current_task()->tss.ds, 1 * 8, (int)((uint32_t)stack - sz));
   Maskirq(0);
-  char *memman = (char *)page_kmalloc(4 * 1024);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   task->alloc_addr = alloc_addr;
   task->alloc_size = 512 * 1024;
-  task->memman = memman;
+  init_mem(task);
   task->drive = current_task()->drive;
   task->drive_number = current_task()->drive_number;
   task->TTY = current_task()->TTY;
@@ -716,7 +717,6 @@ struct TASK *_fork(int b) {
   fifo8_init((struct FIFO8 *)mfifo, 4096, (unsigned char *)mbuf);
   TaskSetFIFO(task, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
   change_page_task_id(task->sel / 8 - 103, stack - 32 * 1024, 32 * 1024);
-  change_page_task_id(task->sel / 8 - 103, memman, 4 * 1024);
 
   task->is_child = 1;
   task->thread.father = current_task();
@@ -725,7 +725,7 @@ struct TASK *_fork(int b) {
   return task;
 }
 void SubTask(struct TASK *task) {
-  int tid = Get_Tid(task);
+  int tid = get_tid(task);
   task->running = 0;  // 不在运行状态中
   WakeUp(GetTask(1)); // 叫醒idle task
   while (GetTask(tid))
@@ -751,7 +751,7 @@ static struct TASK *__clone_task(struct TASK *tk, int stack_sz) {
   void *stack = page_malloc(stack_sz);
   struct TASK *result = AddTask(tk->name, tk->level, tk->tss.cs, tk->eip_start,
                                 tk->tss.ds, tk->tss.ss, (int)stack);
-  change_page_task_id(Get_Tid(result), stack, stack_sz);
+  change_page_task_id(get_tid(result), stack, stack_sz);
   ClearMaskIrq(0);
   return result;
 }
