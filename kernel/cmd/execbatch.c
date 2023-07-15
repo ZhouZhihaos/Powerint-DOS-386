@@ -352,7 +352,7 @@ int cmd_app(char* cmdline) {
       uint32_t gdt_data[4];
       int now = current_task()->level;
       uint32_t alloc_size = elf32_get_max_vaddr((Elf32_Ehdr*)fp->buffer) +
-                            ELF32_HEAP_SIZE + ELF32_STACK_SIZE;
+                            ELF32_STACK_SIZE + ELF32_HEAP_SIZE;
       p = (char*)page_malloc(alloc_size);
       uint32_t entry = load_elf(p, (Elf32_Ehdr*)fp->buffer);
       fclose(fp);
@@ -379,7 +379,7 @@ int cmd_app(char* cmdline) {
       init_ok_flag = 0;
       struct TASK* this_task = AddUserTask(name, 1, ((3 + app_num * 2) * 8),
                                            entry, ((4 + app_num * 2) * 8),
-                                           ((4 + app_num * 2) * 8), alloc_size);
+                                           ((4 + app_num * 2) * 8), alloc_size - ELF32_HEAP_SIZE);
       init_ok_flag = 1;
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
@@ -387,7 +387,7 @@ int cmd_app(char* cmdline) {
       this_task->ss_start = this_task->tss.ss;
       this_task->alloc_addr =
           (int)((uint32_t)q +
-                (alloc_size - ELF32_HEAP_SIZE - ELF32_STACK_SIZE));
+                (alloc_size - ELF32_HEAP_SIZE));
       this_task->alloc_size = ELF32_HEAP_SIZE;
       this_task->gdt_data = gdt_data;
       // init_mem(this_task);
