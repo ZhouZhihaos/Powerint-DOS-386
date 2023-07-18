@@ -9,7 +9,7 @@
 
 ## Build
 
-**Warning: Powerint DOS can only be built on Windows at the moment! You must have TDM-GCC & QEMU installed. Are you all set? Let's do it!**
+**Note: you may need to install nasm, gcc, g++ and qemu before build**
 
 First, you have to clone the repo, like this:
 
