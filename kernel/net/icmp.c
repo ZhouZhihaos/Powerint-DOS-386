@@ -116,7 +116,6 @@ void icmp_handler(void *base) {
       (struct ICMPMessage *)(base + sizeof(struct EthernetFrame_head) +
                              sizeof(struct IPV4Message));
   if (icmp->type == 8 && icmp->code == 0) { // Ping请求
-    // printf("ICMP PING Echo request\n");
     uint32_t size = (((ipv4->totalLength & 0xff00) >> 8) |
                      ((ipv4->totalLength & 0x00ff) << 8));
     size -= sizeof(struct IPV4Message);
@@ -131,7 +130,6 @@ void icmp_handler(void *base) {
     IPV4ProviderSend(1, *(uint64_t *)&header->src_mac[0], src_ip, ip, packet,
                      size + sizeof(struct ICMPMessage));                 // 给答复
   } else if (icmp->type == 0 && icmp->code == 0) { // Ping答复
-    // printf("ICMP PING Echo Reply\n");
     memcpy(ping_reply_data, base, 2048);
     ping_reply_flags = 0;
   }

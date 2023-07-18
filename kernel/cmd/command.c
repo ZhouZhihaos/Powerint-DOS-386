@@ -3,9 +3,8 @@
 #include <dos.h>
 #include <fcntl.h>
 #include <mst.h>
-#include "../zlib/zlib.h"
 void showPage(void);
-void show_photo(char* path, vram_t* vr, int xsize);
+void wav_player_test(void);
 /* 一些函数或结构体声明 */
 typedef struct {
   char path[50];
@@ -48,15 +47,6 @@ void TestWrite(char drive,
                unsigned int lba) {
   // printk("TestRW:Write Lba %d,Write Sectors number %d\n", lba, number);
   memcpy(ramdisk + lba * 512, buffer, number * 512);
-}
-/* GUI BMP32VIEW/JPGVIEW */
-static vram_t* buf_view_window;
-static struct SHEET* sht_view_window;
-static int sheet_view_free_flag;
-static void close_view_window() {
-  sheet_free(sht_view_window);
-  page_free(buf_view_window, 1029 * 792 * sizeof(color_t));
-  sheet_view_free_flag = 0;
 }
 // socket测试例子
 static void TCP_Socket_Handler(struct Socket* socket, void* base) {
@@ -249,14 +239,6 @@ CHECK_OK:
     printf("\n");
   } else if (stricmp("SHOWPAGE", cmdline) == 0) {
     showPage();
-  } else if (strincmp("DESKTOP ", cmdline, 8) == 0 &&
-             running_mode == POWERDESKTOP) {
-    if (fsz(cmdline + 8) == -1) {
-      return;
-    }
-    extern struct SHEET* sht_back;
-    show_photo(cmdline + 8, sht_back->buf, sht_back->bxsize);
-    sheet_refresh(sht_back, 0, 0, sht_back->bxsize, sht_back->bysize);
   } else if (stricmp("PCNET", cmdline) == 0) {
     init_pcnet_card();
   } else if (stricmp("CHAT", cmdline) == 0 && running_mode == POWERINTDOS) {
@@ -592,80 +574,8 @@ CHECK_OK:
     }
   } else if (stricmp("VBETEST", cmdline) == 0) {
     cmd_vbetest();
-  } else if (strincmp("BMPVIEW32 ", cmdline, 10) == 0) {
-    if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbeinfo = (struct VBEINFO*)VBEINFO_ADDRESS;
-      if (set_mode(1024, 768, 32) != 0) {
-        printf("Can't enable 1024x768x32 VBE mode.\n\n");
-        return;
-      }
-      BMPVIEW32(cmdline + 10, (unsigned char*)vbeinfo->vram, 1024);
-      getch();
-      SwitchToText8025_BIOS();
-      clear();
-      return;
-    } else if (running_mode == POWERDESKTOP) {
-      if (fsz(cmdline + 10) == -1) {
-        printf("Can't find file %s!\n\n", cmdline + 10);
-        return;
-      }
-      sheet_view_free_flag = 1;
-      extern struct SHTCTL* shtctl;
-      buf_view_window = (vram_t*)page_malloc(1029 * 792 * sizeof(color_t));
-      sht_view_window = MakeWindow(50, 50, 1029, 792, "bmpview32", shtctl,
-                                   buf_view_window, close_view_window);
-      sheet_updown(sht_view_window, shtctl->top - 1);
-      BMPVIEW32(cmdline + 10, (unsigned char*)(buf_view_window + 24 * 1029 + 3),
-                1029);
-      sheet_refresh(sht_view_window, 0, 0, 1029, 792);
-      while (sheet_view_free_flag)
-        ;
-    }
   } else if (stricmp("GET_BUILD_INFO", cmdline) == 0) {
     printf("Build Time: %s %s\n", __DATE__, __TIME__);
-    return;
-  } else if (strincmp("JPGVIEW ", cmdline, 8) == 0) {
-    if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbeinfo = (struct VBEINFO*)VBEINFO_ADDRESS;
-      if (set_mode(1024, 768, 32) != 0) {
-        printf("Can't enable 1024x768x32 VBE mode.\n\n");
-        return;
-      }
-      jpgview32(cmdline + 8, (unsigned char*)vbeinfo->vram, 1024);
-      getch();
-      SwitchToText8025_BIOS();
-      clear();
-      return;
-    } else if (running_mode == POWERDESKTOP) {
-      if (fsz(cmdline + 8) == -1) {
-        printf("Can't find file %s!\n\n", cmdline + 8);
-        return;
-      }
-      sheet_view_free_flag = 1;
-      extern struct SHTCTL* shtctl;
-      buf_view_window = (vram_t*)page_malloc(1029 * 792 * sizeof(color_t));
-      sht_view_window = MakeWindow(50, 50, 1029, 792, "jpgview", shtctl,
-                                   buf_view_window, close_view_window);
-      sheet_updown(sht_view_window, shtctl->top - 1);
-      show_photo(cmdline + 8, buf_view_window + 24 * 1029 + 3, 1029);
-      sheet_refresh(sht_view_window, 0, 0, 1029, 792);
-      while (sheet_view_free_flag)
-        ;
-    }
-  } else if (strincmp("PRAVIEW ", cmdline, 8) == 0 &&
-             running_mode == POWERINTDOS) {
-    char* path = malloc(strlen(cmdline) - 7);
-    strcpy(path, cmdline + 8);
-    struct VBEINFO* vbeinfo = (struct VBEINFO*)VBEINFO_ADDRESS;
-    if (set_mode(1024, 768, 32) != 0) {
-      printf("Can't enable 1024x768x32 VBE mode.\n\n");
-      return;
-    }
-    pra_view_32((unsigned char*)path, (unsigned char*)vbeinfo->vram, 1024);
-    getch();
-    SwitchToText8025_BIOS();
-    clear();
-    free(path);
     return;
   } else if (strincmp("DIR", cmdline, 3) == 0) {
     char* args[1];
@@ -792,16 +702,12 @@ CHECK_OK:
     return;
   } else if (stricmp("PCILS", cmdline) == 0) {
     pci_list();
-  } else if (stricmp("PRASHELL", cmdline) == 0) {
-    PraShell();
   } else if (strincmp("ECHO ", cmdline, 5) == 0) {
     print(cmdline + 5);
     print("\n");
     return;
   } else if (strincmp("MKDIR ", cmdline, 6) == 0) {
     vfs_createdict(cmdline + 6);
-  } else if (stricmp("TREE", cmdline) == 0) {
-    // tree(current_task()->directory);
   } else if (strincmp("POKE ", cmdline, 5) == 0) {
     addr = (ascii2num(cmdline[5]) >> 28) + (ascii2num(cmdline[6]) >> 24);
     addr = addr + (ascii2num(cmdline[7]) >> 20) + (ascii2num(cmdline[8]) >> 16);
@@ -827,18 +733,6 @@ CHECK_OK:
     pcinfo();
   } else if (stricmp("MEM", cmdline) == 0) {
     mem();
-  } else if (strincmp("BMPVIEW ", cmdline, 8) == 0 &&
-             running_mode == POWERINTDOS) {
-    bmpview(cmdline + 8);
-    char c;
-    for (;;) {
-      c = input_char_inSM();
-      if (c == 0x01) {
-        SwitchToText8025_BIOS();
-        break;
-      }
-    }
-    return;
   } else if (strincmp("BEEP ", cmdline, 5) == 0) {
     int point, notes, dup;
     point = ascii2num(*(char*)(cmdline + 5));
@@ -858,60 +752,11 @@ CHECK_OK:
     io_cli();
     while (1)
       ;
-  } else if (strincmp("ZIP ", cmdline, 4) == 0) {
-    if (Get_Argc(cmdline) < 2) {
-      printf("Usage: ZIP <infile> <outfile>\n\n");
-      return;
-    }
-    char* asm1 = page_malloc(100);
-    char* out = page_malloc(100);
-    Get_Arg(asm1, cmdline, 1);
-    Get_Arg(out, cmdline, 2);
-    compress_one_file(asm1, out);
-  } else if (strincmp("UZIP ", cmdline, 5) == 0) {
-    if (Get_Argc(cmdline) < 2) {
-      printf("Usage: UZIP <infile> <outfile>\n\n");
-      return;
-    }
-    char* asm1 = page_malloc(100);
-    char* out = page_malloc(100);
-    Get_Arg(asm1, cmdline, 1);
-    Get_Arg(out, cmdline, 2);
-    decompress_one_file(asm1, out);
   } else if (strincmp("COLOR ", cmdline, 6) == 0) {
     struct TASK* task = current_task();
     unsigned char c = (ascii2num(cmdline[6]) << 4) + ascii2num(cmdline[7]);
     Text_Draw_Box(0, 0, task->TTY->xsize, task->TTY->ysize, c);
     task->TTY->color = c;
-  } else if (strincmp("CASM ", cmdline, 5) == 0) {
-    if (Get_Argc(cmdline) < 2) {
-      printf("Usage: CASM <asmfile> <outfile>\n\n");
-      return;
-    }
-    char* asm1 = page_malloc(100);
-    char* out = page_malloc(100);
-    Get_Arg(asm1, cmdline, 1);
-    Get_Arg(out, cmdline, 2);
-    if (fsz(asm1) == -1) {
-      printf("%s not find!\n\n", asm1);
-      return;
-    }
-    if (fsz(out) == -1) {
-      vfs_createfile(out);
-    }
-    FILE* fp_asm = fopen(asm1, "wb");
-    FILE* fp_out = fopen(out, "wb");
-    compile_file(fp_asm, fp_out);
-    fclose(fp_asm);
-    fclose(fp_out);
-    FILE* fp = fopen(out, "r");
-    for (int i = 0; i != fp->fileSize; i++) {
-      printf("%02x ", (unsigned char)fp->buffer[i]);
-    }
-    printf("\n");
-    fclose(fp);
-    page_free(asm1, 100);
-    page_free(out, 100);
   } else if (strincmp("MKFILE ", cmdline, 7) == 0) {
     vfs_createfile(cmdline + 7);
     return;
@@ -930,11 +775,6 @@ CHECK_OK:
       printf("Directory tree not find.\n\n");
     }
     return;
-    // else if (strincmp("EDIT ", cmdline, 5) == 0)
-    // {
-    // 	edit(cmdline);
-    // 	return;
-    // }
   } else if (strincmp("FONT ", cmdline, 5) == 0) {
     Set_Font(cmdline + 5);
   } else if (strincmp("CD ", cmdline, 3) == 0) {
@@ -1081,66 +921,6 @@ void cmd_dir(char** args) {
   return;
 }
 
-void tree(struct FAT_FILEINFO* directory) {
-  /*struct TASK* task = current_task();
-  struct FAT_FILEINFO* finfo = directory;
-  struct List* list_ = NewList();
-  int directory_num = 0;
-  int root_file_num = 0;
-  for (; directory[root_file_num].name[0] != '\0'; root_file_num++)
-    ;
-  for (; directory[root_file_num].type != 0x10; root_file_num--)
-    ;
-  printf("|-%c:\\%s>\n", task->drive, task->path);
-  for (;;) {
-    for (int i = 0; finfo[i].name[0] != '\0'; i++) {
-      if (finfo[i].type == 0x10 && finfo[i].name[0] != 0xe5) {
-        if (strncmp((char*)finfo[i].name, ".       ", 8) == 0 ||
-            strncmp((char*)finfo[i].name, "..      ", 8) == 0) {
-          continue;
-        } else {
-          for (int j = 1; FindForCount(j, (struct List*)drive_ctl
-                                              .drives[task->drive_number]
-                                              .directory_clustno_list) != NULL;
-               j++) {
-            struct List* list = FindForCount(
-                j, (struct List*)drive_ctl.drives[task->drive_number]
-                       .directory_clustno_list);
-            if (list->val == finfo[i].clustno) {
-              list = FindForCount(
-                  j, (struct List*)drive_ctl.drives[task->drive_number]
-                         .directory_list);
-              printf("|-");
-              for (int k = 0; k != directory_num; k++) {
-                printf("    ");
-              }
-              printf("|---");
-              for (int k = 0; finfo[i].name[k] != ' '; k++) {
-                printf("%c", finfo[i].name[k]);
-              }
-              printf("\n");
-              AddVal((int)(finfo + i), list_);
-              finfo = (struct FAT_FILEINFO*)list->val;
-              i = 0;
-              directory_num++;
-              break;
-            }
-          }
-        }
-      }
-    }
-    if (finfo == directory + root_file_num + 1) {
-      break;
-    }
-    struct FAT_FILEINFO* last =
-        (struct FAT_FILEINFO*)FindForCount(directory_num, list_)->val;
-    finfo = last + 1;
-    DeleteVal(directory_num, list_);
-    directory_num--;
-  }
-  return;*/
-}
-
 void type_deal(char* cmdline) {
   // type命令的实现
   char* name = cmdline + 5;
@@ -1215,108 +995,4 @@ void cmd_tl() {
 }
 void cmd_vbetest() {
   get_all_mode();
-}
-
-int compress_one_file(char* infilename, char* outfilename) {
-  FILE* file;
-  unsigned flen;
-  unsigned char* fbuf = NULL;
-  unsigned clen;
-  unsigned char* cbuf = NULL;
-
-  /* 通过命令行参数将srcfile文件的数据压缩后存放到dstfile文件中 */
-
-  if ((file = fopen(infilename, "rb")) == NULL) {
-    printf("Can\'t open %s!\n", infilename);
-    return -1;
-  }
-  /* 装载源文件数据到缓冲区 */
-  fseek(file, 0L, SEEK_END); /* 跳到文件末尾 */
-  flen = ftell(file);        /* 获取文件长度 */
-  fseek(file, 0L, SEEK_SET);
-  if ((fbuf = (unsigned char*)malloc(sizeof(unsigned char) * flen)) == NULL) {
-    printf("No enough memory!\n");
-    fclose(file);
-    return -1;
-  }
-  fread(fbuf, sizeof(unsigned char), flen, file);
-  /* 压缩数据 */
-  clen = compressBound(flen);
-  if ((cbuf = (unsigned char*)malloc(sizeof(unsigned char) * clen)) == NULL) {
-    printf("No enough memory!\n");
-    fclose(file);
-    return -1;
-  }
-  if (compress(cbuf, (unsigned long*)&clen, fbuf, flen) != Z_OK) {
-    printf("Compress %s failed!\n", infilename);
-    return -1;
-  }
-  fclose(file);
-
-  if (fsz(outfilename) == -1) {
-    vfs_createfile(outfilename);
-  }
-  if ((file = fopen(outfilename, "wb")) == NULL) {
-    printf("Can\'t create %s!\n", outfilename);
-    return -1;
-  }
-  /* 保存压缩后的数据到目标文件 */
-  fwrite(&flen, sizeof(uLong), 1, file); /* 写入源文件长度 */
-  fwrite(&clen, sizeof(uLong), 1, file); /* 写入目标数据长度 */
-  fwrite(cbuf, sizeof(unsigned char), clen, file);
-  fclose(file);
-
-  free(fbuf);
-  free(cbuf);
-
-  return 0;
-}
-int decompress_one_file(char* infilename, char* outfilename) {
-  FILE* file;
-  unsigned int flen;
-  unsigned char* fbuf = NULL;
-  unsigned int ulen;
-  unsigned char* ubuf = NULL;
-
-  /* 通过命令行参数将srcfile文件的数据解压缩后存放到dstfile文件中 */
-
-  if ((file = fopen(infilename, "rb")) == NULL) {
-    printf("Can\'t open %s!\n", infilename);
-    return -1;
-  }
-  /* 装载源文件数据到缓冲区 */
-  fread(&ulen, sizeof(uLong), 1, file); /* 获取缓冲区大小 */
-  fread(&flen, sizeof(uLong), 1, file); /* 获取数据流大小 */
-  if ((fbuf = (unsigned char*)malloc(sizeof(unsigned char) * flen)) == NULL) {
-    printf("No enough memory!\n");
-    fclose(file);
-    return -1;
-  }
-  fread(fbuf, sizeof(unsigned char), flen, file);
-  /* 解压缩数据 */
-  if ((ubuf = (unsigned char*)malloc(sizeof(unsigned char) * ulen)) == NULL) {
-    printf("No enough memory!\n");
-    fclose(file);
-    return -1;
-  }
-  if (uncompress(ubuf, (unsigned long*)&ulen, fbuf, flen) != Z_OK) {
-    printf("Uncompress %s failed!\n", infilename);
-    return -1;
-  }
-  fclose(file);
-
-  if (fsz(outfilename) == -1) {
-    vfs_createfile(outfilename);
-  }
-  if ((file = fopen(outfilename, "wb")) == NULL) {
-    printf("Can\'t create %s!\n", outfilename);
-    return -1;
-  }
-  /* 保存解压缩后的数据到目标文件 */
-  fwrite(ubuf, sizeof(unsigned char), ulen, file);
-  fclose(file);
-
-  free(fbuf);
-  free(ubuf);
-  return 0;
 }

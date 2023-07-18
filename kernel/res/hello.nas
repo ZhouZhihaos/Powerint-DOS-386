@@ -2,15 +2,15 @@
 [INSTRSET "i486p"]
 [FILE "hello.nas"]
 [BITS 32]
-GLOBAL _main
-EXTERN _puts
+GLOBAL _Main
 [SECTION .text]
-_main:
-  push msg
-  call _puts
-  add esp,4
-  mov eax,0
-  ret
+_Main:
+  mov eax,0x5
+  mov edx,msg
+  int 0x36
+  mov eax,0x1e
+  int 0x36
+  jmp $
 [SECTION .data]
 msg:
   db 'hello, world',0

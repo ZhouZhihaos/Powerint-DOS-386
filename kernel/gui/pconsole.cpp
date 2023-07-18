@@ -7,7 +7,7 @@ void pcons_key_press(char ch, uint32_t val) {
   PConsole* p = (PConsole*)val;
   fifo8_put(TaskGetKeyfifo(p->use_task), (uint8_t)ch);
 }
-PConsole::PConsole(struct SHTCTL* ctl, int x, int y)
+PConsole::PConsole(struct SHTCTL* ctl, int x, int y, struct TASK *use_task)
     : Window(ctl, "console", x, y, 644, 431) {
   SDraw_Box(this->get_vram(), 2, 28, 2 + 8 * 80, 28 + 16 * 25, COL_000000,
             this->get_xsize());
@@ -18,7 +18,7 @@ PConsole::PConsole(struct SHTCTL* ctl, int x, int y)
   this->x = 2;
   this->y = 28;
   this->register_key_press(pcons_key_press, (uint32_t)this);
-  this->use_task = current_task();
+  this->use_task = use_task;
   this->color = 0x0f;
 }
 static void copy_char(vram_t* vram,
@@ -171,10 +171,10 @@ void Draw_Box_pgui(struct tty* res,
   res->x = (p->x - 2) / 8;
   res->y = (p->y - 28) / 16;
 }
-void register_tty(PConsole* p) {
+void register_tty(PConsole* p, struct TASK *task) {
   struct tty* tty_g = tty_alloc((void*)p, 80, 25, putchar_pgui, MoveCursor_pgui,
                                 clear_pgui, screen_ne_pgui, Draw_Box_pgui);
-  tty_set_reserved(tty_g, (unsigned int)0, (unsigned int)current_task(), 0, 0);
+  tty_set_reserved(tty_g, (unsigned int)0, (unsigned int)task, 0, 0);
   tty_set_default(tty_g);
-  tty_set(current_task(), tty_g);
+  tty_set(task, tty_g);
 }

@@ -262,29 +262,16 @@ int memman_free(struct MEMMAN* man, unsigned int addr, unsigned int size)
   man->lostsize += size;
   return -1; /* 失败 */
 }
-unsigned int memman_alloc_4k(struct MEMMAN* man, unsigned int size) {
+unsigned int memman_alloc_128b(struct MEMMAN* man, unsigned int size) {
   unsigned int a;
-  size = (size + 0xfff) & 0xfffff000;
+  size = (size + 0x7f) & 0xffffff80;
   a = memman_alloc(man, size);
   return a;
 }
 
-int memman_free_4k(struct MEMMAN* man, unsigned int addr, unsigned int size) {
+int memman_free_128b(struct MEMMAN* man, unsigned int addr, unsigned int size) {
   int i;
-  size = (size + 0xfff) & 0xfffff000;
-  i = memman_free(man, addr, size);
-  return i;
-}
-unsigned int memman_alloc_2048b(struct MEMMAN* man, unsigned int size) {
-  unsigned int a;
-  size = (size + 0x7ff) & 0xfffff800;
-  a = memman_alloc(man, size);
-  return a;
-}
-
-int memman_free_2048b(struct MEMMAN* man, unsigned int addr, unsigned int size) {
-  int i;
-  size = (size + 0x7ff) & 0xfffff800;
+  size = (size + 0x7f) & 0xffffff80;
   i = memman_free(man, addr, size);
   return i;
 }
@@ -292,28 +279,27 @@ void init_mem(struct TASK* task) {
   if (task->alloc_addr == 0 || task->alloc_size == 0) {
     return;
   }
-  char* start = (char*)task->alloc_addr;
-  task->mm = start;
+  unsigned int start = (unsigned int)task->alloc_addr;
+  task->mm = (struct MEMMAN *)start;
   memman_init((struct MEMMAN*)start);
   start += sizeof(struct MEMMAN);
   memman_free(task->mm, start, task->alloc_size - sizeof(struct MEMMAN));
 }
 void* page_malloc_lessthan4kb(int size) {
   if (current_task()->mm != NULL) {
-    void* p = memman_alloc_2048b(current_task()->mm, size);
+    void* p = (void *)memman_alloc_128b(current_task()->mm, size);
     return p;
   }
   return page_kmalloc(size);
 }
 void page_free_lessthan4kb(void* p, int size) {
   if (p == NULL || current_task()->mm == NULL) {
-    page_kfree(p, size);
+    page_kfree((int)p, size);
     return;
   }
-  memman_free_2048b(current_task()->mm, (int)p, size);
+  memman_free_128b(current_task()->mm, (int)p, size);
 }
 void* page_malloc(int size) {
- // printk("malloc --- %d\n", size);
   if (size > 0 && size < 4 * 1024) {
     void* p = page_malloc_lessthan4kb(size);
     return p;

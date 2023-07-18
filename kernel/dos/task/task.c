@@ -244,7 +244,7 @@ struct FIFO8 *TaskGetMousefifo(struct TASK *task) {
   return (struct FIFO8 *)task->mousefifo;
 }
 static bool flags_once = false;
-static char default_drive;
+char default_drive;
 static unsigned int default_drive_number;
 struct TASK *AddTask(char *name, int level, int cs, int eip, int ds, int ss,
                      int esp) {

@@ -46,6 +46,7 @@ uint32_t DNSParseIP(uint8_t *name) {
   return dns_parse_ip;
 }
 void dns_handler(void *base) {
+  //printf("This?\n");
   struct DNS_Header *dns_header =
       (struct DNS_Header *)(base + sizeof(struct EthernetFrame_head) +
                             sizeof(struct IPV4Message) +

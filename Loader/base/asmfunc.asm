@@ -3,7 +3,8 @@
 		GLOBAL	io_in8,  io_in16,  io_in32
 		GLOBAL	io_out8, io_out16, io_out32
 		GLOBAL	io_load_eflags, io_store_eflags
-		GLOBAL	load_gdtr, load_idtr
+		GLOBAL	load_gdtr, load_idtr,loader_main
+		EXTERN DOSLDR_MAIN
 		GLOBAL	load_cr0, store_cr0,memtest_sub
 [SECTION .text]
 %define ADR_BOTPAK 							   0x100000
@@ -102,7 +103,7 @@ floppy_int:
 		popad
 		sti
     IRETD
-testsize:	dd	0
+
 memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
 		CLI
 		PUSH	EDI						; （由于还要使用EBX, ESI, EDI）
@@ -111,10 +112,10 @@ memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
 		MOV		ESI,0xaa55aa55			; pat0 = 0xaa55aa55;
 		MOV		EDI,0x55aa55aa			; pat1 = 0x55aa55aa;
 		MOV		EAX,[ESP+12+4]			; i = start;
-		MOV		dword[ds:ADR_BOTPAK+testsize],1024*1024*1024	; testsize = 1024*1024*1024;
+		MOV		dword[testsize],1024*1024*1024	; testsize = 1024*1024*1024;
 mts_loop:
 		MOV		EBX,EAX
-		ADD		EBX,[ds:ADR_BOTPAK+testsize]		 	; p = i + testsize;
+		ADD		EBX,[testsize]		 	; p = i + testsize;
 		SUB		EBX,4					; p -= 4;
 		MOV		EDX,[EBX]				; old = *p;
 		MOV		[EBX],ESI				; *p = pat0;
@@ -125,7 +126,7 @@ mts_loop:
 		CMP		ESI,[EBX]				; if (*p != pat0) goto fin;
 		JNE		mts_fin
 		MOV		[EBX],EDX				; *p = old;
-		ADD		EAX,[ds:ADR_BOTPAK+testsize]			; i += testsize;
+		ADD		EAX,[testsize]			; i += testsize;
 		CMP		EAX,[ESP+12+8]			; if (i <= end) goto mts_loop;
 		
 		JBE		mts_loop
@@ -135,9 +136,9 @@ mts_loop:
 		POP		EDI
 		RET
 mts_fin:
-		CMP		dword[ds:ADR_BOTPAK+testsize],0x1000	; if (testsize == 0x1000) goto mts_nomore;
+		CMP		dword[testsize],0x1000	; if (testsize == 0x1000) goto mts_nomore;
 		JE		mts_nomore
-		SHR		dword[ds:ADR_BOTPAK+testsize],2	; testsize /= 4;
+		SHR		dword[testsize],2	; testsize /= 4;
 		JMP		mts_loop
 mts_nomore:
 		STI
@@ -189,17 +190,16 @@ memcpy:
 	ret
 global _IN
 _IN:
-	cli
-	MOV	EBX,0x00280000
-	MOV	ECX,[EBX+16]
-	ADD	ECX,3			; ECX += 3;
-	SHR	ECX,2			; ECX /= 4;
-	JZ	.skip			; 传输完成
-	MOV	ESI,[EBX+20]	; 源
-	ADD	ESI,EBX
-	MOV	EDI,[EBX+12]	; 目标
-	CALL	memcpy
-.skip:
-	mov esp,[EBX+12]
-	jmp dword 2*8:0x1b
-	jmp $
+	mov ebx,[esp+4]
+	mov edx,[esp+8]
+	push ebx
+	push edx
+	jmp far [esp]
+loader_main:
+	mov esp,stack_top
+	jmp DOSLDR_MAIN
+[SECTION .data]
+testsize:	dd	0
+[SECTION .bss]
+stack: resb 2*1024
+stack_top:

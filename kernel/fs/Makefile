@@ -2,8 +2,7 @@ include ../cdef.mk
 out_path_src = ../obj/
 incpath_src = ../include/
 obj_fs = $(out_path_src)fat.o $(out_path_src)file.o $(out_path_src)bmp.o \
-	     $(out_path_src)jpeg.o $(out_path_src)path.o $(out_path_src)pra.o \
-		 $(out_path_src)elf.o $(out_path_src)png.o $(out_path_src)rootfs.o \
+	     $(out_path_src)path.o $(out_path_src)elf.o $(out_path_src)rootfs.o \
 		 $(out_path_src)vfs.o
 default : $(obj_fs)
 $(out_path_src)%.o : ./%.c Makefile

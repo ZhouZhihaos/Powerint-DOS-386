@@ -3,10 +3,8 @@ DOSPATH = ./base/
 DRVPATH = ./driver/
 OUTPATH = ./out/
 FSPATH  = ./fs/
-MAKE     = $(TOOLPATH)make.exe -r
-NASM     = $(TOOLPATH)nasm.exe
-OBJ2BIM  = $(TOOLPATH)obj2bim.exe
-BIM2HRB  = $(TOOLPATH)bim2hrb.exe
+MAKE     = make -r
+NASM     = nasm
 RULEFILE = make.rul
 DEL      = del
 
@@ -20,13 +18,8 @@ default :
 	$(MAKE) -C $(FSPATH)
 	$(MAKE) $(OUTPATH)dosldr.bin
 
-$(OUTPATH)dosldr.bim : $(OBJS_BOOTPACK) Makefile
-	$(OBJ2BIM) @$(RULEFILE) out:$(OUTPATH)dosldr.bim stack:3136k map:$(OUTPATH)dosldr.map \
-		$(OBJS_BOOTPACK)
-
-$(OUTPATH)dosldr.bin : $(OUTPATH)dosldr.bim Makefile
-	$(BIM2HRB) $(OUTPATH)dosldr.bim $(OUTPATH)dosldr.bin 0
+$(OUTPATH)dosldr.bin : $(OBJS_BOOTPACK) Makefile
+	ld -m elf_i386 -static -Ttext 0x100000 -e loader_main $(OBJS_BOOTPACK) -o $(OUTPATH)dosldr.bin
 
 clean :
-	-$(DEL) out /s/q
-	$(MAKE) -C $(APPSPATH) clean
+	rm out/*

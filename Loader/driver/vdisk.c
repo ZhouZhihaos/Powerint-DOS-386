@@ -36,7 +36,9 @@ int rw_vdisk(char drive, unsigned int lba, unsigned char *buffer,
   }
   if (vdisk_ctl[indx].flag) {
     if (read) {
+    //  printf("[rw_vdisk] read.\n");
       vdisk_ctl[indx].Read(drive, buffer, number, lba);
+      //for(;;);
     } else {
       vdisk_ctl[indx].Write(drive, buffer, number, lba);
     }

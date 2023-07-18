@@ -26,29 +26,8 @@ int fsz(char *filename);
 void EDIT_FILE(char* name, char* dest, int length, int offset);
 int Copy(char* path, char* path1);
 // bmp.c
-void bmpview(char* filename);
-void BMPVIEW32(char* path, unsigned char* vram, int xsize);
-// jpeg.c
-int info_JPEG(struct DLL_STRPICENV* env,
-              int* info,
-              int size,
-              unsigned char* fp);
-int decode0_JPEG(struct DLL_STRPICENV* env,
-                 int size,
-                 unsigned char* fp0,
-                 int b_type,
-                 unsigned char* buf,
-                 int skip);
-void jpgview32(char* path, unsigned char* vram, int xsize);
-// pra.c
-// Powerint raw image viewer
-void MakePraFile(char* PraFileName,
-                 uint8_t* imgBuffer,
-                 uint32_t xsize,
-                 uint32_t ysize);
-void PraShell();
-void pra_view_32(unsigned char* path, unsigned char* vram, int scr_xsize);
-void jpgview32(char* path, unsigned char* vram, int xsize);
+bool BMPVIEW8(char* path, unsigned char* vram, int xsize);
+bool BMPVIEW32(char* path, unsigned char* vram, int xsize);
 // path.c
 void env_init(void);
 void env_write(char *name,char *val);

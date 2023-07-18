@@ -2,7 +2,7 @@ TOOLPATH = ../tools/
 APPSPATH = ../apps/
 APPSOUTPATH = ../apps/out/
 BIDPATH = ../apps/build_tools_in_pdos/
-FAT12TOOLSPATH = ../fat12tools/
+FATTOOLSPATH = ../fattools/
 BOOTPATH = ./boot/
 DOSPATH = ./dos/
 CMDPATH = ./cmd/
@@ -12,7 +12,6 @@ IOPATH = ./io/
 STDPATH = ./std/
 FSPATH = ./fs/
 NETPATH = ./net/
-ZLIBPATH = ./zlib/
 MSTPATH = ./mst/
 RESPATH = ./res/
 INCPATH  = ./include/
@@ -20,39 +19,33 @@ OUTPATH = ./obj/
 IMGPATH = ./img/
 LOADERPATH = ../Loader/out/
 
-MAKE     = $(TOOLPATH)make.exe -r
-NASM     = $(TOOLPATH)nasm.exe
-OBJ2BIM  = $(TOOLPATH)obj2bim.exe
-BIM2HRB  = $(TOOLPATH)bim2hrb.exe
-FAT12TOOLS = $(FAT12TOOLSPATH)fat12tools.exe -file $(IMGPATH)Powerint_DOS_386.img
+MAKE     = make -r
+NASM     = nasm
+FATTOOLS = $(FATTOOLSPATH)fattools -file $(IMGPATH)Powerint_DOS_386.img
 RULEFILE = make.rul
-EDIMG    = $(TOOLPATH)edimg.exe
+EDIMG    = $(TOOLPATH)edimg
 COPY     = copy
 DEL      = del
 
-OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUTPATH)execbatch.o $(OUTPATH)timer.o $(OUTPATH)fifo.o \
+OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUTPATH)execbatch.o $(OUTPATH)timer.o \
 				$(OUTPATH)mem.o $(OUTPATH)file.o $(OUTPATH)setjmp.obj $(OUTPATH)int32.obj $(OUTPATH)i386.obj \
 				$(OUTPATH)handlers.obj $(OUTPATH)errors.obj $(OUTPATH)vga.o $(OUTPATH)harddisk.o $(OUTPATH)TextMode.o  \
-				$(OUTPATH)mouse.o $(OUTPATH)acpi.o $(OUTPATH)Input_Stack.o $(OUTPATH)gdtidt.o $(OUTPATH)arg.o $(OUTPATH)CASM.o \
+				$(OUTPATH)mouse.o $(OUTPATH)acpi.o $(OUTPATH)Input_Stack.o $(OUTPATH)gdtidt.o $(OUTPATH)arg.o \
 				$(OUTPATH)other.o $(OUTPATH)task.o $(OUTPATH)floppy.o $(OUTPATH)dma.o $(OUTPATH)init.o $(OUTPATH)main.o \
 				$(OUTPATH)std.o $(OUTPATH)sheet.o $(OUTPATH)graphic.o $(OUTPATH)vbe.o $(OUTPATH)cmos.o $(OUTPATH)pci.o \
-				$(OUTPATH)fat.o $(OUTPATH)beep.o $(OUTPATH)jpeg.o  $(OUTPATH)gui_syscall.o $(OUTPATH)syscall.o \
+				$(OUTPATH)fat.o $(OUTPATH)beep.o $(OUTPATH)gui_syscall.o $(OUTPATH)syscall.o $(OUTPATH)fifo.o \
 				$(OUTPATH)list.o $(OUTPATH)input.o $(OUTPATH)keyboard.o $(OUTPATH)pcnet.o $(OUTPATH)ipc.o \
-				$(OUTPATH)tty.o $(OUTPATH)page.o $(OUTPATH)serial.o $(OUTPATH)log.o $(OUTPATH)path.o $(OUTPATH)pra.o \
-				$(OUTPATH)Draw.o $(OUTPATH)HighTextMode.o $(OUTPATH)pic.o $(OUTPATH)bmp.o $(OUTPATH)button.o $(OUTPATH)window.o \
-				$(OUTPATH)sb16.o $(OUTPATH)lock.o $(OUTPATH)elf.o $(OUTPATH)rtc.o $(OUTPATH)driver.o $(OUTPATH)md5.o $(OUTPATH)libcpp.o \
-				$(OUTPATH)rand.o $(OUTPATH)time.o $(OUTPATH)png.o $(OUTPATH)listbox.o $(OUTPATH)etherframe.o \
-				$(OUTPATH)arp.o $(OUTPATH)ipv4.o $(OUTPATH)icmp.o $(OUTPATH)udp.o $(OUTPATH)dhcp.o $(OUTPATH)tcp.o $(OUTPATH)chat.o \
-				$(OUTPATH)dns.o $(OUTPATH)socket.o $(OUTPATH)bit.o $(OUTPATH)loadbox.o $(OUTPATH)http.o \
-				$(OUTPATH)gui.o $(OUTPATH)gui_login.o  $(OUTPATH)adler32.o $(OUTPATH)compress.o $(OUTPATH)crc32.o \
-				$(OUTPATH)deflate.o $(OUTPATH)gzclose.o $(OUTPATH)gzlib.o \
-				$(OUTPATH)gzread.o $(OUTPATH)gzwrite.o $(OUTPATH)infback.o \
-				$(OUTPATH)inffast.o $(OUTPATH)inflate.o $(OUTPATH)inftrees.o \
-				$(OUTPATH)trees.o $(OUTPATH)uncompr.o $(OUTPATH)zutil.o $(OUTPATH)ftp.o\
-			  $(OUTPATH)linux_style_file.o $(OUTPATH)netgobang.o $(OUTPATH)ide.o $(OUTPATH)net_syscall.o $(OUTPATH)ntp.o \
-				$(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o $(OUTPATH)GraphicMode.o \
-				$(OUTPATH)vfs.o $(OUTPATH)build.o $(OUTPATH)mst.o $(OUTPATH)str.o $(OUTPATH)pvector.o $(OUTPATH)psheet.o $(OUTPATH)pgui.o \
-				$(OUTPATH)box.o $(OUTPATH)pwindow.o $(OUTPATH)pbutton.o $(OUTPATH)ptextbox.o $(OUTPATH)pconsole.o
+				$(OUTPATH)tty.o $(OUTPATH)page.o $(OUTPATH)serial.o $(OUTPATH)log.o $(OUTPATH)path.o $(OUTPATH)Draw.o \
+				$(OUTPATH)HighTextMode.o $(OUTPATH)pic.o $(OUTPATH)bmp.o $(OUTPATH)button.o $(OUTPATH)window.o \
+				$(OUTPATH)sb16.o $(OUTPATH)lock.o $(OUTPATH)elf.o $(OUTPATH)driver.o $(OUTPATH)md5.o $(OUTPATH)libcpp.o \
+				$(OUTPATH)rand.o $(OUTPATH)time.o $(OUTPATH)listbox.o $(OUTPATH)etherframe.o $(OUTPATH)arp.o $(OUTPATH)ipv4.o \
+				$(OUTPATH)icmp.o $(OUTPATH)udp.o $(OUTPATH)dhcp.o $(OUTPATH)tcp.o $(OUTPATH)chat.o $(OUTPATH)dns.o \
+				$(OUTPATH)socket.o $(OUTPATH)bit.o $(OUTPATH)loadbox.o $(OUTPATH)http.o $(OUTPATH)gui.o $(OUTPATH)gui_login.o \
+				$(OUTPATH)ftp.o $(OUTPATH)linux_style_file.o $(OUTPATH)netgobang.o $(OUTPATH)ide.o $(OUTPATH)net_syscall.o \
+				$(OUTPATH)ntp.o $(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o \
+				$(OUTPATH)GraphicMode.o $(OUTPATH)vfs.o $(OUTPATH)build.o $(OUTPATH)mst.o $(OUTPATH)str.o $(OUTPATH)pvector.o \
+				$(OUTPATH)psheet.o $(OUTPATH)pgui.o $(OUTPATH)box.o $(OUTPATH)pwindow.o $(OUTPATH)pbutton.o $(OUTPATH)ptextbox.o \
+				$(OUTPATH)pconsole.o
 
 # 默认动作
 
@@ -65,7 +58,6 @@ default :
 	$(MAKE) -C $(CMDPATH)
 	$(MAKE) -C $(GUIPATH)
 	$(MAKE) -C $(NETPATH)
-	$(MAKE) -C $(ZLIBPATH)
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
 	
@@ -73,19 +65,16 @@ default :
 
 $(OUTPATH)boot.bin : $(BOOTPATH)boot.asm Makefile
 	$(NASM) $(BOOTPATH)boot.asm -o $(OUTPATH)boot.bin
+$(OUTPATH)boot_elf.bin : $(BOOTPATH)boot_elf.asm Makefile
+	$(NASM) $(BOOTPATH)boot_elf.asm -o $(OUTPATH)boot_elf.bin
 $(OUTPATH)boot32.bin : $(BOOTPATH)boot32.asm Makefile
 	$(NASM) $(BOOTPATH)boot32.asm -o $(OUTPATH)boot32.bin
-$(OUTPATH)kernel.bim : $(OBJS_BOOTPACK) Makefile
-	$(OBJ2BIM) @$(RULEFILE) out:$(OUTPATH)kernel.bim stack:3136k map:$(OUTPATH)kernel.map \
-		$(OBJS_BOOTPACK)
-# 3MB+64KB=3136KB
 
-$(OUTPATH)kernel.bin : $(OUTPATH)kernel.bim Makefile
-	$(BIM2HRB) $(OUTPATH)kernel.bim $(OUTPATH)kernel.bin 0
-
-Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
+$(OUTPATH)kernel.bin : $(OBJS_BOOTPACK) Makefile
+	ld -m elf_i386 -static -Ttext 0x280000 -e KernelMain $(OBJS_BOOTPACK) -o $(OUTPATH)kernel.bin
+Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin $(OUTPATH)boot_elf.bin Makefile
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
-		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
+		wbinimg src:$(OUTPATH)boot_elf.bin len:512 from:0 to:0 \
 		copy from:$(LOADERPATH)dosldr.bin to:@: \
 		copy from:$(OUTPATH)kernel.bin to:@: \
 		copy from:$(RESPATH)autoexec.bat to:@: \
@@ -94,10 +83,10 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 		copy from:$(OUTPATH)boot32.bin to:@: \
 		copy from:$(RESPATH)setup.bat to:@: \
 		copy from:$(APPSOUTPATH)setup1.bin to:@: \
-		copy from:$(APPSOUTPATH)creus.bin to:@: \
+		copy from:$(APPSOUTPATH)CREUS.bin to:@: \
 		copy from:$(APPSOUTPATH)bainian.bin to:@: \
 		imgout:$(IMGPATH)Powerint_DOS_386.img
-		$(FAT12TOOLS) -mkdir other \
+		$(FATTOOLS) -mkdir other \
 		-copy other/font.bin ../tools/font/font.bin \
 		-copy other/HZK16 ../tools/font/HZK16 \
 		-copy other/copy.bin $(APPSOUTPATH)copy.bin \
@@ -105,18 +94,13 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 		-copy other/coin.wav $(RESPATH)coin.wav
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
-		copy from:$(APPSOUTPATH)uigobang.bin to:@: \
-		copy from:$(APPSOUTPATH)aigobang.bin to:@: \
+		copy from:$(APPSOUTPATH)AIGOBANG.bin to:@: \
 		copy from:$(APPSOUTPATH)snake.bin to:@: \
 		copy from:$(APPSOUTPATH)gobang.bin to:@: \
 		copy from:$(APPSOUTPATH)cgobang.bin to:@: \
 		copy from:$(APPSOUTPATH)game.bin to:@: \
-		copy from:$(APPSOUTPATH)login.bin to:@: \
 		copy from:$(APPSOUTPATH)pwsh.bin to:@: \
-		copy from:$(APPSOUTPATH)pfn.bin to:@: \
-		copy from:$(APPSOUTPATH)RandNum.bin to:@: \
 		copy from:$(APPSOUTPATH)sort.bin to:@: \
-		copy from:$(APPSOUTPATH)student.bin to:@: \
 		copy from:$(APPSOUTPATH)bf.bin to:@: \
 		copy from:$(APPSOUTPATH)copy.bin to:@: \
 		copy from:$(APPSOUTPATH)basic.bin to:@: \
@@ -127,20 +111,15 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 		copy from:$(APPSOUTPATH)calc.bin to:@: \
 		copy from:$(APPSOUTPATH)clock.bin to:@: \
 		copy from:$(APPSOUTPATH)Maze.bin to:@: \
-		copy from:$(APPSOUTPATH)winver.bin to:@: \
-		copy from:$(APPSOUTPATH)uicalc.bin to:@: \
 		copy from:$(APPSOUTPATH)invader.bin to:@: \
-		copy from:$(APPSOUTPATH)tetris.bin to:@: \
 		copy from:$(APPSOUTPATH)cc.bin to:@: \
-		copy from:$(APPSOUTPATH)spgame.bin to:@: \
-		copy from:$(APPSOUTPATH)ps2test.bin to:@: \
+		copy from:$(APPSOUTPATH)SPGAME.bin to:@: \
 		copy from:$(APPSOUTPATH)msttest.bin to:@: \
-		copy from:$(RESPATH)make.rul to:@: \
+		copy from:$(RESPATH)MAKE.RUL to:@: \
 		copy from:$(BIDPATH)nask.bin to:@: \
 		copy from:$(BIDPATH)test.bin to:@: \
 		copy from:$(BIDPATH)obj2bim.bin to:@: \
 		copy from:$(APPSOUTPATH)bim2hrb.bin to:@: \
-		copy from:$(APPSOUTPATH)plib.lib to:@: \
 		copy from:$(RESPATH)codeedit.ini to:@: \
 		copy from:$(RESPATH)asm.lua to:@: \
 		copy from:$(RESPATH)student.lua to:@: \
@@ -195,10 +174,9 @@ img_run :
 	$(MAKE) -C $(CMDPATH)
 	$(MAKE) -C $(GUIPATH)
 	$(MAKE) -C $(NETPATH)
-	$(MAKE) -C $(ZLIBPATH)
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
-	.\run.bat
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
 full :
 	$(MAKE) -C $(DOSPATH)
 	$(MAKE) -C $(IOPATH)
@@ -208,12 +186,11 @@ full :
 	$(MAKE) -C $(CMDPATH)
 	$(MAKE) -C $(GUIPATH)
 	$(MAKE) -C $(NETPATH)
-	$(MAKE) -C $(ZLIBPATH)
 	$(MAKE) -C $(APPSPATH)
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
 run:
-	.\run.bat
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
 full_run:
 	$(MAKE) -C $(DOSPATH)
 	$(MAKE) -C $(IOPATH)
@@ -223,10 +200,9 @@ full_run:
 	$(MAKE) -C $(CMDPATH)
 	$(MAKE) -C $(GUIPATH)
 	$(MAKE) -C $(NETPATH)
-	$(MAKE) -C $(ZLIBPATH)
 	$(MAKE) -C $(APPSPATH)
 	$(MAKE) Mimg
-	.\run.bat
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
 clean :
 	-$(DEL) obj /s/q
 	$(MAKE) -C $(APPSPATH) clean

@@ -93,8 +93,6 @@ asm_sb16_handler:
 		POP		DS
 		POP		ES
 		IRETD
-EXTERN rtc_handler
-GLOBAL asm_rtc_handler
 EXTERN ide_irq
 GLOBAL asm_ide_irq
 asm_ide_irq:
@@ -113,19 +111,6 @@ asm_ide_irq:
 		POP		ES
 		IRETD
 asm_rtc_handler:
-		PUSH	ES
-		PUSH	DS
-		PUSHAD
-		MOV		EAX,ESP
-		PUSH	EAX
-		MOV		AX,SS
-		MOV		DS,AX
-		MOV		ES,AX
-		CALL	rtc_handler
-		POP		EAX
-		POPAD
-		POP		DS
-		POP		ES
 		IRETD
 global asm_gui_api
 extern Gui_API

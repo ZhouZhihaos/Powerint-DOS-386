@@ -3,7 +3,7 @@
 #include <window.hpp>
 class PConsole : public Window {
  public:
-  PConsole(struct SHTCTL* ctl, int x, int y);
+  PConsole(struct SHTCTL* ctl, int x, int y, struct TASK *use_task);
   void putch(char ch);
   void scroll();
   void clear();
@@ -15,5 +15,5 @@ class PConsole : public Window {
   PSheetBase *cursur;
   
 };
-void register_tty(PConsole* p);
+void register_tty(PConsole* p, struct TASK *task);
 #endif

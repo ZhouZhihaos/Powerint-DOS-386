@@ -52,7 +52,7 @@ struc regs16_t
 	.ef resw 1
 endstruc
 
-%define ADR_BOTPAK 							   0x280000
+%define ADR_BOTPAK 							   0
 %define INT32_BASE                             0x7C00	; 这个位置分页线性地址=分段线性地址
 %define REBASE(x)                              (((x) - reloc) + INT32_BASE)	; 计算在INT32_BASE中的数据的偏移地址
 %define DATA32                                 1 * 8

@@ -53,7 +53,7 @@ void DeleteVal(size_t count, struct List* Obj) {
     prev->next = next;
     next->prev = prev;
   }
-  page_kfree((size_t)Will_Free, sizeof(struct List));
+  page_kfree((int)Will_Free, sizeof(struct List));
   Obj->ctl->all--;
 }
 struct List* NewList() {
@@ -82,12 +82,12 @@ int GetLastCount(struct List* Obj) {
 }
 void DeleteList(struct List* Obj) {
   Obj = Obj->ctl->start;
-  page_kfree((size_t)Obj->ctl, sizeof(struct ListCtl));
+  page_kfree((int)Obj->ctl, sizeof(struct ListCtl));
   for (; Obj != (struct List*)NULL;) {
     //printf("Will free: %llx\n", Obj);
     struct List* tmp = Obj;
     Obj = Obj->next;
-    page_kfree((size_t)tmp, sizeof(struct List));
+    page_kfree((int)tmp, sizeof(struct List));
   }
   return;
 }

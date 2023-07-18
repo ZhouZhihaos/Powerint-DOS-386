@@ -22,7 +22,6 @@ typedef vram_t color_t;
 #define PIT_CTRL 0x0043
 #define PIT_CNT0 0x0040
 #define AR_TSS32 0x0089
-typedef struct List List;
 #define Panic_Print(func, info, ...)                                           \
   func("%s--PANIC: %s:%d Info:" info "\n", __FUNCTION__, __FILE__, __LINE__,   \
        ##__VA_ARGS__);
@@ -203,8 +202,8 @@ extern uint32_t Path_Addr;
 struct FAT_CACHE {
   unsigned int ADR_DISKIMG;
   struct FAT_FILEINFO *root_directory;
-  struct LIST *directory_list;
-  struct LIST *directory_clustno_list;
+  struct List *directory_list;
+  struct List *directory_clustno_list;
   int *fat;
   int FatMaxTerms;
   unsigned int ClustnoBytes;

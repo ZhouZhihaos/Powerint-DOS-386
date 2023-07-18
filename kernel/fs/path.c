@@ -35,8 +35,14 @@ char* env_read(char* name) {
   }
 }
 void env_save() {
+  extern char default_drive;
+  char path[12];
+  sprintf(path, "%c:/env.cfg", default_drive);
+  if (vfs_filesize(path) == -1) {
+    return;
+  }
   char* s = MST_build_to_string(env);
-  vfs_writefile("/env.cfg", s, strlen(s));
+  vfs_writefile(path, s, strlen(s));
   free(s);
 }
 void env_reload() {

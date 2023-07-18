@@ -1,49 +1,45 @@
 // bmp.c ：位图解析
 #include <fs.h>
-void bmpview(char *filename) {
+bool BMPVIEW8(char *path, unsigned char *vram, int xsize) {
+  if (fsz(path) == -1) {
+    return false;
+  }
   int i, j;
-  FILE *fp = fopen(filename, "r");
+  FILE *fp = fopen(path, "r");
   char *p = fp->buffer;
   unsigned short pxsize, pysize, start;
   unsigned int length;
-  if (fp == 0) {
-    print("Can't find file ");
-    print(filename);
-    print("\n");
-    return;
-  }
   if (p[0] != 'B' || p[1] != 'M') {
-    print("Isn't BMP photo,format error.\n");
-    return;
+    return false;
   }
   pxsize = *(unsigned short *)(p + 0x12);
   pysize = *(unsigned short *)(p + 0x16);
   length = *(unsigned int *)(p + 2);
   start = *(unsigned short *)(p + 0xa);
-  if (set_mode(1024, 768, 8) != 0) {
-    printf("Can't enable 1024x768x8 VBE mode.\n\n");
-    return;
-  }
   io_out8(VGA_DAC_WRITE_INDEX, 0);
   for (i = 0; i != 256; i++) {
     io_out8(VGA_DAC_DATA, p[0x36 + i * 4 + 2] / 4);
     io_out8(VGA_DAC_DATA, p[0x36 + i * 4 + 1] / 4);
     io_out8(VGA_DAC_DATA, p[0x36 + i * 4] / 4);
   }
-  struct VBEINFO *vinfo = (struct VBEINFO *)VBEINFO_ADDRESS;
-  unsigned char *vram = vinfo->vram;
   for (i = 0; i < pysize; i++) {
     for (j = 0; j < pxsize; j++) {
       // Draw_Px(j, i, p[length - (i * pxsize + pxsize - j)]);
-      vram[i * 1024 + j] = p[length - (i * pxsize + pxsize - j)];
+      vram[i * xsize + j] = p[length - (i * pxsize + pxsize - j)];
     }
   }
   fclose(fp);
-  return;
+  return true;
 }
-void BMPVIEW32(char *path, unsigned char *vram, int xsize) {
+bool BMPVIEW32(char *path, unsigned char *vram, int xsize) {
+  if (fsz(path) == -1) {
+    return false;
+  }
   FILE *fp = fopen(path, "r");
   unsigned char *buf = fp->buffer;
+  if (buf[0] != 'B' || buf[1] != 'M') {
+    return false;
+  }
   int i, j;
   int offset;
   int width, height;
@@ -63,4 +59,5 @@ void BMPVIEW32(char *path, unsigned char *vram, int xsize) {
     }
   }
   fclose(fp);
+  return true;
 }

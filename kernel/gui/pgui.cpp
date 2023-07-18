@@ -6,20 +6,20 @@
 #include <textbox.hpp>
 #include <window.hpp>
 
-extern "C" void wav_player(char* filename);
+extern "C" void wav_player(char *filename);
 extern "C" int sc2a(int sc);
-static struct VBEINFO* vbinfo;
-struct SHTCTL* ctl;
+static struct VBEINFO *vbinfo;
+struct SHTCTL *ctl;
 PSheetBase *main_sheet, *mouse_sheet;
-PSheetBase* new_window2;
-WindowBox* click_left;
-WindowBox* click_right;
-WindowBox* stay_box;
-PSheetBase* left_last;
-PSheetBase* stay_last;
-PSheetBase* right_last;
+PSheetBase *new_window2;
+WindowBox *click_left;
+WindowBox *click_right;
+WindowBox *stay_box;
+PSheetBase *left_last;
+PSheetBase *stay_last;
+PSheetBase *right_last;
 int pgmx = 0, pgmy = 0;
-static char* mouse_cur_graphic[19] = {
+static char *mouse_cur_graphic[19] = {
     "*...............", "**..............", "*O*.............",
     "*OO*............", "*OOO*...........", "*OOOO*..........",
     "*OOOOO*.........", "*OOOOOO*........", "*OOOOOOO*.......",
@@ -28,7 +28,7 @@ static char* mouse_cur_graphic[19] = {
     ".....*OO*.......", "......*OO*......", "......*OO*......",
     ".......**......."};
 
-void pgui_init_mouse_cursor(vram_t* mouse, int bc) {
+void pgui_init_mouse_cursor(vram_t *mouse, int bc) {
   int x, y;
   for (y = 0; y < 19; y++) {
     for (x = 0; x < 16; x++) {
@@ -88,39 +88,33 @@ static void handle() {
       }
       if (fifo8_status(TaskGetKeyfifo(current_task())) != 0) {
         int i = fifo8_get(TaskGetKeyfifo(current_task()));
-        struct SHEET* sht = ctl->sheets[ctl->top - 1];
-        ((PSheetBase*)sht->args)->key_press_handle(i);
+        struct SHEET *sht = ctl->sheets[ctl->top - 1];
+        ((PSheetBase *)sht->args)->key_press_handle(i);
       }
       //   io_sti();
     }
   }
 }
-void onclick1(PSheetBase* ps, int x, int y, uint32_t val) {
+void onclick1(PSheetBase *ps, int x, int y, uint32_t val) {
   SDraw_Box(ps->get_vram(), 0, 0, 100, 100, COL_848484, ps->get_xsize());
   ps->refresh(0, 0, 100, 100);
 }
-void onclick2(PSheetBase* ps, int x, int y, uint32_t val) {
+void onclick2(PSheetBase *ps, int x, int y, uint32_t val) {
   SDraw_Box(ps->get_vram(), 0, 0, 100, 100, COL_000000, ps->get_xsize());
   ps->refresh(0, 0, 100, 100);
 }
-Window* wnd10;
-void btn_click(PButton* pbtn, uint32_t val) {
-  wav_player("other/coin.wav");
-}
-void btn_click1(PButton* pbtn, uint32_t val) {
-  command_run("halt");
-}
-void btn_click2(PButton* pbtn, uint32_t val) {
-  command_run("reboot");
-}
-void btn_click3(PButton* pbtn, uint32_t val) {
-  PTextBox* pt = (PTextBox*)val;
+Window *wnd10;
+void btn_click(PButton *pbtn, uint32_t val) { wav_player("other/coin.wav"); }
+void btn_click1(PButton *pbtn, uint32_t val) { command_run("halt"); }
+void btn_click2(PButton *pbtn, uint32_t val) { command_run("reboot"); }
+void btn_click3(PButton *pbtn, uint32_t val) {
+  PTextBox *pt = (PTextBox *)val;
   wav_player(pt->Text());
 }
-PButton* w_btn;
-Window* wnd1;
+PButton *w_btn;
+Window *wnd1;
 int flag = 0;
-void btn_click4(PButton* pbtn, uint32_t val) {
+void btn_click4(PButton *pbtn, uint32_t val) {
   if (flag) {
     flag = 0;
     return;
@@ -141,30 +135,28 @@ void key(char ch, uint32_t val) {
   wnd10 = new Window(ctl, buf, 0, 0, 100, 100);
 }
 void pgui_shell() {
-  io_cli();
-  PConsole* pcons = new PConsole(ctl, 100, 100);
-  register_tty(pcons);
-  io_sti();
   shell_handler();
   for (;;)
     ;
 }
-void start(PButton* pbtn, uint32_t val) {
-  struct FIFO8* fifo = (struct FIFO8*)malloc(sizeof(struct FIFO8));
-  struct FIFO8* fifo2 = (struct FIFO8*)malloc(sizeof(struct FIFO8));
-  uint8_t* fifobuf = new uint8_t[32];
-  uint8_t* fifobuf2 = new uint8_t[32];
+void start(PButton *pbtn, uint32_t val) {
+  struct FIFO8 *fifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+  struct FIFO8 *fifo2 = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+  uint8_t *fifobuf = (uint8_t *)page_malloc(128);
+  uint8_t *fifobuf2 = (uint8_t *)page_malloc(128);
   io_cli();
-  fifo8_init(fifo, 32, fifobuf);
-  fifo8_init(fifo2, 32, fifobuf2);
-  struct TASK* t = AddTask("cmdline", 1, 2 * 8, (int)pgui_shell, 1 * 8, 1 * 8,
-                           (int)page_malloc(32 * 1024) + 32 * 1024);
+  fifo8_init(fifo, 128, fifobuf);
+  fifo8_init(fifo2, 128, fifobuf2);
+  struct TASK *t = AddTask("cmdline", 1, 2 * 8, (int)pgui_shell, 1 * 8, 1 * 8,
+                           (int)page_kmalloc(32 * 1024) + 32 * 1024);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   t->alloc_addr = alloc_addr;
   t->alloc_size = 512 * 1024;
   init_mem(t);
   TaskSetFIFO(t, fifo, fifo2);
   SleepTaskFIFO(t);
+  PConsole *pcons = new PConsole(ctl, 100, 100, t);
+  register_tty(pcons, t);
   io_sti();
 }
 void pgui_main() {
@@ -172,12 +164,12 @@ void pgui_main() {
   click_left = new WindowBox();
   click_right = new WindowBox();
   stay_box = new WindowBox();
-  vbinfo = (struct VBEINFO*)page_malloc(sizeof(struct VBEINFO));
-  struct VBEINFO* vbinfo0 = (struct VBEINFO*)VBEINFO_ADDRESS;
+  vbinfo = (struct VBEINFO *)page_malloc(sizeof(struct VBEINFO));
+  struct VBEINFO *vbinfo0 = (struct VBEINFO *)VBEINFO_ADDRESS;
   vbinfo->vram = vbinfo0->vram;
   vbinfo->xsize = vbinfo0->xsize;
   vbinfo->ysize = vbinfo0->ysize;
-  ctl = shtctl_init((vram_t*)vbinfo->vram, vbinfo->xsize, vbinfo->ysize);
+  ctl = shtctl_init((vram_t *)vbinfo->vram, vbinfo->xsize, vbinfo->ysize);
   main_sheet =
       new PSheetBase(ctl, vbinfo->xsize, vbinfo->ysize, 0, 0, COL_TRANSPARENT);
   printk("A object news.\n");
@@ -193,19 +185,17 @@ void pgui_main() {
                        mouse_sheet->get_ysize());
   pgmx = 0;
   pgmy = 0;
-  Window* wnd = new Window(ctl, "RabbitWindow", 300, 100, 400, 250);
+  Window *wnd = new Window(ctl, "RabbitWindow", 300, 100, 400, 250);
   wnd1 = new Window(ctl, "RabbitWindow1", 300, 100, 400, 250);
   w_btn = new PButton(wnd1, "start", 2, 28, 100, 20, 0, btn_click4);
-  PTextBox* pt = new PTextBox(wnd, 2, 50, 200, 20);
-  PButton* btn = new PButton(wnd, "sb16", 2, 28, 100, 20, 0, btn_click);
-  PButton* btn1 = new PButton(wnd, "start", 103, 28, 100, 20, 0, start);
-  PButton* btn3 =
+  PTextBox *pt = new PTextBox(wnd, 2, 50, 200, 20);
+  PButton *btn = new PButton(wnd, "sb16", 2, 28, 100, 20, 0, btn_click);
+  PButton *btn1 = new PButton(wnd, "start", 103, 28, 100, 20, 0, start);
+  PButton *btn3 =
       new PButton(wnd, "play", 203, 50, 100, 20, (uint32_t)pt, btn_click3);
 
   mouse_ready(&mdec);
   handle();
 }
 
-extern "C" void c_pgui_main() {
-  pgui_main();
-}
+extern "C" void c_pgui_main() { pgui_main(); }

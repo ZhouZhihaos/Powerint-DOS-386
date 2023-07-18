@@ -7,7 +7,7 @@ uint32_t Path_Addr;
 unsigned char *font, *ascfont, *hzkfont;
 unsigned char* IVT;
 int init_ok_flag = 0;
-
+void c_pgui_main(void);
 void shell(void) {
   ide_initialize(0x1F0, 0x3F6, 0x170, 0x376, 0x000);
   init_palette();
@@ -16,7 +16,6 @@ void shell(void) {
   env_init();
   init_networkCTL();
   init_network();
-
 
   if (env_read("network") == NULL) {
     printf("would you like to enable network?(y/n)\n");
@@ -113,7 +112,7 @@ void task_sr1() {
         extern struct TASK* last_fpu_task;
         if (last_fpu_task == task) {
           printk("Set last fpu task.\n");
-          last_fpu_task = 0x1;
+          last_fpu_task = (struct TASK *)0x1;
         }
         __SubTask(task);
         goto re;

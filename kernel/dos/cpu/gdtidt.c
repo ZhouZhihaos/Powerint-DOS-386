@@ -42,7 +42,7 @@ void init_gdtidt(void) {
     set_segmdesc(gdt + i, 0, 0, 0);
   }
   set_segmdesc(gdt + 1, 0xffffffff, 0x00000000, AR_DATA32_RW);
-  set_segmdesc(gdt + 2, LIMIT_BOTPAK, ADR_BOTPAK, AR_CODE32_ER);
+  set_segmdesc(gdt + 2, 0xffffffff, 0x00000000, AR_CODE32_ER);
 
   load_gdtr(LIMIT_GDT, ADR_GDT);  //加载GDT表
 
@@ -93,8 +93,6 @@ void init_gdtidt(void) {
                AR_INTGATE32);  // 鼠标中断
   set_gatedesc(idt + 0x20 + 15, (int)asm_ide_irq, 2 * 8,
                AR_INTGATE32);  // IDE中断
-  set_gatedesc(idt + 0x28, (int)asm_rtc_handler, 2 * 8,
-               AR_INTGATE32);                                       // RTC
   set_gatedesc(idt + 0x30, (int)asm_net_api, 2 * 8, AR_INTGATE32 | 3 << 5);  // NET API
   set_gatedesc(idt + 0x72, (int)asm_gui_api, 2 * 8, AR_INTGATE32 | 3 << 5);  // GUI API
   return;

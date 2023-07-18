@@ -18,8 +18,12 @@ static void Write(char drive,
 static bool dev_check(uint8_t disk_number) {
   uint32_t **b = page_kmalloc(512);
   *b = page_kmalloc(4);
+  uint32_t *bmp  = *b;
 
   Disk_Read(0,1,b,disk_number);
+  if(*b != bmp) {
+    return false;
+  }
   if(**b) {
     printk("this.\n");
     page_kfree(b,512);
@@ -32,6 +36,7 @@ static bool dev_check(uint8_t disk_number) {
     return false;
   }
 }
+
 static void dev_copy_cache(struct vfs_t *dest, struct vfs_t *src) {
   return;
 }

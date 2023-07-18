@@ -44,8 +44,8 @@ typedef struct DrvGeom {
 /**globals*/
 static volatile int done = 0;
 static int dchange = 0;
-static int motor = 0;
-static int mtick = 0;
+int motor = 0;
+int mtick = 0;
 static volatile int tmout = 0;
 static unsigned char status[7] = {0};
 static unsigned char statsz = 0;
@@ -94,6 +94,7 @@ void flint(int* esp) {
   /**
    * 软盘中断服务程序（C语言），这个中断的入口在nasmfunc.asm中
    * */
+   //print("flint.?\n");
   floppy_int_count =
       1;  // 设置中断计数器为1，代表中断已经发生（或者是系统已经收到了中断）
   io_out8(0x20, 0x20);  // 发送EOI信号，告诉PIC，我们已经处理完了这个中断
@@ -101,17 +102,19 @@ void flint(int* esp) {
 void reset(void) {
   /* 停止软盘电机并禁用IRQ和DMA传输 */
   io_out8(FDC_DOR, 0);
-
+  
+  //for(;;);
   //初始化电机计数器
   mtick = 0;
   motor = 0;
-
+  
   /* 数据传输速度 (500K/s) */
   io_out8(FDC_DRS, 0);
   /* 重新启动软盘中断（让软盘发送iRQ6），这将会调用上面的flint函数 */
   io_out8(FDC_DOR, 0x0c);
 
   /* 重置软盘驱动器将会引发一个中断了，我们需要进行处理 */
+  //for(;;);
   wait_floppy_interrupt();  //等待软盘驱动器的中断发生
 
   /* 指定软盘驱动器定时（不使用在实模式时BIOS设定的操作） */
@@ -330,6 +333,7 @@ int fdc_rw(int block,
     p_blockbuff = blockbuff;
     p_tbaddr = (char*)0x80000;
     for (copycount = 0; copycount < (nosectors * 512); copycount++) {
+   // printf("%02x ",(unsigned char)*p_tbaddr);
       *p_blockbuff = *p_tbaddr;
       p_blockbuff++;
       p_tbaddr++;

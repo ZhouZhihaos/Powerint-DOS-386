@@ -11,7 +11,7 @@ section .data
 		GLOBAL get_eip
 str: db 'Yun Xing Ni Ma De Kernel Xiang Si Shi Bu Shi',0
 section .text
-%define ADR_BOTPAK 							   0x280000
+%define ADR_BOTPAK 							   0x0
 get_eip:		; int get_eip();
 	mov	eax,[esp]
 	ret
@@ -49,7 +49,7 @@ io_sti:	; void io_sti(void);
 EXTERN clear
 EXTERN Print_Hex
 EXTERN Clear_A_Line
-testsize:	dd	0
+
 memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
 		CLI
 		PUSH	EDI						; （由于还要使用EBX, ESI, EDI）
@@ -58,7 +58,7 @@ memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
 		MOV		ESI,0xaa55aa55			; pat0 = 0xaa55aa55;
 		MOV		EDI,0x55aa55aa			; pat1 = 0x55aa55aa;
 		MOV		EAX,[ESP+12+4]			; i = start;
-		MOV		dword[ds:ADR_BOTPAK+testsize],1024*1024*1024	; testsize = 1024*1024*1024;
+		MOV		dword[testsize],1024*1024*1024	; testsize = 1024*1024*1024;
 mts_loop:
 		pushad
 		push eax
@@ -67,7 +67,7 @@ mts_loop:
 		call Clear_A_Line
 		popad
 		MOV		EBX,EAX
-		ADD		EBX,[ds:ADR_BOTPAK+testsize]		 	; p = i + testsize;
+		ADD		EBX,[testsize]		 	; p = i + testsize;
 		SUB		EBX,4					; p -= 4;
 		MOV		EDX,[EBX]				; old = *p;
 		MOV		[EBX],ESI				; *p = pat0;
@@ -78,7 +78,7 @@ mts_loop:
 		CMP		ESI,[EBX]				; if (*p != pat0) goto fin;
 		JNE		mts_fin
 		MOV		[EBX],EDX				; *p = old;
-		ADD		EAX,[ds:ADR_BOTPAK+testsize]			; i += testsize;
+		ADD		EAX,[testsize]			; i += testsize;
 		CMP		EAX,[ESP+12+8]			; if (i <= end) goto mts_loop;
 		
 		JBE		mts_loop
@@ -88,9 +88,9 @@ mts_loop:
 		POP		EDI
 		RET
 mts_fin:
-		CMP		dword[ds:ADR_BOTPAK+testsize],0x1000	; if (testsize == 0x1000) goto mts_nomore;
+		CMP		dword[testsize],0x1000	; if (testsize == 0x1000) goto mts_nomore;
 		JE		mts_nomore
-		SHR		dword[ds:ADR_BOTPAK+testsize],2	; testsize /= 4;
+		SHR		dword[testsize],2	; testsize /= 4;
 		JMP		mts_loop
 mts_nomore:
 		STI
@@ -311,110 +311,8 @@ get_cpu7:
 	mov eax,edx
 	ret
 
-
-
-
-
-system_timer_fractions:  resd 1          ; Fractions of 1 ms since timer initialized
-system_timer_ms:         resd 1          ; Number of whole ms since timer initialized
-IRQ0_fractions:          resd 1          ; Fractions of 1 ms between IRQs
-IRQ0_ms:                 resd 1          ; Number of whole ms between IRQs
-IRQ0_frequency:          resd 1          ; Actual frequency of PIT
-PIT_reload_value:        resw 1          ; Current PIT reload value
 global __init_PIT
 __init_PIT:
-    pushad
-	; ebx = 时钟频率
-	mov ebx,8007
-    ; Do some checking
- 
-    mov eax,0x10000                   ;eax = reload value for slowest possible frequency (65536)
-    cmp ebx,18                        ;Is the requested frequency too low?
-    jbe .gotReloadValue               ; yes, use slowest possible frequency
- 
-    mov eax,1                         ;ax = reload value for fastest possible frequency (1)
-    cmp ebx,1193181                   ;Is the requested frequency too high?
-    jae .gotReloadValue               ; yes, use fastest possible frequency
- 
-    ; Calculate the reload value
- 
-    mov eax,3579545
-    mov edx,0                         ;edx:eax = 3579545
-    div ebx                           ;eax = 3579545 / frequency, edx = remainder
-    cmp edx,3579545 / 2               ;Is the remainder more than half?
-    jb .l1                            ; no, round down
-    inc eax                           ; yes, round up
- .l1:
-    mov ebx,3
-    mov edx,0                         ;edx:eax = 3579545 * 256 / frequency
-    div ebx                           ;eax = (3579545 * 256 / 3 * 256) / frequency
-    cmp edx,3 / 2                     ;Is the remainder more than half?
-    jb .l2                            ; no, round down
-    inc eax                           ; yes, round up
- .l2:
- 
- 
- ; Store the reload value and calculate the actual frequency
- 
- .gotReloadValue:
-    push eax                          ;Store reload_value for later
-    mov [ds:ADR_BOTPAK+PIT_reload_value],ax         ;Store the reload value for later
-    mov ebx,eax                       ;ebx = reload value
- 
-    mov eax,3579545
-    mov edx,0                         ;edx:eax = 3579545
-    div ebx                           ;eax = 3579545 / reload_value, edx = remainder
-    cmp edx,3579545 / 2               ;Is the remainder more than half?
-    jb .l3                            ; no, round down
-    inc eax                           ; yes, round up
- .l3:
-    mov ebx,3
-    mov edx,0                         ;edx:eax = 3579545 / reload_value
-    div ebx                           ;eax = (3579545 / 3) / frequency
-    cmp edx,3 / 2                     ;Is the remainder more than half?
-    jb .l4                            ; no, round down
-    inc eax                           ; yes, round up
- .l4:
-    mov [ds:ADR_BOTPAK+IRQ0_frequency],eax          ;Store the actual frequency for displaying later
- 
- 
- ; Calculate the amount of time between IRQs in 32.32 fixed point
- ;
- ; Note: The basic formula is:
- ;           time in ms = reload_value / (3579545 / 3) * 1000
- ;       This can be rearranged in the following way:
- ;           time in ms = reload_value * 3000 / 3579545
- ;           time in ms = reload_value * 3000 / 3579545 * (2^42)/(2^42)
- ;           time in ms = reload_value * 3000 * (2^42) / 3579545 / (2^42)
- ;           time in ms * 2^32 = reload_value * 3000 * (2^42) / 3579545 / (2^42) * (2^32)
- ;           time in ms * 2^32 = reload_value * 3000 * (2^42) / 3579545 / (2^10)
- 
-    pop ebx                           ;ebx = reload_value
-    mov eax,0xDBB3A062                ;eax = 3000 * (2^42) / 3579545
-    mul ebx                           ;edx:eax = reload_value * 3000 * (2^42) / 3579545
-    shrd eax,edx,10
-    shr edx,10                        ;edx:eax = reload_value * 3000 * (2^42) / 3579545 / (2^10)
- 
-    mov [ds:ADR_BOTPAK+IRQ0_ms],edx                 ;Set whole ms between IRQs
-    mov [ds:ADR_BOTPAK+IRQ0_fractions],eax          ;Set fractions of 1 ms between IRQs
- 
- 
- ; Program the PIT channel
- 
-    pushfd
-    cli                               ;Disabled interrupts (just in case)
- 
-    mov al,00110100b                  ;channel 0, lobyte/hibyte, rate generator
-    out 0x43, al
- 
-    mov ax,[ds:ADR_BOTPAK+PIT_reload_value]         ;ax = 16 bit reload value
-    out 0x40,al                       ;Set low byte of PIT reload value
-    mov al,ah                         ;ax = high 8 bits of reload value
-    out 0x40,al                       ;Set high byte of PIT reload value
- 
-    popfd
- 
-    popad
     ret
 global init_float
 init_float:
@@ -442,3 +340,5 @@ check:
 	int 36h
 .hlt:
 	jmp .hlt
+[SECTION .data]
+testsize:	dd	0

@@ -113,9 +113,6 @@ void pokeb(int setmentaddr, int offset, char value);
 void set_palette(int start, int end, unsigned char *rgb);
 void init_palette(void);
 unsigned get_fb_seg(void);
-// rtc.c
-void rtc_handler();
-void init_rtc();
 // driver.c
 void init_driver();
 drv_t driver_malloc(char *drv_file, drv_type_t drv_type);

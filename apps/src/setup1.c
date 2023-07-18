@@ -1,7 +1,7 @@
 #include <string.h>
 #include <syscall.h>
 #define All_Kernel_files_count 8
-#define All_App_files_count 42
+#define All_App_files_count 40
 #define All_Res_files_count 23
 #define Line_X 205
 #define Line_Y 186
@@ -206,24 +206,10 @@ int main() {
     Set_Loading(0);
     setState("Copy Apps --- mkdir bin");
     mkdir("bin");
-    setState("Copy Apps --- mkdir config");
-    mkdir("config");
 
     // 1
     setState("Copy Apps --- Copy file: bin/editor.bin");
     Copy("A:\\EDITOR.BIN", "bin/editor.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));
-    setState("Copy Apps --- Copy file: bin/codeedit.bin");
-    Copy("A:\\CODEEDIT.BIN", "bin/codeedit.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));
-    setState("Copy Apps --- Copy file: config/codeedit.ini");
-    Copy("A:\\CODEEDIT.INI", "config/codeedit.ini");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *

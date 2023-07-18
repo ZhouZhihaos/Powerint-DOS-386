@@ -65,31 +65,6 @@ void read_fat(unsigned char *img, int *fat, unsigned char *ff, int max,
   }
   return;
 }
-void write_fat(unsigned char *img, int *fat, int max, int type) {
-  if (type == 12) {
-    for (int i = 0, j = 0; i < max; i += 2) {
-      img[j + 0] = fat[i + 0] & 0xff;
-      img[j + 1] = (fat[i + 0] >> 8 | fat[i + 1] << 4) & 0xff;
-      img[j + 2] = (fat[i + 1] >> 4) & 0xff;
-      j += 3;
-    }
-  } else if (type == 16) {
-    for (int i = 0, j = 0; i < max; i++) {
-      img[j + 0] = fat[i] & 0xff;
-      img[j + 1] = (fat[i] >> 8) & 0xff;
-      j += 2;
-    }
-  } else if (type == 32) {
-    for (int i = 0, j = 0; i < max; i++) {
-      img[j + 0] = fat[i] & 0xff;
-      img[j + 1] = (fat[i] >> 8) & 0xff;
-      img[j + 2] = (fat[i] >> 16) & 0xff;
-      img[j + 3] = fat[i] >> 24;
-      j += 4;
-    }
-  }
-  return;
-}
 void file_loadfile(int clustno, int size, char *buf, int *fat, vfs_t *vfs) {
   if (!size) {
     return;
@@ -373,7 +348,7 @@ struct FAT_FILEINFO *Get_File_Address(char *path1, vfs_t *vfs) {
   }
   // printk("strlen(path) = %d\n",strlen(path));
   char *temp_name = (char *)page_malloc(128);
-  // printf("%08x %08x\n", path, temp_name);
+  // printf("%08x %08x\n", bmp, temp_name);
   struct FAT_FILEINFO *finfo;
   int i = 0;
   while (1) {
@@ -1233,10 +1208,10 @@ bool Fat_ReadFile(struct vfs_t *vfs, char *path, char *buffer) {
 bool Fat_WriteFile(struct vfs_t *vfs, char *path, char *buffer, int size) {
   struct TASK *task = current_task();
   struct FAT_FILEINFO *finfo = Get_File_Address(path, vfs);
-  // printf("finfo = %08x\n",finfo);
+  printk("finfo = %08x\n",finfo);
   file_savefile(get_clustno(finfo->clustno_high, finfo->clustno_low), size,
                 buffer, get_dm(vfs).fat, get_dm(vfs).FatClustnoFlags, vfs);
-  // printf("file save ok\n");
+  printk("file save ok\n");
   finfo->size = size;
   file_saveinfo(Get_dictaddr(path, vfs), vfs);
 }
