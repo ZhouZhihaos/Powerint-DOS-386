@@ -20,7 +20,7 @@ void Input_Stack_Init(void) {
   STACK->Now = 1023;
   STACK->times = 0;
 }
-void Input_Stack_Put(char *str) {
+void input_stack_put(char *str) {
   int i;
 
   if (STACK->Now == 0) {
@@ -30,7 +30,7 @@ void Input_Stack_Put(char *str) {
     STACK->free = 1023;
     STACK->Now = 1023;
     STACK->times = 0;
-    Input_Stack_Put(str);
+    input_stack_put(str);
   } else {
     strcpy(STACK->Stack[STACK->Now], str);
     STACK->free--;
@@ -38,8 +38,8 @@ void Input_Stack_Put(char *str) {
     STACK->times++;
   }
 }
-int Get_Now() { return STACK->Now; }
+int input_stack_get_now() { return STACK->Now; }
 int Get_times() { return STACK->times; }
-char *Pop_Stack() { return STACK->Stack[STACK->Now + 1]; }
-void Set_Now(int now) { STACK->Now = now; }
+char *input_stack_pop() { return STACK->Stack[STACK->Now + 1]; }
+void input_stack_set_now(int now) { STACK->Now = now; }
 int get_free() { return STACK->free; }

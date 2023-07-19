@@ -1,4 +1,4 @@
-TOOLPATH = ../tools/
+FONTPATH = ../font/
 APPSPATH = ../apps/
 APPSOUTPATH = ../apps/out/
 BIDPATH = ../apps/build_tools_in_pdos/
@@ -21,11 +21,11 @@ LOADERPATH = ../Loader/out/
 
 MAKE     = make -r
 NASM     = nasm
+EDIMG    = ../tools/edimg
 FATTOOLS = $(FATTOOLSPATH)fattools -file $(IMGPATH)Powerint_DOS_386.img
 RULEFILE = make.rul
-EDIMG    = $(TOOLPATH)edimg
 COPY     = copy
-DEL      = del
+DEL      = rm
 
 OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUTPATH)execbatch.o $(OUTPATH)timer.o \
 				$(OUTPATH)mem.o $(OUTPATH)file.o $(OUTPATH)setjmp.obj $(OUTPATH)int32.obj $(OUTPATH)i386.obj \
@@ -65,16 +65,13 @@ default :
 
 $(OUTPATH)boot.bin : $(BOOTPATH)boot.asm Makefile
 	$(NASM) $(BOOTPATH)boot.asm -o $(OUTPATH)boot.bin
-$(OUTPATH)boot_elf.bin : $(BOOTPATH)boot_elf.asm Makefile
-	$(NASM) $(BOOTPATH)boot_elf.asm -o $(OUTPATH)boot_elf.bin
 $(OUTPATH)boot32.bin : $(BOOTPATH)boot32.asm Makefile
 	$(NASM) $(BOOTPATH)boot32.asm -o $(OUTPATH)boot32.bin
-
 $(OUTPATH)kernel.bin : $(OBJS_BOOTPACK) Makefile
 	ld -m elf_i386 -static -Ttext 0x280000 -e KernelMain $(OBJS_BOOTPACK) -o $(OUTPATH)kernel.bin
-Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin $(OUTPATH)boot_elf.bin Makefile
+Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
-		wbinimg src:$(OUTPATH)boot_elf.bin len:512 from:0 to:0 \
+		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
 		copy from:$(LOADERPATH)dosldr.bin to:@: \
 		copy from:$(OUTPATH)kernel.bin to:@: \
 		copy from:$(RESPATH)autoexec.bat to:@: \
@@ -94,13 +91,12 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin $(OUTPATH)bo
 		-copy other/coin.wav $(RESPATH)coin.wav
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
-		copy from:$(APPSOUTPATH)AIGOBANG.bin to:@: \
+		copy from:$(APPSOUTPATH)uigobang.bin to:@: \
+		copy from:$(APPSOUTPATH)aigobang.bin to:@: \
 		copy from:$(APPSOUTPATH)snake.bin to:@: \
-		copy from:$(APPSOUTPATH)gobang.bin to:@: \
 		copy from:$(APPSOUTPATH)cgobang.bin to:@: \
-		copy from:$(APPSOUTPATH)game.bin to:@: \
-		copy from:$(APPSOUTPATH)pwsh.bin to:@: \
-		copy from:$(APPSOUTPATH)sort.bin to:@: \
+		copy from:$(APPSOUTPATH)pfn.bin to:@: \
+		copy from:$(APPSOUTPATH)RandNum.bin to:@: \
 		copy from:$(APPSOUTPATH)bf.bin to:@: \
 		copy from:$(APPSOUTPATH)copy.bin to:@: \
 		copy from:$(APPSOUTPATH)basic.bin to:@: \
@@ -111,20 +107,13 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin $(OUTPATH)bo
 		copy from:$(APPSOUTPATH)calc.bin to:@: \
 		copy from:$(APPSOUTPATH)clock.bin to:@: \
 		copy from:$(APPSOUTPATH)Maze.bin to:@: \
+		copy from:$(APPSOUTPATH)winver.bin to:@: \
 		copy from:$(APPSOUTPATH)invader.bin to:@: \
-		copy from:$(APPSOUTPATH)cc.bin to:@: \
-		copy from:$(APPSOUTPATH)SPGAME.bin to:@: \
-		copy from:$(APPSOUTPATH)msttest.bin to:@: \
-		copy from:$(RESPATH)MAKE.RUL to:@: \
+		copy from:$(RESPATH)make.rul to:@: \
 		copy from:$(BIDPATH)nask.bin to:@: \
-		copy from:$(BIDPATH)test.bin to:@: \
 		copy from:$(BIDPATH)obj2bim.bin to:@: \
 		copy from:$(APPSOUTPATH)bim2hrb.bin to:@: \
-		copy from:$(RESPATH)codeedit.ini to:@: \
-		copy from:$(RESPATH)asm.lua to:@: \
-		copy from:$(RESPATH)student.lua to:@: \
-		copy from:$(RESPATH)json.lua to:@: \
-		copy from:$(RESPATH)hello.nas to:@: \
+		copy from:$(BIDPATH)plib.lib to:@: \
 		imgout:$(IMGPATH)Disk2.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
@@ -137,8 +126,8 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin $(OUTPATH)bo
 		imgout:$(IMGPATH)Disk3.img
 	$(EDIMG)   imgin:../tools/fdimg0at.tek \
 		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
-		copy from:$(RESPATH)demo.asm to:@: \
-		copy from:$(RESPATH)demo2.asm to:@: \
+		copy from:$(RESPATH)hello.nas to:@: \
+		copy from:$(RESPATH)asm.lua to:@: \
 		copy from:$(RESPATH)coin.wav to:@: \
 		copy from:$(RESPATH)test.wav to:@: \
 		copy from:$(RESPATH)desktop.jpg to:@: \
@@ -162,7 +151,6 @@ Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin $(OUTPATH)bo
 		copy from:../apps/src/c4.c to:@: \
 		imgout:$(IMGPATH)res.img
 
-
 # 运行程序
 
 img_run :
@@ -176,7 +164,7 @@ img_run :
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
-	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512
 full :
 	$(MAKE) -C $(DOSPATH)
 	$(MAKE) -C $(IOPATH)
@@ -190,7 +178,7 @@ full :
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
 run:
-	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512
 full_run:
 	$(MAKE) -C $(DOSPATH)
 	$(MAKE) -C $(IOPATH)
@@ -202,7 +190,7 @@ full_run:
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(APPSPATH)
 	$(MAKE) Mimg
-	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512
 clean :
-	-$(DEL) obj /s/q
+	rm obj/*
 	$(MAKE) -C $(APPSPATH) clean

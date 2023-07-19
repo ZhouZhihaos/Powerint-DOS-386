@@ -1,6 +1,6 @@
 #include <dos.h>
 // TCP
-void TCPProviderSend(uint32_t dstIP, uint32_t srcIP, uint16_t dstPort,
+void tcp_provider_send(uint32_t dstIP, uint32_t srcIP, uint16_t dstPort,
                      uint16_t srcPort, uint32_t Sequence, uint32_t ackNum,
                      bool URG, bool ACK, bool PSH, bool RST, bool SYN, bool FIN,
                      bool ECE, bool CWR, uint8_t *data, uint32_t size) {
@@ -76,7 +76,7 @@ void tcp_handler(void *base) {
           uint16_t MSS_ = swap32(tcp->options[0]) & 0xffff;
           socket->MSS = (MSS_Default >= MSS_) ? MSS_ : MSS_Default;
         }
-        TCPProviderSend(socket->remoteIP, socket->localIP, socket->remotePort,
+        tcp_provider_send(socket->remoteIP, socket->localIP, socket->remotePort,
                         socket->localPort, socket->seqNum, socket->ackNum, 0, 1,
                         0, 0, 0, 0, 0, 0, 0, 0);
       }
@@ -92,7 +92,7 @@ void tcp_handler(void *base) {
           uint16_t MSS_ = swap32(tcp->options[0]) & 0xffff;
           socket->MSS = (MSS_Default >= MSS_) ? MSS_ : MSS_Default;
         }
-        TCPProviderSend(socket->remoteIP, socket->localIP, socket->remotePort,
+        tcp_provider_send(socket->remoteIP, socket->localIP, socket->remotePort,
                         socket->localPort, socket->seqNum, socket->ackNum, 0, 1,
                         0, 0, 1, 0, 0, 0, 0, 0);
         socket->seqNum++;
@@ -115,17 +115,17 @@ void tcp_handler(void *base) {
       if (socket->state == SOCKET_TCP_ESTABLISHED) {
         socket->state = SOCKET_TCP_CLOSE_WAIT;
         socket->ackNum++;
-        TCPProviderSend(socket->remoteIP, socket->localIP, socket->remotePort,
+        tcp_provider_send(socket->remoteIP, socket->localIP, socket->remotePort,
                         socket->localPort, socket->seqNum, socket->ackNum, 0, 1,
                         0, 0, 0, 0, 0, 0, 0, 0);
-        TCPProviderSend(socket->remoteIP, socket->localIP, socket->remotePort,
+        tcp_provider_send(socket->remoteIP, socket->localIP, socket->remotePort,
                         socket->localPort, socket->seqNum, socket->ackNum, 0, 1,
                         0, 0, 0, 1, 0, 0, 0, 0);
       } else if (socket->state == SOCKET_TCP_FIN_WAIT1 ||
                  socket->state == SOCKET_TCP_FIN_WAIT2) {
         socket->state = SOCKET_TCP_CLOSED;
         socket->ackNum++;
-        TCPProviderSend(socket->remoteIP, socket->localIP, socket->remotePort,
+        tcp_provider_send(socket->remoteIP, socket->localIP, socket->remotePort,
                         socket->localPort, socket->seqNum, socket->ackNum, 0, 1,
                         0, 0, 0, 0, 0, 0, 0, 0);
       } else if (socket->state == SOCKET_TCP_CLOSE_WAIT) {
@@ -149,7 +149,7 @@ void tcp_handler(void *base) {
         socket->ackNum += swap16(ipv4->totalLength) -
                           sizeof(struct IPV4Message) - (tcp->headerLength * 4);
       }
-      TCPProviderSend(socket->remoteIP, socket->localIP, socket->remotePort,
+      tcp_provider_send(socket->remoteIP, socket->localIP, socket->remotePort,
                       socket->localPort, socket->seqNum, socket->ackNum, 0, 1,
                       1, 0, 0, 0, 0, 0, 0, 0);
       break;

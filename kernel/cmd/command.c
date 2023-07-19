@@ -81,14 +81,14 @@ static void HTTP_Socket_Handler(struct Socket* socket, void* base) {
                   (tcp->headerLength * 4);
   uint8_t* data = base + sizeof(struct EthernetFrame_head) +
                   sizeof(struct IPV4Message) + (tcp->headerLength * 4);
-  if (IsHttpGetHeader(data, size).ok) {  // 是HTTP GetHeader
+  if (http_check(data, size).ok) {  // 是HTTP GetHeader
     /* 标头信息 */
     unsigned char head[500] = "HTTP/1.1 200 OK\r\n";
     unsigned char content_type[] = "Content-Type: text/html\r\n";
     unsigned char content_length[100];
     unsigned char date[100];
     printf("Is Http get header!\n");
-    if (strlen(IsHttpGetHeader(data, size).path) ==
+    if (strlen(http_check(data, size).path) ==
         1) {             // 只有一个字符，那只能是"/"
       printf("root\n");  // 根目录
       HttpFile* f = (HttpFile*)FindForCount(1, httpFileList)
@@ -99,7 +99,7 @@ static void HTTP_Socket_Handler(struct Socket* socket, void* base) {
       printf("Not root.\n");  // 不是根目录
       for (int i = 1; FindForCount(i, httpFileList) != NULL; i++) {
         HttpFile* f = (HttpFile*)FindForCount(i, httpFileList)->val;
-        if (strcmp(f->path, IsHttpGetHeader(data, size).path + 1) ==
+        if (strcmp(f->path, http_check(data, size).path + 1) ==
             0) {  // 判断网站是否有这个文件
           html_file = (unsigned char*)f->buf;  // 有，直接返回
           goto OK;
@@ -329,10 +329,10 @@ CHECK_OK:
     printf("Src Port:%d\n", srcPort);
     if (!m) {
       if (p) {  // TCP
-        socket = Socket_Alloc(TCP_PROTOCOL);
+        socket = socket_alloc(TCP_PROTOCOL);
         Socket_Bind(socket, TCP_Socket_Handler);
       } else if (!p) {  // UDP
-        socket = Socket_Alloc(UDP_PROTOCOL);
+        socket = socket_alloc(UDP_PROTOCOL);
         Socket_Bind(socket, UDP_Socket_Handler);
       }
       Socket_Init(socket, dstIP, dstPort, srcIP, srcPort);
@@ -366,7 +366,7 @@ CHECK_OK:
         if (p) {
           socket->Disconnect(socket);
         }
-        Socket_Free(socket);
+        socket_free(socket);
         page_free((void*)inp, 1024);
         return;
       }
@@ -390,7 +390,7 @@ CHECK_OK:
           if (p) {
             socket->Disconnect(socket);
           }
-          Socket_Free(socket);
+          socket_free(socket);
         } else if (m) {
           SocketServer_Free(server, TCP_PROTOCOL);
         }
@@ -442,7 +442,7 @@ CHECK_OK:
     input(buf, 15);
     dstPort = (uint16_t)strtol(buf, NULL, 10);
     struct Socket* socket;
-    socket = Socket_Alloc(UDP_PROTOCOL);
+    socket = socket_alloc(UDP_PROTOCOL);
     Socket_Init(socket, dstIP, dstPort, srcIP, srcPort);
     if (m) {
       Socket_Bind(socket, FUDP_Socket_Handler);
@@ -480,11 +480,11 @@ CHECK_OK:
       fclose(fp);
       free(send_file_name);
     }
-    Socket_Free(socket);
+    socket_free(socket);
   } else if (strincmp("NSLOOKUP ", cmdline, 9) == 0) {
     uint8_t* dns = (uint8_t*)page_malloc(strlen(cmdline + 9) + 1);
     memcpy(dns + 1, cmdline + 9, strlen(cmdline + 9));
-    uint32_t ip = DNSParseIP(dns + 1);
+    uint32_t ip = dns_parse_ip(dns + 1);
     printf("DNS: %s -> IP: %d.%d.%d.%d\n", cmdline + 9, (uint8_t)(ip >> 24),
            (uint8_t)(ip >> 16), (uint8_t)(ip >> 8), (uint8_t)(ip));
     page_free(dns, strlen(cmdline + 9) + 1);
@@ -584,7 +584,7 @@ CHECK_OK:
     cmd_dir(args);
     return;
   } else if (stricmp("NTPTIME", cmdline) == 0) {
-    uint32_t ts = GetNTPServerTime(NTPServer2);
+    uint32_t ts = ntp_get_server_time(NTPServer2);
     uint32_t year, mon, day, hour, min, sec;
     UnNTPTimeStamp(ts, &year, &mon, &day, &hour, &min, &sec);
     printf("NTPTime:%04d\\%02d\\%02d %02d:%02d:%02d\n", year, mon, day, hour,
@@ -609,17 +609,17 @@ CHECK_OK:
     printf("\n");
   } else if (strincmp("KILL ", cmdline, 5) == 0) {
     cmdline += 5;
-    for (int i = 0; GetTask(i) != 0; i++) {
+    for (int i = 0; get_task(i) != 0; i++) {
       if (strtol(cmdline, NULL, 10) == i) {
-        if (Get_Running_Task_Num() == 1) {
+        if (get_running_task_num() == 1) {
           printf("Cannot kill the last task.\n");
           return;
         }
-        if (!GetTask(i)->app) {
+        if (!get_task(i)->app) {
           printf("Cannot kill the system task.\n");
           return;
         }
-        SubTask(GetTask(i));
+        task_delete(get_task(i));
         return;
       }
     }
@@ -983,7 +983,7 @@ void cmd_tl() {
   // 显示当前运行的任务
   extern int tasknum;  //任务数量（定义在task.c）
   for (int i = 0; i != tasknum + 1; i++) {
-    struct TASK* task = GetTask(i);
+    struct TASK* task = get_task(i);
     printf("Task %d: Name:%s,Level:%d,Sleep:%d,GDT address:%d*8,Type:", i,
            task->name, task->level, task->sleep, task->sel / 8);
     if (task->is_child == 1) {

@@ -41,21 +41,21 @@ void mt_init(void) {
 void mt_taskswitch1() {
   // printk("mt1\n");
   io_cli();
-  if (Get_Running_Task_Num() == 0) {
+  if (get_running_task_num() == 0) {
     printk("Start idle task.\n");
-    WakeUp(GetTask(1)); // 启动idle task
+    task_wake_up(get_task(1)); // 启动idle task
     timer_settime(mt_timer1, 1);
     io_sti();
     return;
   }
   if (mt_tr1 == 103 * 8) {
     if (cg_flag0) {
-      Maskirq(0);
+      irq_mask_set(0);
       // io_cli();
-      for (int i = 1; GetTask(i) != 0; i++) {
+      for (int i = 1; get_task(i) != 0; i++) {
         // printk("Set %s Task %d To
         // %d\n",GetTask(i)->name,GetTask(i)->level,GetTask(i)->nl);
-        GetTask(i)->level = GetTask(i)->nl;
+        get_task(i)->level = get_task(i)->nl;
       }
       mt_tr2 = 103 * 8;
       mt_tr3 = 103 * 8;
@@ -66,10 +66,10 @@ void mt_taskswitch1() {
       // timer_settime(mt_timer3, 8);
       // io_sti();
       // return;
-      ClearMaskIrq(0);
+      irq_mask_clear(0);
     }
   }
-  if (Get_Running_Task_Num() == 1) {
+  if (get_running_task_num() == 1) {
     // 无优先级1的任务
     // printk("Let?\n");
     if (mt_tr1 == 103 * 8) {
@@ -85,7 +85,7 @@ void mt_taskswitch1() {
   }
   for (int i = mt_tr1 / 8 - 103; i < tasknum + 1; i++) {
     // 优先级1的执行
-    struct TASK *task = GetTask(mt_tr1 / 8 - 103);
+    struct TASK *task = get_task(mt_tr1 / 8 - 103);
     if (task->level == 1 && task->sleep == 0 && task->lock == 0 &&
         task->running == 1) { // 找到level=1的任务并且没有休眠
       // task->level = task->nl;
@@ -118,7 +118,7 @@ void mt_taskswitch1() {
 void mt_taskswitch2() {
   // printk("mt2\n");
   asm volatile("cli");
-  if (Get_Running_Task_Num() <= 1) {
+  if (get_running_task_num() <= 1) {
     timer_settime(mt_timer2, 3);
     timer_settime(mt_timer1, 1);
     asm volatile("sti");
@@ -127,7 +127,7 @@ void mt_taskswitch2() {
 
   for (int i = mt_tr2 / 8 - 103; i < tasknum + 1; i++) {
     // 优先级2的执行
-    struct TASK *task = GetTask(mt_tr2 / 8 - 103);
+    struct TASK *task = get_task(mt_tr2 / 8 - 103);
     if (task->level == 2 && task->sleep == 0 && task->lock == 0 &&
         task->running == 1) { // 找到level=2的任务并且没有休眠
                               // task->level = task->nl;
@@ -165,7 +165,7 @@ void mt_taskswitch3() {
   // printk("mt3\n");
   extern int mt2flag;
   asm volatile("cli");
-  if (Get_Running_Task_Num() <= 1) {
+  if (get_running_task_num() <= 1) {
     timer_settime(mt_timer3, 8);
     if (mt2flag == 1) {
       timer_settime(mt_timer2, 3);
@@ -176,7 +176,7 @@ void mt_taskswitch3() {
   }
   for (int i = mt_tr3 / 8 - 103; i < tasknum + 1; i++) {
     // 优先级3的执行
-    struct TASK *task = GetTask(mt_tr3 / 8 - 103);
+    struct TASK *task = get_task(mt_tr3 / 8 - 103);
     if (task->level == 3 && task->sleep == 0 && task->lock == 0 &&
         task->running == 1) { // 找到level=3的任务并且没有休眠
                               // task->level = task->nl;
@@ -218,10 +218,10 @@ void mt_taskswitch3() {
   timer_settime(mt_timer1, 1);
   asm volatile("sti");
 }
-int Get_Running_Task_Num() {
+int get_running_task_num() {
   int ret = 0;
   for (int i = 0; i <= tasknum; i++) {
-    if (GetTask(i)->sleep == 0) {
+    if (get_task(i)->sleep == 0) {
       ret++;
     }
   }
@@ -230,23 +230,23 @@ int Get_Running_Task_Num() {
 }
 struct TASK *current_task() {
   // while(taskctl != 103*8 && tasknum < 2);
-  return GetTask(taskctl / 8 - 103);
+  return get_task(taskctl / 8 - 103);
 }
-void TaskSetFIFO(struct TASK *task, struct FIFO8 *keyfifo,
+void task_set_fifo(struct TASK *task, struct FIFO8 *keyfifo,
                  struct FIFO8 *mousefifo) {
   task->keyfifo = keyfifo;
   task->mousefifo = mousefifo;
 }
-struct FIFO8 *TaskGetKeyfifo(struct TASK *task) {
+struct FIFO8 *task_get_key_fifo(struct TASK *task) {
   return (struct FIFO8 *)task->keyfifo;
 }
-struct FIFO8 *TaskGetMousefifo(struct TASK *task) {
+struct FIFO8 *task_get_mouse_fifo(struct TASK *task) {
   return (struct FIFO8 *)task->mousefifo;
 }
 static bool flags_once = false;
 char default_drive;
 static unsigned int default_drive_number;
-struct TASK *AddTask(char *name, int level, int cs, int eip, int ds, int ss,
+struct TASK *register_task(char *name, int level, int cs, int eip, int ds, int ss,
                      int esp) {
   if (!flags_once) {
     if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
@@ -272,7 +272,7 @@ struct TASK *AddTask(char *name, int level, int cs, int eip, int ds, int ss,
     default_drive = default_drive_number + 0x41;
     flags_once = true;
   }
-  Maskirq(0);
+  irq_mask_set(0);
   tasknum++;
   struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *)ADR_GDT;
   struct TASK *task = (struct TASK *)page_kmalloc(sizeof(struct TASK));
@@ -353,10 +353,10 @@ struct TASK *AddTask(char *name, int level, int cs, int eip, int ds, int ss,
   } else {
     strcpy(task->name, name);
   }
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
   return task;
 }
-struct TASK *AddUserTask(char *name, int level, int cs, int eip, int ds, int ss,
+struct TASK *register_user_task(char *name, int level, int cs, int eip, int ds, int ss,
                          int esp) {
   if (!flags_once) {
     if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
@@ -382,7 +382,7 @@ struct TASK *AddUserTask(char *name, int level, int cs, int eip, int ds, int ss,
     default_drive = default_drive_number + 0x41;
     flags_once = true;
   }
-  Maskirq(0);
+  irq_mask_set(0);
   tasknum++;
   struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *)ADR_GDT;
   struct TASK *task = (struct TASK *)page_kmalloc(sizeof(struct TASK));
@@ -459,17 +459,17 @@ struct TASK *AddUserTask(char *name, int level, int cs, int eip, int ds, int ss,
   } else {
     strcpy(task->name, name);
   }
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
   return task;
 }
-void SleepTask(struct TASK *task) {
+void task_sleep(struct TASK *task) {
   // printk("sleeptask\n");
-  if (Get_Running_Task_Num() == 1)
+  if (get_running_task_num() == 1)
     return;
   if (!task->is_child) {
     // 我是你爹，我睡了你也必须睡
-    for (int i = 0; GetTask(i) != NULL; i++) {
-      struct TASK *t = GetTask(i);
+    for (int i = 0; get_task(i) != NULL; i++) {
+      struct TASK *t = get_task(i);
       if (t->is_child == 1 && t->thread.father == task) {
         t->sleep = 1;
         t->fifosleep = 1;
@@ -479,14 +479,14 @@ void SleepTask(struct TASK *task) {
   task->sleep = 1; // 任务休眠
   task->fifosleep = 1;
 }
-void WakeUp(struct TASK *task) {
+void task_wake_up(struct TASK *task) {
   if (!task->is_child) {
     // 同样的，我是你爸，我都起了你敢不起？
     if (!task->sleep && !task->fifosleep) {
       return;
     }
-    for (int i = 0; GetTask(i) != NULL; i++) {
-      struct TASK *t = GetTask(i);
+    for (int i = 0; get_task(i) != NULL; i++) {
+      struct TASK *t = get_task(i);
       if (t->is_child == 1 && t->thread.father == task) {
         t->sleep = 0;
         t->fifosleep = 0;
@@ -503,7 +503,7 @@ void WakeUp(struct TASK *task) {
   }
   return;
 }
-void SleepTaskFIFO(struct TASK *task) {
+void task_sleep_fifo(struct TASK *task) {
   /* 子线程和父线程共用FIFO */
   if (!task->is_child) {
     task->fifosleep = 1;
@@ -512,7 +512,7 @@ void SleepTaskFIFO(struct TASK *task) {
   }
 }
 
-struct TASK *GetTask(int taskNum) {
+struct TASK *get_task(int taskNum) {
   if (taskNum > tasknum)
     return 0;
   struct SEGMENT_DESCRIPTOR *gdt =
@@ -532,15 +532,15 @@ struct TASK *GetTask(int taskNum) {
   unsigned int res2 = *(unsigned int *)res1;
   return (struct TASK *)(res2 - 0xc);
 }
-struct TASK *GetTaskForName(char *taskname) {
+struct TASK *get_task_by_name(char *taskname) {
   for (int i = 0; i <= tasknum; i++) {
-    if (strcmp(GetTask(i)->name, taskname) == 0) {
-      return GetTask(i);
+    if (strcmp(get_task(i)->name, taskname) == 0) {
+      return get_task(i);
     }
   }
   return 0;
 }
-struct TASK *GetTask_NoSafe(int taskNum) {
+struct TASK *get_task_unsafe(int taskNum) {
   // if (taskNum > tasknum)
   //   return 0;
   struct SEGMENT_DESCRIPTOR *gdt =
@@ -560,7 +560,7 @@ struct TASK *GetTask_NoSafe(int taskNum) {
   unsigned int res2 = *(unsigned int *)res1;
   return (struct TASK *)(res2 - 0xc);
 }
-void __SubTask(struct TASK *task) {
+void __sub_task(struct TASK *task) {
   // Maskirq(0);  // 关闭时钟中断 防止有任务来打扰
   // SleepTask(task);
   // struct SEGMENT_DESCRIPTOR* gdt = (struct SEGMENT_DESCRIPTOR*)ADR_GDT;
@@ -592,12 +592,12 @@ void __SubTask(struct TASK *task) {
   // }
   // tasknum -= 2;
   // ClearMaskIrq(0);
-  Maskirq(0);
+  irq_mask_set(0);
   io_cli();
-  for (int i = 0; GetTask(i) != NULL; i++) {
-    struct TASK *t = GetTask(i);
+  for (int i = 0; get_task(i) != NULL; i++) {
+    struct TASK *t = get_task(i);
     if (t->is_child == 1 && t->thread.father == task) {
-      __SubTask(t);
+      __sub_task(t);
     }
   }
   struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *)ADR_GDT;
@@ -606,8 +606,8 @@ void __SubTask(struct TASK *task) {
   int bmpNum = tasknum;
   for (int i = task->sel / 8 - 103 + 1; i <= bmpNum + index; i++) {
     tasknum++;
-    GetTask_NoSafe(i)->sel = (103 + tasknum) * 8;
-    set_segmdesc(gdt + 103 + tasknum, 103, (int)&GetTask_NoSafe(i)->tss,
+    get_task_unsafe(i)->sel = (103 + tasknum) * 8;
+    set_segmdesc(gdt + 103 + tasknum, 103, (int)&get_task_unsafe(i)->tss,
                  AR_TSS32);
   }
   extern struct PAGE_INFO *pages;
@@ -637,7 +637,7 @@ void __SubTask(struct TASK *task) {
   //   EnableExp();               // 测试完成，开启蓝屏
   // }
   io_sti();
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
   // sleep(10);
 }
 void change_level(struct TASK *task, int nlevel) {
@@ -648,14 +648,14 @@ void change_level(struct TASK *task, int nlevel) {
   if (task->level == nlevel) {
     return;
   }
-  if (GetTask(get_tid(task)) != task) {
+  if (get_task(get_tid(task)) != task) {
     return; // 防止修改一个不存在的进程
   }
   io_cli();
   task->level = nlevel;
   io_sti();
 }
-void RunTask(struct TASK *task) {
+void task_run(struct TASK *task) {
   io_cli();
   switch (task->level) {
   case 1:
@@ -677,10 +677,10 @@ struct TASK *_fork(int b) {
   int *eipa = &b;
   ESP = (int)eipa;
   // printk("eipa=%08x\n", eipa[-1]);
-  Maskirq(0);
+  irq_mask_set(0);
   if (current_task()->is_child) {
     io_sti();
-    ClearMaskIrq(0);
+    irq_mask_clear(0);
     return NULL; // 子进程返回0
   }
 
@@ -698,10 +698,10 @@ struct TASK *_fork(int b) {
   memcpy(stack, (void *)ESP, sz);
   stack += sz;
 
-  struct TASK *task = AddTask(
+  struct TASK *task = register_task(
       current_task()->name, current_task()->level, current_task()->tss.cs, EIP,
       current_task()->tss.ds, 1 * 8, (int)((uint32_t)stack - sz));
-  Maskirq(0);
+  irq_mask_set(0);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   task->alloc_addr = alloc_addr;
   task->alloc_size = 512 * 1024;
@@ -715,20 +715,20 @@ struct TASK *_fork(int b) {
   char *mbuf = (char *)page_kmalloc(4096);
   fifo8_init((struct FIFO8 *)kfifo, 4096, (unsigned char *)kbuf);
   fifo8_init((struct FIFO8 *)mfifo, 4096, (unsigned char *)mbuf);
-  TaskSetFIFO(task, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
+  task_set_fifo(task, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
   change_page_task_id(task->sel / 8 - 103, stack - 32 * 1024, 32 * 1024);
 
   task->is_child = 1;
   task->thread.father = current_task();
 
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
   return task;
 }
-void SubTask(struct TASK *task) {
+void task_delete(struct TASK *task) {
   int tid = get_tid(task);
   task->running = 0;  // 不在运行状态中
-  WakeUp(GetTask(1)); // 叫醒idle task
-  while (GetTask(tid))
+  task_wake_up(get_task(1)); // 叫醒idle task
+  while (get_task(tid))
     ;
 }
 void c_g() {
@@ -737,22 +737,22 @@ void c_g() {
   }
   io_cli();
 
-  for (int i = 1; GetTask(i) != 0; i++) {
+  for (int i = 1; get_task(i) != 0; i++) {
     // printk("Need.\n");
     // printf("Task #%d: Level %d -->
     // Level%d\n",i,GetTask(i)->level,GetTask(i)->nl);
-    GetTask(i)->level = GetTask(i)->nl;
+    get_task(i)->level = get_task(i)->nl;
   }
   cg_flag0 = 0;
   io_sti();
 }
 static struct TASK *__clone_task(struct TASK *tk, int stack_sz) {
-  Maskirq(0);
+  irq_mask_set(0);
   void *stack = page_malloc(stack_sz);
-  struct TASK *result = AddTask(tk->name, tk->level, tk->tss.cs, tk->eip_start,
+  struct TASK *result = register_task(tk->name, tk->level, tk->tss.cs, tk->eip_start,
                                 tk->tss.ds, tk->tss.ss, (int)stack);
   change_page_task_id(get_tid(result), stack, stack_sz);
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
   return result;
 }
 struct TASK *clone_task(struct TASK *tk, int stack_sz) {
@@ -763,9 +763,9 @@ struct TASK *clone_task(struct TASK *tk, int stack_sz) {
   io_cli();
   struct TASK *father = __clone_task(tk, stack_sz);
   for (int i = 1; i < tasknum + 1; i++) {
-    if (GetTask(i)->is_child) {
-      if (GetTask(i)->thread.father == tk) {
-        struct TASK *ttask = __clone_task(GetTask(i), stack_sz);
+    if (get_task(i)->is_child) {
+      if (get_task(i)->thread.father == tk) {
+        struct TASK *ttask = __clone_task(get_task(i), stack_sz);
         ttask->is_child = 1;
         ttask->thread.father = father;
       }
@@ -774,40 +774,40 @@ struct TASK *clone_task(struct TASK *tk, int stack_sz) {
   io_sti();
   return father;
 }
-void TaskLock() {
+void task_lock() {
   io_cli();                            // 保证原子操作
   if (current_task()->is_child == 0) { // 父进程
-    for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == current_task()) {
-        GetTask(i)->lock = 1; // 锁住他，不让他运行，和此任务抢资源
+    for (int i = 1; get_task(i) != 0; i++) {
+      if (get_task(i)->thread.father == current_task()) {
+        get_task(i)->lock = 1; // 锁住他，不让他运行，和此任务抢资源
       }
     }
   } else {
-    for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == current_task()->thread.father ||
-          GetTask(i) == current_task()->thread.father) {
-        if (GetTask(i) != current_task()) {
-          GetTask(i)->lock = 1; // 锁住他，不让他运行，和此任务抢资源
+    for (int i = 1; get_task(i) != 0; i++) {
+      if (get_task(i)->thread.father == current_task()->thread.father ||
+          get_task(i) == current_task()->thread.father) {
+        if (get_task(i) != current_task()) {
+          get_task(i)->lock = 1; // 锁住他，不让他运行，和此任务抢资源
         }
       }
     }
   }
   io_sti();
 }
-void TaskUnLock() {
+void task_unlock() {
   io_cli();                            // 保证原子操作
   if (current_task()->is_child == 0) { // 父进程
-    for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == current_task()) {
-        GetTask(i)->lock = 0;
+    for (int i = 1; get_task(i) != 0; i++) {
+      if (get_task(i)->thread.father == current_task()) {
+        get_task(i)->lock = 0;
       }
     }
   } else {
-    for (int i = 1; GetTask(i) != 0; i++) {
-      if (GetTask(i)->thread.father == current_task()->thread.father ||
-          GetTask(i) == current_task()->thread.father) {
-        if (GetTask(i) != current_task()) {
-          GetTask(i)->lock = 0;
+    for (int i = 1; get_task(i) != 0; i++) {
+      if (get_task(i)->thread.father == current_task()->thread.father ||
+          get_task(i) == current_task()->thread.father) {
+        if (get_task(i) != current_task()) {
+          get_task(i)->lock = 0;
         }
       }
     }

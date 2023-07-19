@@ -35,7 +35,7 @@ void chat_cmd() { // 用于接收用户想要发送的内容
   }
   printf("Connect 118.31.248.215 done.\n"); // 到这里说明连接成功
   printf("Connect Server...\n"); // 现在通过UDP协议连接服务器
-  socket = Socket_Alloc(UDP_PROTOCOL); // 向SocketAPI分配一个socket位置，让我们通过Socket API连接到服务器（声明使用UDP协议）
+  socket = socket_alloc(UDP_PROTOCOL); // 向SocketAPI分配一个socket位置，让我们通过Socket API连接到服务器（声明使用UDP协议）
   Socket_Init(socket, CHAT_SERVER_IP, CHAT_SERVER_PROT, ip, CHAT_CLIENT_PROT); // 对Socket进行初始化（设置服务器的IP、端口，以及自身的IP、端口）
   Socket_Bind(socket, Chat_Handler); // 绑定回调函数
   clean((char *)chat_data, 2048); // 清空缓冲区
@@ -58,7 +58,7 @@ void chat_cmd() { // 用于接收用户想要发送的内容
   inp[4] = ' ';
   unsigned int stack = (unsigned int)page_malloc(64 * 1024); // 声明接收服务程序的task的栈空间
   struct TASK *out_put_task =
-      AddTask("out_put_task", 2, 2 * 8, (int)out_put_task_main_cmd, 1 * 8,
+      register_task("out_put_task", 2, 2 * 8, (int)out_put_task_main_cmd, 1 * 8,
               1 * 8, stack + 64 * 1024); // 创建进程
   (void)(out_put_task);
   for (;;) {
@@ -114,7 +114,7 @@ void chat_gui() {
   }
   printf("Connect 118.31.248.215 done.\n");
   printf("Connect Server...\n");
-  socket = Socket_Alloc(UDP_PROTOCOL);
+  socket = socket_alloc(UDP_PROTOCOL);
   Socket_Init(socket, CHAT_SERVER_IP, CHAT_SERVER_PROT, ip, CHAT_CLIENT_PROT);
   Socket_Bind(socket, Chat_Handler);
   clean((char *)chat_data, 2048);
@@ -147,7 +147,7 @@ void chat_gui() {
 
   unsigned int stack = (unsigned int)page_malloc(64 * 1024);
   struct TASK *out_put_task =
-      AddTask("out_put_task", 2, 2 * 8, (int)out_put_task_main_gui, 1 * 8,
+      register_task("out_put_task", 2, 2 * 8, (int)out_put_task_main_gui, 1 * 8,
               1 * 8, stack + 64 * 1024);
   (void)(stack);
   (void)(out_put_task);

@@ -23,7 +23,7 @@ void bios_read_hd_sec(unsigned LBA, unsigned char* buffer) {
   p.seg = 0x800;  // 0x8000物理地址 （0x800:0）
   p.sectors_of_number = 1;
   memcpy(0x7e00, &p, sizeof(packet));
-  SendIPCMessage(2, "a", 1, asynchronous);
+  send_ipc_message(2, "a", 1, asynchronous);
 
   while (*(unsigned char*)(0x7e00) != 0xff)
     ;
@@ -45,7 +45,7 @@ void bios_write_hd_sec(unsigned LBA, unsigned char* buffer) {
   p.seg = 0x800;  // 0x8000物理地址 （0x800:0）
   p.sectors_of_number = 1;
   memcpy(0x7e00, &p, sizeof(packet));
-  SendIPCMessage(2, "b", 1, asynchronous);
+  send_ipc_message(2, "b", 1, asynchronous);
   while (*(unsigned char*)(0x7e00) != 0xff)
     ;
   // regs16_t r;

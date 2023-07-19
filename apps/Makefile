@@ -6,10 +6,8 @@ OBJS_GUI = ./out/WinEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 OBJS_PACK_CPP = ./out/CppEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj
 MST_LIB = ./out/mst.obj ./out/list.obj
-build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) game.bin gobang.bin memz.bin Makefile
-
+build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) Makefile
 	@python3 build.py bainian $(OBJS_PACK)
-	@python3 build.py test $(OBJS_PACK)
 	@python3 build.py uigobang $(OBJS_GUI)
 	@python3 build.py bitz $(OBJS_PACK)
 	@python3 build.py calc $(OBJS_PACK)
@@ -17,10 +15,8 @@ build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) game.bin gobang.bin
 	@python3 build.py RandNum $(OBJS_PACK)
 	@python3 build.py cale $(OBJS_PACK)
 	@python3 build.py pfn $(OBJS_PACK)
-	@python3 build.py oi $(OBJS_PACK)
 	@python3 build.py sort $(OBJS_PACK)
 	@python3 build.py copy $(OBJS_PACK)
-	@python3 build.py ps2test $(OBJS_PACK)
 	@python3 build.py pwsh $(OBJS_PACK)
 	@python3 build.py snake $(OBJS_PACK)
 	@python3 build.py cgobang $(OBJS_PACK)
@@ -42,8 +38,6 @@ build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) game.bin gobang.bin
 	@python3 buildpp.py editor $(OBJS_PACK_CPP) $(MST_LIB)
 	@python3 build.py lua $(OBJS_PACK) ./out/gui_syscall.obj
 	@python3 build.py luac $(OBJS_PACK)
-	@python3 buildpp.py SPGAME $(OBJS_PACK_CPP)
-	@python3 buildpp.py codeEdit $(OBJS_PACK_CPP)
 	@python3 build.py ttf $(OBJS_PACK)
 	@python3 build.py tedit $(OBJS_GUI)
 	@python3 build.py c4 $(OBJS_PACK)

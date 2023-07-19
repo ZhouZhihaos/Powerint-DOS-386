@@ -114,7 +114,7 @@ void init_card() {
     }
   }
 }
-void Send(unsigned char* buffer, unsigned int size) {
+void netcard_send(unsigned char* buffer, unsigned int size) {
   for (int i = 0; i < 25; i++) {
     if (network_card_CTL[i].use) {
       if (DriveSemaphoreTake(GetDriveCode("NETCARD_DRIVE"))) {

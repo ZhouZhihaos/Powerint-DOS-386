@@ -308,7 +308,7 @@ void ERROR(int CODE, char* TIPS) {
     }
   }
   io_cli();
-  Maskirq(0);
+  irq_mask_set(0);
   printk("%s\n", TIPS);
   printk("Error Code: %d\n", CODE);
   SwitchToText8025_BIOS();
@@ -357,9 +357,9 @@ void KILLAPP(int eip, int ec) {
     printf("\nSystem Protect:The program name:%s TASK ID:%d EC:%x EIP:%08x\n",
            task->name, task->sel / 8 - 103, ec, eip);
   }
-  SleepTask(task);
+  task_sleep(task);
   task->running = 0;
-  WakeUp(GetTask(1));  // 别睡了，起来帮我杀下进程
+  task_wake_up(get_task(1));  // 别睡了，起来帮我杀下进程
   // 下半部会帮助我们结束程序
   for (;;)
     ;
@@ -372,7 +372,7 @@ void KILLAPP0(int ec, int tn) {
   }
   DeleteList(vfs_now->path);
   page_kfree((int)vfs_now, sizeof(vfs_t));
-  struct TASK* task = GetTask(tn);
+  struct TASK* task = get_task(tn);
   struct tty* t = task->TTY;
   t = tty_set(current_task(), t);
   if (ec == 0xff) {  // 返回系统快捷键
@@ -386,9 +386,9 @@ void KILLAPP0(int ec, int tn) {
   extern uint32_t app_num;
   app_num--;
   task->running = 0;
-  WakeUp(GetTask(1));  // 别睡了，起来帮我杀下进程
+  task_wake_up(get_task(1));  // 别睡了，起来帮我杀下进程
   io_sti();
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
 
   for (;;) {
     // printk("Wait.\n");

@@ -207,7 +207,7 @@ void AddShell_HighTextMode() {
                                MoveCursor_HighTextMode, clear_HighTextMode,
                                screen_ne_HighTextMode, Draw_Box_HighTextMode);
   struct TASK *ntask =
-      AddTask("Shell", 1, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
+      register_task("Shell", 1, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
               (unsigned int)page_kmalloc(128 * 1024) + 128 * 1024);
   char *kfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
   char *mfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
@@ -215,7 +215,7 @@ void AddShell_HighTextMode() {
   char *mbuf = (char *)page_kmalloc(4096);
   fifo8_init(kfifo, 4096, kbuf);
   fifo8_init(mfifo, 4096, mbuf);
-  TaskSetFIFO(ntask, kfifo, mfifo);
+  task_set_fifo(ntask, kfifo, mfifo);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   ntask->alloc_addr = alloc_addr;
   ntask->alloc_size = 512 * 1024;
@@ -252,8 +252,8 @@ void SwitchShell_HighTextMode(int i) {
   struct SHEET *sht_n = (struct SHEET *)n->vram;
   sheet_updown(sht_n, -1);
   sheet_updown(sht_t, 0);
-  for (int j = 1; GetTask(j) != 0; j++) {
-    struct TASK *task = GetTask(j);
+  for (int j = 1; get_task(j) != 0; j++) {
+    struct TASK *task = get_task(j);
     if (task->TTY == t && (strcmp("Shell", task->name) == 0 ||
                            (task->app == 1 && task->forever == 0))) {
       task->sleep = 0;

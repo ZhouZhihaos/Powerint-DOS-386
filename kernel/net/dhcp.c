@@ -50,7 +50,7 @@ int dhcp_discovery(uint8_t *mac) {
 
   len = fill_dhcp_discovery_options(dhcp);
   dhcp_output(dhcp, mac, &len);
-  UDPProviderSend(0xffffffff, 0x0, DHCP_SERVER_PORT, DHCP_CLIENT_PORT,
+  udp_provider_send(0xffffffff, 0x0, DHCP_SERVER_PORT, DHCP_CLIENT_PORT,
                   (uint8_t *)dhcp, len);
   return 0;
 }

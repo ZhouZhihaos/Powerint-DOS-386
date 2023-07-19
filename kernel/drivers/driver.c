@@ -37,7 +37,7 @@ drv_t driver_malloc(char* drv_file, drv_type_t drv_type) {
 }
 void driver_free(drv_t driver) {
   driver->drv_task->running = 0;  // 让他自生自灭（
-  while (GetTask(get_tid(driver->drv_task)))
+  while (get_task(get_tid(driver->drv_task)))
     ;
   driver->flags = DRIVER_FREE;
   drv_ctl->driver_num--;
@@ -48,13 +48,13 @@ void driver_call(drv_t driver, int func, void* arg) {
   args.func_num = func;
   args.arg = arg;
   args.tid = get_tid(current_task());
-  SendIPCMessage(get_tid(driver->drv_task), &args, sizeof(struct arg_struct),
+  send_ipc_message(get_tid(driver->drv_task), &args, sizeof(struct arg_struct),
                  synchronous);
   for (;;) {
-    while (IPCMessageLength(get_tid(driver->drv_task)) == -1)
+    while (ipc_message_len(get_tid(driver->drv_task)) == -1)
       ;
     int result;
-    GetIPCMessage(&result,get_tid(driver->drv_task));
+    get_ipc_message(&result,get_tid(driver->drv_task));
     if(result == 0x200) {
       break;
     } else if(result == 0x404) {

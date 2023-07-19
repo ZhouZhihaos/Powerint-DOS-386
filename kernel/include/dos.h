@@ -33,27 +33,27 @@ void mt_init(void);
 void mt_taskswitch1();
 void mt_taskswitch2();
 void mt_taskswitch3();
-int Get_Running_Task_Num();
+int get_running_task_num();
 struct TASK* current_task();
-void TaskSetFIFO(struct TASK* task,
+void task_set_fifo(struct TASK* task,
                  struct FIFO8* keyfifo,
                  struct FIFO8* mousefifo);
-struct FIFO8* TaskGetKeyfifo(struct TASK* task);
-struct FIFO8* TaskGetMousefifo(struct TASK* task);
+struct FIFO8* task_get_key_fifo(struct TASK* task);
+struct FIFO8* task_get_mouse_fifo(struct TASK* task);
 struct TASK*
-AddTask(char* name, int level, int cs, int eip, int ds, int ss, int esp);
+register_task(char* name, int level, int cs, int eip, int ds, int ss, int esp);
 struct TASK*
-AddUserTask(char* name, int level, int cs, int eip, int ds, int ss, int esp);
-void SleepTask(struct TASK* task);
-void WakeUp(struct TASK* task);
-void SleepTaskFIFO(struct TASK* task);
-struct TASK* GetTask(int taskNum);
-struct TASK* GetTaskForName(char* taskname);
-struct TASK* GetTask_NoSafe(int taskNum);
-void __SubTask(struct TASK* task);
-void SubTask(struct TASK* task);
+register_user_task(char* name, int level, int cs, int eip, int ds, int ss, int esp);
+void task_sleep(struct TASK* task);
+void task_wake_up(struct TASK* task);
+void task_sleep_fifo(struct TASK* task);
+struct TASK* get_task(int taskNum);
+struct TASK* get_task_by_name(char* taskname);
+struct TASK* get_task_unsafe(int taskNum);
+void __sub_task(struct TASK* task);
+void task_delete(struct TASK* task);
 void change_level(struct TASK* task, int nlevel);
-void RunTask(struct TASK* task);
+void task_run(struct TASK* task);
 struct TASK* _fork(int b);
 #ifndef _TASK_C
 #define fork() _fork(0)
@@ -61,8 +61,8 @@ struct TASK* _fork(int b);
 
 #endif
 struct TASK* clone_task(struct TASK* tk, int stack_sz);
-void TaskLock();
-void TaskUnLock();
+void task_lock();
+void task_unlock();
 // page.c
 void C_init_page();
 void pf_set(unsigned int memsize);
@@ -232,22 +232,22 @@ void* memcpy(void* s, const void* ct, size_t n);
 void* malloc(int size);
 void free(void* p);
 // ipc.c
-int SendIPCMessage(int to_tid, void* data, unsigned int size, char type);
-int SendIPCMessageForName(char* tname,
+int send_ipc_message(int to_tid, void* data, unsigned int size, char type);
+int send_ipc_message_by_name(char* tname,
                           void* data,
                           unsigned int size,
                           char type);
-int GetIPCMessage(void* data, int from_tid);
-int GetIPCMessageForName(void* data, char* tname);
-int IPCMessageStatus();
-unsigned int IPCMessageLength(int from_tid);
-int SendIPCMessageTID(int to_tid,         // 收信人
+int get_ipc_message(void* data, int from_tid);
+int get_ipc_message_by_name(void* data, char* tname);
+int ipc_message_status();
+unsigned int ipc_message_len(int from_tid);
+int send_ipc_message_by_tid(int to_tid,         // 收信人
                       int y_tid,          // 发信人
                       void* data,         // 数据
                       unsigned int size,  // 大小
                       char type /* 类型 */);
-bool haveMsg();
-int getMsgAll(void* data);
+bool have_msg();
+int get_msg_all(void* data);
 // arg.c
 int Get_Arg(char* Arg, char* CmdLine, int Count);
 int Get_Argc(char* CmdLine);

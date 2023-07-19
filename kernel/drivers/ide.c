@@ -118,7 +118,7 @@ void ide_initialize(unsigned int BAR0,
                     unsigned int BAR2,
                     unsigned int BAR3,
                     unsigned int BAR4) {
-  ClearMaskIrq(15);
+  irq_mask_clear(15);
   int j, k, count = 0;
   for (int i = 0; i < 4; i++) {
     ide_devices[i].Reserved = 0;

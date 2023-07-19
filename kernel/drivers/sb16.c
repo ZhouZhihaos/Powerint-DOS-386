@@ -78,14 +78,14 @@ void sb16_handler(int* esp) {
 
   printk("sb16 handler state 0x%X...\n", state);
   sb.flag = !sb.flag;
-  RunTask(sb.use_task);
+  task_run(sb.use_task);
 }
 void disable_sb16() {
   sb.addr = (char*)DMA_BUF_ADDR;
   sb.mode = MODE_STEREO16;
   sb.channel = 5;
   sb.use_task = NULL;
-  ClearMaskIrq(SB16_IRQ);
+  irq_mask_clear(SB16_IRQ);
   register_intr_handler(SB16_IRQ + 0x20, asm_sb16_handler);
 }
 static void sb_reset() {

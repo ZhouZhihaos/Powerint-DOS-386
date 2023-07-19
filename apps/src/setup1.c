@@ -1,8 +1,8 @@
 #include <string.h>
 #include <syscall.h>
 #define All_Kernel_files_count 8
-#define All_App_files_count 40
-#define All_Res_files_count 23
+#define All_App_files_count 38
+#define All_Res_files_count 22
 #define Line_X 205
 #define Line_Y 186
 #define Left_Up 201
@@ -313,24 +313,12 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));  // 10
-    setState("Copy Apps --- Copy file: bin/gobang.bin");
-    Copy("A:\\GOBANG.BIN", "bin/gobang.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 11
     setState("Copy Apps --- Copy file: bin/cgobang.bin");
     Copy("A:\\CGOBANG.BIN", "bin/cgobang.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));  // 12
-    setState("Copy Apps --- Copy file: bin/game.bin");
-    Copy("A:\\GAME.BIN", "bin/game.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 13
     setState("Copy Apps --- Copy file: bin/login.bin");
     Copy("A:\\LOGIN.BIN", "bin/login.bin");
     CopyFilesCount++;
@@ -564,14 +552,8 @@ int main() {
       Set_Loading(
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
                 100.0));
-      setState("Copy Apps --- Copy file: res/demo.asm");
-      Copy("A:\\demo.asm", "res/demo.asm");
-      CopyFilesCount++;
-      Set_Loading(
-          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
-                100.0));
-      setState("Copy Apps --- Copy file: res/demo2.asm");
-      Copy("A:\\demo2.asm", "res/demo2.asm");
+      setState("Copy Apps --- Copy file: res/hello.nas");
+      Copy("A:\\hello.nas", "res/hello.nas");
       CopyFilesCount++;
       Set_Loading(
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
@@ -583,7 +565,7 @@ int main() {
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
                 100.0));
       setState("Copy Apps --- Copy file: res/test.htm");
-      Copy("A:\\test1.htm", "res/test1.htm");
+      Copy("A:\\test.htm", "res/test.htm");
       CopyFilesCount++;
       Set_Loading(
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *

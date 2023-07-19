@@ -52,7 +52,7 @@ static void set_handler(int IRQ, int addr) {
   // 注册中断
   struct GATE_DESCRIPTOR* idt = (struct GATE_DESCRIPTOR*)ADR_IDT;
   set_gatedesc(idt + 0x20 + IRQ, (int)addr, 2 * 8, AR_INTGATE32);
-  ClearMaskIrq(IRQ);
+  irq_mask_clear(IRQ);
 }
 void into_32bitsRW() {
   // 切换到32位读写模式 DWIO（BCR18,bit7）=1
@@ -108,10 +108,10 @@ static void init_Card_all() {
   // mac3,
   //        mac4, mac5);
   // 这里约等于 into_16bitsRW();
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
   reset_card();
   sleep(1);
-  Maskirq(0);
+  irq_mask_set(0);
 
   io_out16(io_base + RAP16, BCR20);
   io_out16(io_base + BDP16, 0x102);
@@ -175,7 +175,7 @@ static void init_Card_all() {
     initBlock.logicalAddress = ip;
   }
 
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
 
   // 初始化ARP表
 

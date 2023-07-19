@@ -163,7 +163,7 @@ void AddShell_GraphicMode() {
                 screen_ne_GraphicMode, Draw_Box_GraphicMode);
   tty_set_reserved(ntty, (unsigned int)sht_b_cur, (unsigned int)sht_win, 0, 0);
   struct TASK* ntask =
-      AddTask("Cmdline", 3, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
+      register_task("Cmdline", 3, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
               (unsigned int)page_kmalloc(128 * 1024) + 128 * 1024);
   char* kfifo = (struct FIFO8*)page_kmalloc(sizeof(struct FIFO8));
   char* mfifo = (struct FIFO8*)page_kmalloc(sizeof(struct FIFO8));
@@ -171,7 +171,7 @@ void AddShell_GraphicMode() {
   char* mbuf = (char*)page_kmalloc(4096);
   fifo8_init(kfifo, 4096, kbuf);
   fifo8_init(mfifo, 4096, mbuf);
-  TaskSetFIFO(ntask, kfifo, mfifo);
+  task_set_fifo(ntask, kfifo, mfifo);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   ntask->alloc_addr = alloc_addr;
   ntask->alloc_size = 512 * 1024;

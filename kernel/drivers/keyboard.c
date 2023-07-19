@@ -73,14 +73,14 @@ int input_char_inSM() {
   if (running_mode == POWERDESKTOP) {
   //  printk("%08x %08x\n",cons,current_task());
     while (1)
-      if ((fifo8_status(TaskGetKeyfifo(cons)) ==
+      if ((fifo8_status(task_get_key_fifo(cons)) ==
            0) &&  // 我们称此行为为偷菜行为（
           !current_task()->forever) {
             
       } else {
         // 返回扫描码
      //   printk("yes.\n");
-        i = fifo8_get(TaskGetKeyfifo(cons));  // 从FIFO缓冲区中取出扫描码
+        i = fifo8_get(task_get_key_fifo(cons));  // 从FIFO缓冲区中取出扫描码
         if (i != -1) {
           break;
         }
@@ -89,7 +89,7 @@ int input_char_inSM() {
     return i;
   }
   while (1) {
-    if ((fifo8_status(TaskGetKeyfifo(current_task())) == 0) ||
+    if ((fifo8_status(task_get_key_fifo(current_task())) == 0) ||
         (running_mode == POWERDESKTOP && current_task()->app &&
          current_task()->forever &&
          shtctl->sheets[shtctl->top - 1]->task != current_task()) ||
@@ -99,15 +99,15 @@ int input_char_inSM() {
       // 1.没有输入
       // 2.窗口未处于顶端
       // 3.正在运行的控制台并不是函数发起的控制台（TTY）
-      if (fifo8_status(TaskGetKeyfifo(current_task())) != 0) {
-        fifo8_get(TaskGetKeyfifo(
+      if (fifo8_status(task_get_key_fifo(current_task())) != 0) {
+        fifo8_get(task_get_key_fifo(
             current_task()));  // tnnd 都到这里了还想走？给你拦截了
       }
       io_stihlt();
     } else {
       // 返回扫描码
       i = fifo8_get(
-          TaskGetKeyfifo(current_task()));  // 从FIFO缓冲区中取出扫描码
+          task_get_key_fifo(current_task()));  // 从FIFO缓冲区中取出扫描码
       if (i != -1) {
         break;
       }
@@ -191,8 +191,8 @@ void inthandler21(int* esp) {
   if (data == 0x3b && !shift) {
     // 仅仅按下F1
     if (running_mode == POWERINTDOS) {
-      for (int i = 1; GetTask(i) != 0; i++) {
-        if (GetTask(i)->TTY->vram == 0xB8000 && GetTask(i)->app == 1) {
+      for (int i = 1; get_task(i) != 0; i++) {
+        if (get_task(i)->TTY->vram == 0xB8000 && get_task(i)->app == 1) {
           // printf("Break EIP:%08x",esp[1]);
           //  POWERINTDOS模式下找到现在运行的程序（掌握TTY屏幕主导权 & 是程序）
           KILLAPP0(0xff, i);  // 0xff是快捷键结束程序的便条
@@ -228,9 +228,9 @@ void inthandler21(int* esp) {
   if (data >= 0x80) {
     // printk("press\n");
     for (int i = 1; i < tasknum + 1; i++) {
-      if (GetTask(i)->keyboard_release != NULL) {
+      if (get_task(i)->keyboard_release != NULL) {
         // TASK结构体中有对松开键特殊处理的
-        GetTask(i)->keyboard_release(data, i);  // 处理松开键
+        get_task(i)->keyboard_release(data, i);  // 处理松开键
       }
     }
 
@@ -239,20 +239,20 @@ void inthandler21(int* esp) {
   }
   for (int i = 1; i < tasknum + 1; i++) {
     // printk("up\n");
-    if (GetTask(i)->keyboard_press != NULL) {
+    if (get_task(i)->keyboard_press != NULL) {
       // TASK结构体中有对按下键特殊处理的
-      GetTask(i)->keyboard_press(data, i);  // 处理按下键
+      get_task(i)->keyboard_press(data, i);  // 处理按下键
     }
   }
   for (int i = 1; i < tasknum + 1; i++) {
     // 按下键通常处理
-    struct TASK* task = GetTask(i);  // 每个进程都处理一遍
+    struct TASK* task = get_task(i);  // 每个进程都处理一遍
     if (task->sleep == 1 || task->fifosleep)
       // 如果进程正在休眠
       continue;
     // 一般进程
     // printk("Send packet to %s ID %d\n",task->name,Get_Tid(task));
-    fifo8_put(TaskGetKeyfifo(task), data + e0_flag);
+    fifo8_put(task_get_key_fifo(task), data + e0_flag);
     // printk(
     //    "TASKNUM:%d TASK NAME:%s TASK ID:%d TASK FIFO:%08x STATUS:%d
     //    DATA:%c\n", tasknum, task->name, Get_Tid(task), TaskGetKeyfifo(task),

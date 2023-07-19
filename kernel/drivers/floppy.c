@@ -84,7 +84,7 @@ void init_floppy() {
   //设置软盘驱动器的中断服务程序
   struct GATE_DESCRIPTOR* idt = (struct GATE_DESCRIPTOR*)ADR_IDT;
   set_gatedesc(idt + 0x26, (int)floppy_int, 2 * 8, AR_INTGATE32);
-  ClearMaskIrq(0x6);  //清除IRQ6的中断
+  irq_mask_clear(0x6);  //清除IRQ6的中断
   printf("FLOPPY DISK:RESETING\n");
   reset();  //重置软盘驱动器
   printf("FLOPPY DISK:reset over!\n");
@@ -105,7 +105,7 @@ void flint(int* esp) {
   floppy_int_count =
       1;  // 设置中断计数器为1，代表中断已经发生（或者是系统已经收到了中断）
   if(floppy_use) {
-    RunTask(floppy_use);
+    task_run(floppy_use);
   }
   io_out8(0x20, 0x20);  // 发送EOI信号，告诉PIC，我们已经处理完了这个中断
 }

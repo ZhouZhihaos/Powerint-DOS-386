@@ -12,7 +12,7 @@
 static int table1[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 static int table2[12] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 static uint32_t NTPTime;
-static void NTP_Handler(struct Socket *socket, void *base) {
+static void ntp_handler(struct Socket *socket, void *base) {
   // printf("Recv: ");
   struct NTPMessage *ntp =
       (struct NTPMessage *)(base + sizeof(struct EthernetFrame_head) +
@@ -23,11 +23,11 @@ static void NTP_Handler(struct Socket *socket, void *base) {
   // }
   NTPTime = swap32(ntp->Transmission_Timestamp);
 }
-uint32_t GetNTPServerTime(uint32_t NTPServerIP) {
-  struct Socket *socket = Socket_Alloc(UDP_PROTOCOL);
+uint32_t ntp_get_server_time(uint32_t NTPServerIP) {
+  struct Socket *socket = socket_alloc(UDP_PROTOCOL);
   extern uint32_t ip;
   Socket_Init(socket, NTPServerIP, 123, ip, 123);
-  Socket_Bind(socket, NTP_Handler);
+  Socket_Bind(socket, ntp_handler);
   struct NTPMessage *ntp =
       (struct NTPMessage *)malloc(sizeof(struct NTPMessage));
   ntp->LI = LI_;
@@ -39,7 +39,7 @@ uint32_t GetNTPServerTime(uint32_t NTPServerIP) {
   ntp->Root_Delay = 1 << 8;
   ntp->Root_Difference = 1 << 8;
   ntp->Transmission_Timestamp =
-      swap32(NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
+      swap32(ntp_time_stamp(get_year(), get_mon_hex(), get_day_of_month(),
                           get_hour_hex(), get_min_hex(), get_sec_hex()));
   NTPTime = NULL;
   while (!NTPTime) {
@@ -51,10 +51,10 @@ uint32_t GetNTPServerTime(uint32_t NTPServerIP) {
   //   printf("%02x ", p[i]);
   // }
   // printf("\n");
-  Socket_Free(socket);
+  socket_free(socket);
   return NTPTime;
 }
-uint32_t NTPTimeStamp(uint32_t year, uint32_t month, uint32_t day,
+uint32_t ntp_time_stamp(uint32_t year, uint32_t month, uint32_t day,
                       uint32_t hour, uint32_t min, uint32_t sec) {
   uint32_t leap = 0;
   for (int y = 1900; y != year; y++) {
@@ -78,7 +78,7 @@ uint32_t NTPTimeStamp(uint32_t year, uint32_t month, uint32_t day,
 }
 uint32_t UTCTimeStamp(uint32_t year, uint32_t month, uint32_t day,
                       uint32_t hour, uint32_t min, uint32_t sec) {
-  return NTPTimeStamp(year, month, day, hour, min, sec) - JAN_1970;
+  return ntp_time_stamp(year, month, day, hour, min, sec) - JAN_1970;
 }
 void UnNTPTimeStamp(uint32_t timestamp, uint32_t *year, uint32_t *month,
                     uint32_t *day, uint32_t *hour, uint32_t *min,

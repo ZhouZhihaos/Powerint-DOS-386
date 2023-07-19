@@ -130,7 +130,7 @@ asm_gui_api:
 		POP		DS
 		IRETD
 global asm_net_api
-extern net_API
+extern net_api
 asm_net_api:
 		STI
 		PUSH	DS
@@ -140,7 +140,7 @@ asm_net_api:
 		MOV		AX,SS
 		MOV		DS,AX ; 将操作系统用段地址存入DS和ES
 		MOV		ES,AX
-		CALL	net_API
+		CALL	net_api
 		ADD		ESP,32
 		POPAD
 		POP		ES

@@ -330,7 +330,7 @@ void switchUI() {
       }
     } else if (strcmp(s, "3") == 0) {
       socket->Disconnect(socket);
-      Socket_Free(socket);
+      socket_free(socket);
       return;
     }
   }
@@ -351,7 +351,7 @@ void netgobang() {
     printf("The ICMP Packet is not from the ip.\n");
     return;
   }
-  socket = Socket_Alloc(TCP_PROTOCOL);
+  socket = socket_alloc(TCP_PROTOCOL);
   extern uint32_t ip;
   srand(time());
   Socket_Init(socket, ip_, port, ip, rand());

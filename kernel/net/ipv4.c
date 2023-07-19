@@ -22,7 +22,7 @@ void IPV4ProviderSend(uint8_t protocol, uint64_t dest_mac, uint32_t dest_ip,
     res->flagsAndOffset = 0;
     res->checkSum = 0;
     res->checkSum = CheckSum((uint16_t *)dat, sizeof(struct IPV4Message));
-    EtherFrameProviderSend(dest_mac, 0x0800, dat,
+    ether_frame_provider_send(dest_mac, 0x0800, dat,
                            sizeof(struct IPV4Message) + size);
   } else {
     int offset = 0;
@@ -44,7 +44,7 @@ void IPV4ProviderSend(uint8_t protocol, uint64_t dest_mac, uint32_t dest_ip,
         // printf("ip:%08x,%08x
         // size:%d\nMF:0\noffset:%d\n",swap32(res->srcIP),swap32(res->dstIP),swap16(res->totalLength),(swap16(res->flagsAndOffset)
         // >> 3));
-        EtherFrameProviderSend(dest_mac, 0x0800, dat1,
+        ether_frame_provider_send(dest_mac, 0x0800, dat1,
                                size - i * (MTU - sizeof(struct IPV4Message)) +
                                    sizeof(struct IPV4Message));
       } else {
@@ -60,7 +60,7 @@ void IPV4ProviderSend(uint8_t protocol, uint64_t dest_mac, uint32_t dest_ip,
         // printf("ip:%08x,%08x
         // size:%d\nMF:1\noffset:%d\n",swap32(res->srcIP),swap32(res->dstIP),swap16(res->totalLength),(swap16(res->flagsAndOffset)
         // >> 3));
-        EtherFrameProviderSend(dest_mac, 0x0800, dat1, MTU);
+        ether_frame_provider_send(dest_mac, 0x0800, dat1, MTU);
       }
       offset += (MTU - sizeof(struct IPV4Message)) / 8;
     }

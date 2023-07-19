@@ -1,11 +1,12 @@
 #include <io.h>
+#include <dos.h>
 //系统日志打印
 void kprint(char *str) {
-  Maskirq(0);
+  irq_mask_set(0);
   for (int i = 0; i < strlen(str); i++) {
     write_serial(str[i]);
   }
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
 }
 void printk(char *str, ...) {
   char buf[1024];

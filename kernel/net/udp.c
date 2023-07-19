@@ -13,7 +13,7 @@ uint8_t *UDP_Packet(uint16_t dest_port, uint16_t src_port, uint8_t *data,
   res->checkSum = 0;
   return (uint8_t *)res;
 }
-void UDPProviderSend(uint32_t destip, uint32_t srcip, uint16_t dest_port,
+void udp_provider_send(uint32_t destip, uint32_t srcip, uint16_t dest_port,
                      uint16_t src_port, uint8_t *data, uint32_t size) {
   if (destip == 0xffffffff) {
     IPV4ProviderSend(17, 0xffffffffffff, destip, srcip,

@@ -95,7 +95,7 @@ void AddShell_TextMode() {
                 clear_TextMode, screen_ne_TextMode, Draw_Box_TextMode);
   io_cli();
   struct TASK *ntask =
-      AddTask("Shell", 1, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
+      register_task("Shell", 1, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
               (unsigned int)page_kmalloc(128 * 1024) + 128 * 1024);
   char *kfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
   char *mfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
@@ -103,7 +103,7 @@ void AddShell_TextMode() {
   char *mbuf = (char *)page_kmalloc(4096);
   fifo8_init(kfifo, 4096, kbuf);
   fifo8_init(mfifo, 4096, mbuf);
-  TaskSetFIFO(ntask, kfifo, mfifo);
+  task_set_fifo(ntask, kfifo, mfifo);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   ntask->alloc_addr = alloc_addr;
   ntask->alloc_size = 512 * 1024;
@@ -139,8 +139,8 @@ void SwitchShell_TextMode(int i) {
   memcpy(buf, t->vram, 160 * 25);
   memcpy(t->vram, n->vram, 160 * 25);
   memcpy(n->vram, buf, 160 * 25);
-  for (int j = 1; GetTask(j) != 0; j++) {
-    struct TASK *task = GetTask(j);
+  for (int j = 1; get_task(j) != 0; j++) {
+    struct TASK *task = get_task(j);
     if (task->TTY == t && (strcmp("Shell", task->name) == 0 ||
                            (task->app == 1 && task->forever == 0))) {
       task->sleep = 0;

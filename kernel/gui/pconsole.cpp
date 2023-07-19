@@ -5,7 +5,7 @@ extern color_t color_table[16];
 void pcons_key_press(char ch, uint32_t val) {
   // printk("this.\n");
   PConsole* p = (PConsole*)val;
-  fifo8_put(TaskGetKeyfifo(p->use_task), (uint8_t)ch);
+  fifo8_put(task_get_key_fifo(p->use_task), (uint8_t)ch);
 }
 PConsole::PConsole(struct SHTCTL* ctl, int x, int y, struct TASK *use_task)
     : Window(ctl, "console", x, y, 644, 431) {

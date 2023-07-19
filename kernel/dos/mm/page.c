@@ -101,12 +101,12 @@ int find_kpage(int line, int n) {
   return line;
 }
 void* page_kmalloc(int size) {
-  Maskirq(0);
+  irq_mask_set(0);
   int n = ((size - 1) / (4 * 1024)) + 1;
   int i = find_kpage(0, n);
   int t, p;
   page2tpo(i, &t, &p);
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
   // printk("KMALLOC LINE ADDR:%08x PHY ADDR:%08x SIZE:%d PAGENUM:%d\n",
   //        get_line_address(t, p, 0), *(int *)get_pageinpte_address(t, p) -
   //        0x7, size, n);
@@ -114,7 +114,7 @@ void* page_kmalloc(int size) {
   return (void*)get_line_address(t, p, 0);
 }
 void page_kfree(int p, int size) {
-  Maskirq(0);
+  irq_mask_set(0);
   int n = ((size - 1) / (4 * 1024)) + 1;
   p = (int)p & 0xfffff000;
   // printk("KFREE ADDR:%08x SIZE:%d PAGE NUM:%d ", p, size, n);
@@ -124,7 +124,7 @@ void page_kfree(int p, int size) {
     // printk("FREE PAGE:%d ",get_page_from_line_address(p));
   }
   // printk("\n");
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
 }
 void* get_phy_address_for_line_address(void* line) {
   int t, p;

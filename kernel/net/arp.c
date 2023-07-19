@@ -50,7 +50,7 @@ uint64_t IPParseMAC(uint32_t dstIP) {
     }
   }
   ARP_flags = 1;
-  EtherFrameProviderSend(
+  ether_frame_provider_send(
       0xffffffffffff, 0x0806,
       ARP_Packet(0xffffffffffff, dstIP, *(uint64_t *)&mac0, ip, 1),
       sizeof(struct ARPMessage));
@@ -92,7 +92,7 @@ void arp_handler(void *base) {
                         ((arp->src_ip << 8) & 0x00ff0000) |
                         ((arp->src_ip >> 8) & 0xff00) |
                         ((arp->src_ip >> 24) & 0xff);
-      EtherFrameProviderSend(*(uint64_t *)&header->src_mac[0], 0x0806,
+      ether_frame_provider_send(*(uint64_t *)&header->src_mac[0], 0x0806,
                              ARP_Packet(*(uint64_t *)&header->src_mac[0],
                                         src_ip, *(uint64_t *)&mac0, ip, 2),
                              sizeof(struct ARPMessage));

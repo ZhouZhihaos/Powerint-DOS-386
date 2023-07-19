@@ -1,7 +1,7 @@
 #include <net.h>
 extern uint8_t mac0, mac1, mac2, mac3, mac4, mac5;
 // 以太网帧
-void EtherFrameProviderSend(uint64_t dest_mac, uint16_t type, uint8_t *buffer,
+void ether_frame_provider_send(uint64_t dest_mac, uint16_t type, uint8_t *buffer,
                             uint32_t size) {
   uint8_t *buffer2 =
       (uint8_t *)page_malloc(sizeof(struct EthernetFrame_head) + size +
@@ -28,7 +28,7 @@ void EtherFrameProviderSend(uint64_t dest_mac, uint16_t type, uint8_t *buffer,
   uint8_t *dst = buffer2 + sizeof(struct EthernetFrame_head);
   for (uint32_t i = 0; i < size; i++)
     dst[i] = src[i];
-  Send(buffer2, sizeof(struct EthernetFrame_head) + size +
+  netcard_send(buffer2, sizeof(struct EthernetFrame_head) + size +
                     sizeof(struct EthernetFrame_tail));
   page_free(buffer2, sizeof(struct EthernetFrame_head) + size +
                          sizeof(struct EthernetFrame_tail));

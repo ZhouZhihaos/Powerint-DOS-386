@@ -56,7 +56,7 @@ void cmd_ping(char *cmdline) {
   if (cmdline[0] < '0' || cmdline[0] > '9') { // 不是数字
     uint8_t *dns = (uint8_t *)page_malloc(strlen(cmdline) + 1);
     memcpy(dns + 1, cmdline, strlen(cmdline));
-    dst_ip = DNSParseIP(dns + 1);
+    dst_ip = dns_parse_ip(dns + 1);
     page_free(dns, strlen(cmdline) + 1);
   } else {
     dst_ip = IP2UINT32_T(cmdline);

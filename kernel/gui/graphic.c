@@ -145,7 +145,7 @@ void graphic(void) {
   init_listBox();
   // cmdline
   char *cmdline_esp = (char *)page_malloc(32 * 1024);
-  struct TASK *Task_cmdline = AddTask("Cmdline", 2, 2 * 8, (int)cmdline, 1 * 8,
+  struct TASK *Task_cmdline = register_task("Cmdline", 2, 2 * 8, (int)cmdline, 1 * 8,
                                       1 * 8, (int)cmdline_esp);
   char *cmdline_kfifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
   char *cmdline_mfifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
@@ -153,7 +153,7 @@ void graphic(void) {
   char *cmdline_mbuf = (char *)page_malloc(128);
   fifo8_init(cmdline_kfifo, 128, cmdline_kbuf);
   fifo8_init(cmdline_mfifo, 128, cmdline_mbuf);
-  TaskSetFIFO(Task_cmdline, cmdline_kfifo, cmdline_mfifo);
+  task_set_fifo(Task_cmdline, cmdline_kfifo, cmdline_mfifo);
   int alloc_addr = (int)page_malloc(512 * 1024);
   Task_cmdline->alloc_addr = alloc_addr;
   Task_cmdline->alloc_size = 512 * 1024;
@@ -178,7 +178,7 @@ void graphic(void) {
   tty_set(Task_cmdline, tty_g);
   io_sti();
   for (;;) {
-    Maskirq(0);
+    irq_mask_set(0);
     if (shtctl->sheets[shtctl->top - 1]->task->TTY->reserved[0] *
             shtctl->sheets[shtctl->top - 1]->task->TTY->reserved[1] !=
         NULL) {
@@ -207,8 +207,8 @@ void graphic(void) {
       sheet_updown(sht_fm, -1);
       sheet_updown(sht_win, -1);
     }*/
-    if (fifo8_status(TaskGetMousefifo(current_task())) +
-            fifo8_status(TaskGetKeyfifo(current_task())) + fifo8_status(&fifo) ==
+    if (fifo8_status(task_get_mouse_fifo(current_task())) +
+            fifo8_status(task_get_key_fifo(current_task())) + fifo8_status(&fifo) ==
         0) {
       if (new_mx >= 0) {
         // io_sti();
@@ -220,15 +220,15 @@ void graphic(void) {
         new_wx = 0x7fffffff;
       } else {
       }
-      WakeUp(current_task());
+      task_wake_up(current_task());
       io_sti();
     } else {
-      if (fifo8_status(TaskGetMousefifo(current_task())) != 0) {
+      if (fifo8_status(task_get_mouse_fifo(current_task())) != 0) {
         // printk("Mouse.\n");
-        int i = fifo8_get(TaskGetMousefifo(current_task()));
+        int i = fifo8_get(task_get_mouse_fifo(current_task()));
         if (mouse_decode(&mdec, i) != 0) {
           // io_cli();
-          SleepTaskFIFO(current_task());
+          task_sleep_fifo(current_task());
           gmx += mdec.x;
           gmy += mdec.y;
           if (gmx > vbinfo->xsize - 10) {
@@ -335,26 +335,26 @@ void graphic(void) {
                     //}
                     // printk("%s:mouse:%d,%d\n",sht->task->name,x,y);
                     unsigned int xy = x << 16 | y;
-                    SendIPCMessageTID(get_tid(sht->task), -3, &xy, 4,
+                    send_ipc_message_by_tid(get_tid(sht->task), -3, &xy, 4,
                                       asynchronous);
                     AddVal(get_tid(sht->task), list_ipc);
                     if (old->task != current_task()) {
-                      SleepTaskFIFO(old->task);
+                      task_sleep_fifo(old->task);
                       if (sht != old) {
                         // printf("Change -> %s\n",old->task->name);
                         change_level(old->task, 3);
                       }
                     }
-                    WakeUp(sht->task);
+                    task_wake_up(sht->task);
                     if (sht->task != current_task()) {
                       change_level(sht->task, 1);
                     }
-                    for (int j = 1; GetTask(j) != 0; j++) {
-                      struct TASK *t = GetTask(j);
+                    for (int j = 1; get_task(j) != 0; j++) {
+                      struct TASK *t = get_task(j);
                       // printk("%s:%08x %s:%08x\n", t->name, t->TTY,
                       //        current_task()->name, current_task()->TTY);
                       if (t->TTY == current_task()->TTY && t->app && !t->forever) {
-                        SleepTaskFIFO(sht->task);
+                        task_sleep_fifo(sht->task);
                         break;
                       }
                     }
@@ -454,10 +454,10 @@ void graphic(void) {
         // io_sti();
       }
     }
-    if (fifo8_status(TaskGetKeyfifo(current_task())) != 0) {
-      int i = fifo8_get(TaskGetKeyfifo(current_task()));
+    if (fifo8_status(task_get_key_fifo(current_task())) != 0) {
+      int i = fifo8_get(task_get_key_fifo(current_task()));
       if (i > 0x80) {
-        ClearMaskIrq(0);
+        irq_mask_clear(0);
         continue;
       }
       i = sc2a(i);
@@ -499,6 +499,6 @@ void graphic(void) {
         timer_settime(timer2, 1200);
       }
     }
-    ClearMaskIrq(0);
+    irq_mask_clear(0);
   }
 }

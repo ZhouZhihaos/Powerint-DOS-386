@@ -1,7 +1,7 @@
 #include <dos.h>
 #define MAX_FTP_CLIENT_NUM 32
 static struct FTP_Client ftp_c[MAX_FTP_CLIENT_NUM];
-static void FTP_Client_CMD_Handler(struct Socket *socket, void *base) {
+static void ftp_client_cmd_handler(struct Socket *socket, void *base) {
   struct IPV4Message *ipv4 =
       (struct IPV4Message *)(base + sizeof(struct EthernetFrame_head));
   struct TCPMessage *tcp =
@@ -10,7 +10,7 @@ static void FTP_Client_CMD_Handler(struct Socket *socket, void *base) {
   uint8_t *data = base + sizeof(struct EthernetFrame_head) +
                   sizeof(struct IPV4Message) + (tcp->headerLength * 4);
   printf("Recv:%s\n",data);
-  struct FTP_Client *ftp_c_ = FTP_Client_Find(socket);
+  struct FTP_Client *ftp_c_ = ftp_client_find(socket);
   if (ftp_c_ != NULL) {
     printf("Not NULL\n");
     uint32_t length = swap16(ipv4->totalLength) - sizeof(struct IPV4Message) -
@@ -26,7 +26,7 @@ static void FTP_Client_CMD_Handler(struct Socket *socket, void *base) {
   }
   //printf("Reply: %s\n", ftp_c_->recv_buf_cmd);
 }
-static void FTP_Client_DAT_Handler(struct Socket *socket, void *base) {
+static void ftp_client_dat_handler(struct Socket *socket, void *base) {
   struct IPV4Message *ipv4 =
       (struct IPV4Message *)(base + sizeof(struct EthernetFrame_head));
   struct TCPMessage *tcp =
@@ -34,7 +34,7 @@ static void FTP_Client_DAT_Handler(struct Socket *socket, void *base) {
                             sizeof(struct IPV4Message));
   uint8_t *data = base + sizeof(struct EthernetFrame_head) +
                   sizeof(struct IPV4Message) + (tcp->headerLength * 4);
-  struct FTP_Client *ftp_c_ = FTP_Client_Find(socket);
+  struct FTP_Client *ftp_c_ = ftp_client_find(socket);
   printf("DAT Handler!\n");
   if (ftp_c_ != NULL) {
     uint32_t pak_length = swap16(ipv4->totalLength) -
@@ -197,8 +197,8 @@ struct FTP_Client *FTP_Client_Alloc(uint32_t remoteIP, uint32_t localIP,
     if (ftp_c[i].using1 == false) {
       ftp_c[i].using1 = true;
       ftp_c[i].is_login = false;
-      ftp_c[i].socket_cmd = Socket_Alloc(TCP_PROTOCOL);
-      ftp_c[i].socket_dat = Socket_Alloc(TCP_PROTOCOL);
+      ftp_c[i].socket_cmd = socket_alloc(TCP_PROTOCOL);
+      ftp_c[i].socket_dat = socket_alloc(TCP_PROTOCOL);
       ftp_c[i].socket_cmd->remoteIP = remoteIP;
       ftp_c[i].socket_dat->remoteIP = remoteIP;
       ftp_c[i].socket_cmd->remotePort = FTP_SERVER_COMMAND_PORT;
@@ -215,8 +215,8 @@ struct FTP_Client *FTP_Client_Alloc(uint32_t remoteIP, uint32_t localIP,
       ftp_c[i].recv_buf_dat = (uint8_t *)NULL;
       ftp_c[i].recv_flag_cmd = false;
       ftp_c[i].recv_flag_dat = false;
-      Socket_Bind(ftp_c[i].socket_cmd, FTP_Client_CMD_Handler);
-      Socket_Bind(ftp_c[i].socket_dat, FTP_Client_DAT_Handler);
+      Socket_Bind(ftp_c[i].socket_cmd, ftp_client_cmd_handler);
+      Socket_Bind(ftp_c[i].socket_dat, ftp_client_dat_handler);
       if (ftp_c[i].socket_cmd->Connect(ftp_c[i].socket_cmd) == -1) {
         return (struct FTP_Client *)NULL;
       }
@@ -231,7 +231,7 @@ struct FTP_Client *FTP_Client_Alloc(uint32_t remoteIP, uint32_t localIP,
   }
   return (struct FTP_Client *)NULL;
 }
-struct FTP_Client *FTP_Client_Find(struct Socket *s) {
+struct FTP_Client *ftp_client_find(struct Socket *s) {
   for (int i = 0; i != MAX_FTP_CLIENT_NUM; i++) {
     if (ftp_c[i].using1 == false) {
       continue;

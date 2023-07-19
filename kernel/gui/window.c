@@ -36,13 +36,13 @@ struct SHEET* MakeWindow(int x,
   sheet_refresh(old, 3, 3, old->bxsize - 4, 20);
   sheet_updown(buf, stl->top);
   sheet_slide(buf, x, y);
-  for (int L = 1; GetTask(L) != NULL; L++) {
-    if (GetTask(L) == current_task()) {
+  for (int L = 1; get_task(L) != NULL; L++) {
+    if (get_task(L) == current_task()) {
       // SubTask(L);
       // break;
       continue;
     }
-    SleepTaskFIFO(GetTask(L));
+    task_sleep_fifo(get_task(L));
   }
   extern struct SHEET* sht;
   sht = buf;

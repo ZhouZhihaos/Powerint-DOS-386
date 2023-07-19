@@ -26,9 +26,7 @@ copy A:\calc.bin bin/calc.bin
 copy A:\uigobang.bin bin/uigobang.bin
 copy A:\aigobang.bin bin/aigobang.bin
 copy A:\snake.bin bin/snake.bin
-copy A:\gobang.bin bin/gobang.bin
 copy A:\cgobang.bin bin/cgobang.bin
-copy A:\game.bin bin/game.bin
 copy A:\login.bin bin/login.bin
 copy A:\pwsh.bin bin/pwsh.bin
 copy A:\pfn.bin bin/pfn.bin
@@ -40,7 +38,6 @@ copy A:\bf.txt bin/bf.txt
 copy A:\basic.bin bin/basic.bin
 copy A:\lua.bin bin/lua.bin
 copy A:\editor.bin bin/editor.bin
-copy A:\codeedit.bin bin/codeedit.bin
 echo Please Insert DISK3.
 pause
 pause

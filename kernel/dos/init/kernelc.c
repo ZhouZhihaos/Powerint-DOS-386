@@ -99,14 +99,14 @@ void task_sr1() {
   while (1) {
   re:
     // printk("Wake UP.\n");
-    if (Get_Running_Task_Num() == 1) {
-      while (Get_Running_Task_Num() == 1) {
+    if (get_running_task_num() == 1) {
+      while (get_running_task_num() == 1) {
         // printk("1\n");
         asm volatile("hlt");
       }
     }
     for (int i = 1; i != tasknum + 1; i++) {
-      struct TASK* task = GetTask(i);
+      struct TASK* task = get_task(i);
       if (task->running == 0) {  // 进程没有运行
         printk("a task .\n");
         extern struct TASK* last_fpu_task;
@@ -114,11 +114,11 @@ void task_sr1() {
           printk("Set last fpu task.\n");
           last_fpu_task = (struct TASK *)0x1;
         }
-        __SubTask(task);
+        __sub_task(task);
         goto re;
       }
     }
-    SleepTask(current_task());
+    task_sleep(current_task());
   }
 }
 void com_input(char* ptr, int len) {
@@ -157,10 +157,10 @@ void task_sr2() {
     com_input(buf, 150);
     printk("Recved Command:%s\n", buf);
     if (strcmp("show_all", buf) == 0) {
-      for (int i = 1; GetTask(i) != 0; i++) {
-        printk("Task %s,Sleep=%d,%d lock=%d is_child=%d\n", GetTask(i)->name,
-               GetTask(i)->sleep, GetTask(i)->fifosleep, GetTask(i)->lock,
-               GetTask(i)->is_child);
+      for (int i = 1; get_task(i) != 0; i++) {
+        printk("Task %s,Sleep=%d,%d lock=%d is_child=%d\n", get_task(i)->name,
+               get_task(i)->sleep, get_task(i)->fifosleep, get_task(i)->lock,
+               get_task(i)->is_child);
       }
     } else {
       printk("Bad Command\n");

@@ -62,6 +62,7 @@ start:
 	mov	ds,ax
 	mov	ax,dataseg
 	mov	es,ax
+	mov byte[drvnum],dl
 
 	mov ax,[rotentcnt]
 	xor dx,dx
@@ -81,7 +82,7 @@ start:
 	xor cl,cl
 .lba_read_loop:
 	cmp cl,readsize
-	jae .hrb
+	jae .intoprotectmode
 	call read1sector
 	add word[packet.off],72*512
 	add dword[packet.lba],72
@@ -117,7 +118,7 @@ start:
 	cmp byte[read],readsize
 	jne .readloop
 
-.hrb:	; HRB格式文件
+.intoprotectmode:
 	; 1.让CPU支持1M以上内存、设置A20GATE
 	in	al,92h
 	or	al,00000010b

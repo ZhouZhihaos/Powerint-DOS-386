@@ -3,7 +3,7 @@ static struct Socket *wait[10] = {NULL, NULL, NULL, NULL, NULL,
                                   NULL, NULL, NULL, NULL, NULL};
 static void *data[10];
 static uint32_t size[10];
-static void Handler_UDP(struct Socket *socket, void *base) {
+static void handler_udp(struct Socket *socket, void *base) {
   struct IPV4Message *ipv4 =
       (struct IPV4Message *)(base + sizeof(struct EthernetFrame_head));
   struct UDPMessage *udp =
@@ -29,7 +29,7 @@ static void Handler_UDP(struct Socket *socket, void *base) {
     }
   }
 }
-static void Handler_TCP(struct Socket *socket, void *base) {
+static void handler_tcp(struct Socket *socket, void *base) {
   struct IPV4Message *ipv4 =
       (struct IPV4Message *)(base + sizeof(struct EthernetFrame_head));
   struct TCPMessage *tcp =
@@ -56,7 +56,7 @@ static void Handler_TCP(struct Socket *socket, void *base) {
   }
 }
 enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };
-void net_API(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
+void net_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
              int eax) {
   struct TASK *task = current_task();
   int cs_base = task->cs_base;
@@ -67,15 +67,15 @@ void net_API(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
   /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
   /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
   if (eax == 0x01) {                 // Socket
-    struct Socket *socket = Socket_Alloc(ebx);
+    struct Socket *socket = socket_alloc(ebx);
     if (ebx == UDP_PROTOCOL) {
-      Socket_Bind(socket, Handler_UDP);
+      Socket_Bind(socket, handler_udp);
     } else if (ebx == TCP_PROTOCOL) {
-      Socket_Bind(socket, Handler_TCP);
+      Socket_Bind(socket, handler_tcp);
     }
     reg[EAX] = socket;
   } else if (eax == 0x02) {
-    Socket_Free((struct Socket *)ebx);
+    socket_free((struct Socket *)ebx);
   } else if (eax == 0x03) {
     struct Socket *socket = (struct Socket *)ebx;
     socket->Send(socket, (uint8_t *)(ds_base + ecx), edx);

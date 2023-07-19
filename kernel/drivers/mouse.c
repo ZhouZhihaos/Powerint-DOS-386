@@ -125,8 +125,8 @@ void inthandler2c(int* esp) {
   data = io_in8(PORT_KEYDAT);
   // printk("data=%02x\n", data);
   if (mouse_use_task != NULL) {
-    fifo8_put(TaskGetMousefifo(mouse_use_task), data);
-    RunTask(mouse_use_task);
+    fifo8_put(task_get_mouse_fifo(mouse_use_task), data);
+    task_run(mouse_use_task);
   }
   // if (mdec.sleep == 0) {
   //   for (int i = 1; i < tasknum + 1; i++) {

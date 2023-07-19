@@ -1,9 +1,9 @@
 #include <dos.h>
 void kbd_press(uint8_t dat, uint32_t task) {
-  fifo8_put(GetTask(task)->Pkeyfifo, dat);
+  fifo8_put(get_task(task)->Pkeyfifo, dat);
 }
 void kbd_up(uint8_t dat, uint32_t task) {
-  fifo8_put(GetTask(task)->Ukeyfifo, dat);
+  fifo8_put(get_task(task)->Ukeyfifo, dat);
 }
 enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };
 void inthandler36(int edi,
@@ -103,11 +103,11 @@ void inthandler36(int edi,
           *(char*)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
       mouse_ready(&mdec);
       for (;;) {
-        if (fifo8_status(TaskGetMousefifo(task)) == 0) {
+        if (fifo8_status(task_get_mouse_fifo(task)) == 0) {
           io_stihlt();
         } else {
           // printk("mx = %d my = %d\n",task->mx,task->my);
-          i = fifo8_get(TaskGetMousefifo(task));
+          i = fifo8_get(task_get_mouse_fifo(task));
           if (mouse_decode(&mdec, i) != 0) {
             if (task->TTY != now_tty() && task->TTY->using1 == 1) {
               continue;
@@ -245,8 +245,8 @@ void inthandler36(int edi,
     app_num--;
     printk("at the last\n");
     task->running = 0;
-    WakeUp(GetTask(1));  // 别睡了，起来干活
-    SleepTask(current_task());
+    task_wake_up(get_task(1));  // 别睡了，起来干活
+    task_sleep(current_task());
     while (1)
       ;
   } else if (eax == 0x20) {
@@ -274,23 +274,23 @@ void inthandler36(int edi,
     if (ebx == 0x03) {
       task->forever = 1;
     } else if (ebx == 0x04) {
-      SendIPCMessage(ecx, (void*)(ds_base + edx), esi, asynchronous);
+      send_ipc_message(ecx, (void*)(ds_base + edx), esi, asynchronous);
     } else if (ebx == 0x05) {
-      GetIPCMessage((void*)(ds_base + edx), ecx);
+      get_ipc_message((void*)(ds_base + edx), ecx);
     } else if (ebx == 0x06) {
-      reg[EAX] = IPCMessageLength(ecx);
+      reg[EAX] = ipc_message_len(ecx);
     } else if (ebx == 0x07) {
       reg[EAX] = task->sel / 8 - 103;
     } else if (ebx == 0x08) {
-      reg[EAX] = haveMsg();
+      reg[EAX] = have_msg();
     } else if (ebx == 0x09) {
-      getMsgAll((void*)(ds_base + edx));
+      get_msg_all((void*)(ds_base + edx));
     } else if (ebx == 0x0a) {
       io_cli();  // 防止任务提前运行
       extern int init_ok_flag;
       init_ok_flag = 0;
       struct TASK* t =
-          AddUserTask((char*)(ecx + ds_base), task->level, task->cs_start, edx,
+          register_user_task((char*)(ecx + ds_base), task->level, task->cs_start, edx,
                       task->ss_start, task->ss_start, esi);
       init_ok_flag = 1;
       t->alloc_addr = task->alloc_addr;
@@ -308,18 +308,18 @@ void inthandler36(int edi,
       char* mbuf = (char*)page_kmalloc(4096);
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
-      TaskSetFIFO(t, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
+      task_set_fifo(t, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
       t->is_child = 1;
       t->TTY = task->TTY;
       t->thread.father = task;
       // command_run("tl");
       io_sti();  // 让任务运行
     } else if (ebx == 0x0b) {
-      TaskLock();
+      task_lock();
     } else if (ebx == 0x0c) {
-      TaskUnLock();
+      task_unlock();
     } else if (ebx == 0x0d) {
-      SubTask((struct TASK*)ecx);
+      task_delete((struct TASK*)ecx);
     }
   } else if (eax == 0x23) {
     if (ebx == 0x01) {
@@ -427,7 +427,7 @@ void inthandler36(int edi,
       SDraw_Box((vram_t*)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
     }
   } else if (eax == 0x2d) {
-    reg[EAX] = NTPTimeStamp(get_year(), get_mon_hex(), get_day_of_month(),
+    reg[EAX] = ntp_time_stamp(get_year(), get_mon_hex(), get_day_of_month(),
                             get_hour_hex(), get_min_hex(), get_sec_hex());
   } else if (eax == 0x2e) {
     reg[EAX] = timerctl.count;

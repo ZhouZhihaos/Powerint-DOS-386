@@ -32,7 +32,7 @@ static void set_handler(int IRQ, int addr) {
   // 注册中断
   struct GATE_DESCRIPTOR *idt = (struct GATE_DESCRIPTOR *)ADR_IDT;
   set_gatedesc(idt + 0x20 + IRQ, (int)addr, 2 * 8, AR_INTGATE32);
-  ClearMaskIrq(IRQ);
+  irq_mask_clear(IRQ);
 }
 static void init_Card_all() {
   recvBuffer = (uint8_t *)malloc(8192 + 16);
@@ -49,7 +49,7 @@ static void init_Card_all() {
   // printk("MAC:%02x:%02x:%02x:%02x:%02x:%02x\n", mac0, mac1, mac2, mac3, mac4,
   //        mac5);
 
-  Maskirq(0);
+  irq_mask_set(0);
   io_out8(io_base + CONFIG_1, 0x00);          // 激活RTL8139网卡
   io_out8(io_base + CMD, 0x10);               // 复位
   while ((io_in8(io_base + CMD) & 0x10) != 0) // 等待RST高1变为0（复位成功）
@@ -71,7 +71,7 @@ static void init_Card_all() {
   printf("RTL8139 INIT DONE\n");
 
 
-  ClearMaskIrq(0);
+  irq_mask_clear(0);
 
   // 初始化ARP表
 }

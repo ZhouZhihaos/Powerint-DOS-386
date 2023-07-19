@@ -49,7 +49,7 @@ int get_y() {
     return task->TTY->y;
   }
 }
-int Get_Raw_y() {
+int get_raw_y() {
   struct TASK *task = current_task();
   if (task->TTY->using1 != 1) {
     return tty_default->Raw_y;

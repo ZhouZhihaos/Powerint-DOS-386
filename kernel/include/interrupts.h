@@ -9,6 +9,6 @@ void inthandler2c(int *esp);
 void init_pic(void);
 void send_eoi(int irq);
 // irq.c
-void ClearMaskIrq(unsigned char irq);
-void Maskirq(unsigned char irq);
+void irq_mask_clear(unsigned char irq);
+void irq_mask_set(unsigned char irq);
 #endif

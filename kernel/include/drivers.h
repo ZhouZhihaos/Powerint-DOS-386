@@ -83,8 +83,8 @@ void PCI_ClassCode_Print(
 // pic.c
 void init_pic(void);
 void send_eoi(int irq);
-void ClearMaskIrq(unsigned char irq);
-void Maskirq(unsigned char irq);
+void irq_mask_clear(unsigned char irq);
+void irq_mask_set(unsigned char irq);
 // pcnet.c
 void into_32bitsRW();
 void into_16bitsRW();

@@ -9,8 +9,8 @@ void input(char *ptr, int len) {
   clean(ptr, len);
 
   int i;
-  int BNOW = Get_Now();
-  int NOW = Get_Now() - 1;
+  int BNOW = input_stack_get_now();
+  int NOW = input_stack_get_now() - 1;
   // int rf = 0; //右方向键按下过吗？
   int Bmx, Bmy;
   Bmx = get_x();
@@ -34,10 +34,10 @@ void input(char *ptr, int len) {
       } else {
         gotoxy(0, Bmy + (strlen(ptr) / get_xsize()) + 1);
       }
-      Set_Now(BNOW);
+      input_stack_set_now(BNOW);
       if (i > 0) {
-        Input_Stack_Put(ptr);
-        Set_Now(BNOW - 1);
+        input_stack_put(ptr);
+        input_stack_set_now(BNOW - 1);
       }
 
       return;
@@ -73,10 +73,10 @@ void input(char *ptr, int len) {
       for (int k = 0; k < 0x54; ++k) {
         if (keytable1[k] == ' ') {
           // in = k;
-          fifo8_put(TaskGetKeyfifo(current_task()), k);
-          fifo8_put(TaskGetKeyfifo(current_task()), k);
-          fifo8_put(TaskGetKeyfifo(current_task()), k);
-          fifo8_put(TaskGetKeyfifo(current_task()), k);
+          fifo8_put(task_get_key_fifo(current_task()), k);
+          fifo8_put(task_get_key_fifo(current_task()), k);
+          fifo8_put(task_get_key_fifo(current_task()), k);
+          fifo8_put(task_get_key_fifo(current_task()), k);
           i--;
           break;
         }
@@ -89,7 +89,7 @@ void input(char *ptr, int len) {
       {
         if (NOW < 1022) {
           NOW++;
-          Set_Now(NOW);
+          input_stack_set_now(NOW);
         }
         // printf("%d\n",get_free()==1023);
         for (int j = 0; j < strlen(ptr) - i; j++) {
@@ -98,7 +98,7 @@ void input(char *ptr, int len) {
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = Pop_Stack();
+        char *Str = input_stack_pop();
         clean(ptr, len);
         strcpy(ptr, Str);
         i = strlen(ptr);
@@ -116,7 +116,7 @@ void input(char *ptr, int len) {
       if (NOW != BNOW) {
         // rf = 1;
         NOW--;
-        Set_Now(NOW);
+        input_stack_set_now(NOW);
 
         for (int j = 0; j < strlen(ptr) - i; j++) {
           printchar(' ');
@@ -124,7 +124,7 @@ void input(char *ptr, int len) {
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = Pop_Stack();
+        char *Str = input_stack_pop();
         clean(ptr, len);
         strcpy(ptr, Str);
         i = strlen(ptr);
@@ -156,7 +156,7 @@ void input(char *ptr, int len) {
       ptr[i] = in;
     } else {
       int bx = get_x(), by = get_y();
-      int ry = Get_Raw_y();
+      int ry = get_raw_y();
       for (int j = 0; j < strlen(ptr) - i; j++) {
         printchar(' ');
       }
@@ -173,7 +173,7 @@ void input(char *ptr, int len) {
       print(ptr);
       int NX = get_x();
       int NY = get_y();
-      int RNy = Get_Raw_y();
+      int RNy = get_raw_y();
       if (NY >= get_ysize() - 1) {
         if (BMPY == NY && NX <= BMPX) {
           gotoxy(bx + 1, by - (RNy - ry)); //还原到它应该在的地方
@@ -197,16 +197,16 @@ void input(char *ptr, int len) {
   } else {
     gotoxy(0, Bmy + (strlen(ptr) / get_xsize()) + 1);
   }
-  Set_Now(BNOW);
+  input_stack_set_now(BNOW);
   if (i > 0) {
-    Input_Stack_Put(ptr);
-    Set_Now(BNOW - 1); // Now-1
+    input_stack_put(ptr);
+    input_stack_set_now(BNOW - 1); // Now-1
   }
 }
-void input_No_El(char *ptr, int len) {
+void input_no_endl(char *ptr, int len) {
   int i;
-  int BNOW = Get_Now();
-  int NOW = Get_Now();
+  int BNOW = input_stack_get_now();
+  int NOW = input_stack_get_now();
   int Bmx, Bmy;
   Bmx = get_x();
   Bmy = get_y();
@@ -224,10 +224,10 @@ void input_No_El(char *ptr, int len) {
       } else {
         gotoxy(0, Bmy + (strlen(ptr) / get_xsize()) + 1);
       }
-      Set_Now(BNOW);
+      input_stack_set_now(BNOW);
       if (i > 0) {
-        Input_Stack_Put(ptr);
-        Set_Now(BNOW - 1);
+        input_stack_put(ptr);
+        input_stack_set_now(BNOW - 1);
       }
 
       return;
@@ -270,14 +270,14 @@ void input_No_El(char *ptr, int len) {
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = Pop_Stack();
+        char *Str = input_stack_pop();
         strcpy(ptr, Str);
         i = strlen(ptr);
         print(ptr);
         i--;
         if (NOW < 1022) {
           NOW++;
-          Set_Now(NOW);
+          input_stack_set_now(NOW);
         }
       }
       continue;
@@ -286,7 +286,7 @@ void input_No_El(char *ptr, int len) {
       int by = get_y();
       if (Get_times() > 0 && NOW != BNOW) {
         NOW--;
-        Set_Now(NOW);
+        input_stack_set_now(NOW);
 
         for (int j = 0; j < strlen(ptr) - i; j++) {
           printchar(' ');
@@ -294,7 +294,7 @@ void input_No_El(char *ptr, int len) {
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = Pop_Stack();
+        char *Str = input_stack_pop();
         strcpy(ptr, Str);
         i = strlen(ptr);
         print(ptr);
@@ -325,7 +325,7 @@ void input_No_El(char *ptr, int len) {
       ptr[i] = in;
     } else {
       int bx = get_x(), by = get_y();
-      int ry = Get_Raw_y();
+      int ry = get_raw_y();
       for (int j = 0; j < strlen(ptr) - i; j++) {
         printchar(' ');
       }
@@ -341,7 +341,7 @@ void input_No_El(char *ptr, int len) {
       print(ptr);
       int NX = get_x();
       int NY = get_y();
-      int RNy = Get_Raw_y();
+      int RNy = get_raw_y();
       if (NY >= get_ysize() - 1) {
         if (BMPY == NY && NX <= BMPX) {
           gotoxy(bx + 1, by - (RNy - ry));
@@ -364,9 +364,9 @@ void input_No_El(char *ptr, int len) {
   } else {
     gotoxy(0, Bmy + (strlen(ptr) / get_xsize()) + 1);
   }
-  Set_Now(BNOW);
+  input_stack_set_now(BNOW);
   if (i > 0) {
-    Input_Stack_Put(ptr);
-    Set_Now(BNOW - 1);
+    input_stack_put(ptr);
+    input_stack_set_now(BNOW - 1);
   }
 }

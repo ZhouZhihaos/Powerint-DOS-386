@@ -21,7 +21,7 @@ void init_page(void);
 void disable_sb16(void);
 void init_mount_disk(void);
 int getReadyDisk();
-void Socket_all_init();
+void socket_init();
 void init_devfs();
 void init_vfs();
 void sysinit(void) {
@@ -43,9 +43,9 @@ void sysinit(void) {
   clear();
   init_pic();
   io_sti();
-  ClearMaskIrq(0);   // pit (timer)
-  ClearMaskIrq(1);   // keyboard
-  ClearMaskIrq(12);  // mouse
+  irq_mask_clear(0);   // pit (timer)
+  irq_mask_clear(1);   // keyboard
+  irq_mask_clear(12);  // mouse
   set_cr0(get_cr0() | CR0_EM | CR0_TS | CR0_NE);
   fifo8_init(&keyfifo, 32, (unsigned char*)keybuf);
   fifo8_init(&mousefifo, 128, (unsigned char*)mousebuf);
@@ -73,7 +73,7 @@ void sysinit(void) {
   init_acpi();
   disable_sb16();
   Input_Stack_Init();
-  Socket_all_init();
+  socket_init();
   init_driver();
   init_mount_disk();
   SetDrive((unsigned char*)"DISK_DRIVE");
@@ -82,27 +82,27 @@ void sysinit(void) {
   normal.tss.iomap = 0x40000000;
   set_segmdesc(gdt + 103, 103, (int)&normal.tss, AR_TSS32);
   load_tr(103 * 8);
-  sr1 = AddTask("System retention1", 1, 2 * 8, (int)task_sr1, 1 * 8, 1 * 8,
+  sr1 = register_task("System retention1", 1, 2 * 8, (int)task_sr1, 1 * 8, 1 * 8,
                 (unsigned int)page_kmalloc(64 * 1024) + 64 * 1024);
-  sr2 = AddTask("System retention2", 1, 2 * 8, (int)task_sr2, 1 * 8, 1 * 8,
+  sr2 = register_task("System retention2", 1, 2 * 8, (int)task_sr2, 1 * 8, 1 * 8,
                 (unsigned int)page_kmalloc(64 * 1024) + 64 * 1024);
-  shell_task = AddTask("Shell", 1, 2 * 8, (int)shell, 1 * 8, 1 * 8,
+  shell_task = register_task("Shell", 1, 2 * 8, (int)shell, 1 * 8, 1 * 8,
                        (unsigned int)page_kmalloc(64 * 1024) + 64 * 1024);
   //给每个任务设置FIFO
-  TaskSetFIFO(shell_task, &keyfifo, &mousefifo);
-  TaskSetFIFO(sr1, &keyfifo_sr1, &mousefifo_sr1);
-  TaskSetFIFO(sr2, &keyfifo_sr2, &mousefifo_sr2);
+  task_set_fifo(shell_task, &keyfifo, &mousefifo);
+  task_set_fifo(sr1, &keyfifo_sr1, &mousefifo_sr1);
+  task_set_fifo(sr2, &keyfifo_sr2, &mousefifo_sr2);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   shell_task->alloc_addr = alloc_addr;
   shell_task->alloc_size = 512 * 1024;
   init_mem(shell_task);
   srand(time());  // Init random seed
-  while (fifo8_status(TaskGetKeyfifo(shell_task)) != 0)
-    fifo8_get(TaskGetKeyfifo(shell_task));
-  while (fifo8_status(TaskGetKeyfifo(sr1)) != 0)
-    fifo8_get(TaskGetKeyfifo(sr1));
-  while (fifo8_status(TaskGetKeyfifo(sr2)) != 0)
-    fifo8_get(TaskGetKeyfifo(sr2));
+  while (fifo8_status(task_get_key_fifo(shell_task)) != 0)
+    fifo8_get(task_get_key_fifo(shell_task));
+  while (fifo8_status(task_get_key_fifo(sr1)) != 0)
+    fifo8_get(task_get_key_fifo(sr1));
+  while (fifo8_status(task_get_key_fifo(sr2)) != 0)
+    fifo8_get(task_get_key_fifo(sr2));
   PCI_ADDR_BASE = (unsigned int)page_kmalloc(1 * 1024 * 1024);
   init_PCI(PCI_ADDR_BASE);
   // printf("%08x\n", PCI_ADDR_BASE);

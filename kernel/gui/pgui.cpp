@@ -44,16 +44,16 @@ void pgui_init_mouse_cursor(vram_t *mouse, int bc) {
 }
 static void handle() {
   for (;;) {
-    if (fifo8_status(TaskGetMousefifo(current_task())) +
-            fifo8_status(TaskGetKeyfifo(current_task())) ==
+    if (fifo8_status(task_get_mouse_fifo(current_task())) +
+            fifo8_status(task_get_key_fifo(current_task())) ==
         0) {
-      WakeUp(current_task());
+      task_wake_up(current_task());
     } else {
       //  io_cli();
-      if (fifo8_status(TaskGetMousefifo(current_task())) != 0) {
+      if (fifo8_status(task_get_mouse_fifo(current_task())) != 0) {
         // printk("Mouse.\n");
-        SleepTaskFIFO(current_task());
-        int i = fifo8_get(TaskGetMousefifo(current_task()));
+        task_sleep_fifo(current_task());
+        int i = fifo8_get(task_get_mouse_fifo(current_task()));
         if (mouse_decode(&mdec, i) != 0) {
           // io_cli();
           pgmx += mdec.x;
@@ -86,8 +86,8 @@ static void handle() {
           mouse_sheet->slide(pgmx, pgmy);
         }
       }
-      if (fifo8_status(TaskGetKeyfifo(current_task())) != 0) {
-        int i = fifo8_get(TaskGetKeyfifo(current_task()));
+      if (fifo8_status(task_get_key_fifo(current_task())) != 0) {
+        int i = fifo8_get(task_get_mouse_fifo(current_task()));
         struct SHEET *sht = ctl->sheets[ctl->top - 1];
         ((PSheetBase *)sht->args)->key_press_handle(i);
       }
@@ -126,7 +126,7 @@ void btn_click4(PButton *pbtn, uint32_t val) {
       w_btn->slide(rand() % (wnd1->get_xsize()), rand() % (wnd1->get_ysize()));
       sleep(100);
     }
-    SubTask(current_task());
+    task_delete(current_task());
   }
 }
 void key(char ch, uint32_t val) {
@@ -147,14 +147,14 @@ void start(PButton *pbtn, uint32_t val) {
   io_cli();
   fifo8_init(fifo, 128, fifobuf);
   fifo8_init(fifo2, 128, fifobuf2);
-  struct TASK *t = AddTask("cmdline", 1, 2 * 8, (int)pgui_shell, 1 * 8, 1 * 8,
+  struct TASK *t = register_task("cmdline", 1, 2 * 8, (int)pgui_shell, 1 * 8, 1 * 8,
                            (int)page_kmalloc(32 * 1024) + 32 * 1024);
   int alloc_addr = (int)page_kmalloc(512 * 1024);
   t->alloc_addr = alloc_addr;
   t->alloc_size = 512 * 1024;
   init_mem(t);
-  TaskSetFIFO(t, fifo, fifo2);
-  SleepTaskFIFO(t);
+  task_set_fifo(t, fifo, fifo2);
+  task_sleep_fifo(t);
   PConsole *pcons = new PConsole(ctl, 100, 100, t);
   register_tty(pcons, t);
   io_sti();

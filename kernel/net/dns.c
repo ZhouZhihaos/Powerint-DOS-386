@@ -1,7 +1,7 @@
 #include <net.h>
 // DNS
-uint32_t dns_parse_ip = 0;
-uint32_t DNSParseIP(uint8_t *name) {
+uint32_t dns_parse_ip_result = 0;
+uint32_t dns_parse_ip(uint8_t *name) {
   uint8_t *data =
       (uint8_t *)page_malloc(sizeof(struct DNS_Header) + strlen(name) + 2 +
                              sizeof(struct DNS_Question));
@@ -37,13 +37,13 @@ uint32_t DNSParseIP(uint8_t *name) {
   dns_question->type = DNS_TYPE_A;
   dns_question->Class = DNS_CLASS_INET;
   extern uint32_t ip;
-  UDPProviderSend(DNS_SERVER_IP, ip, DNS_PORT, CHAT_CLIENT_PROT, data,
+  udp_provider_send(DNS_SERVER_IP, ip, DNS_PORT, CHAT_CLIENT_PROT, data,
                   sizeof(struct DNS_Header) + strlen(name) + 1 +
                       sizeof(struct DNS_Question));
-  dns_parse_ip = 0;
-  while (dns_parse_ip == 0)
+  dns_parse_ip_result = 0;
+  while (dns_parse_ip_result == 0)
     ;
-  return dns_parse_ip;
+  return dns_parse_ip_result;
 }
 void dns_handler(void *base) {
   //printf("This?\n");
@@ -55,6 +55,6 @@ void dns_handler(void *base) {
     uint8_t *p = (uint8_t *)(dns_header) + sizeof(struct DNS_Header);
     p += strlen(p) + sizeof(struct DNS_Question) - 1;
     struct DNS_Answer *dns_answer = (struct DNS_Answer *)p;
-    dns_parse_ip = swap32(*(uint32_t *)&dns_answer->RData[0]);
+    dns_parse_ip_result = swap32(*(uint32_t *)&dns_answer->RData[0]);
   }
 }

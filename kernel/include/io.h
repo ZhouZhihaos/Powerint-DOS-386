@@ -9,7 +9,7 @@ void putchar(char ch);
 void screen_ne();
 int get_x();
 int get_y();
-int Get_Raw_y();
+int get_raw_y();
 int get_xsize();
 int get_ysize();
 void print(const char *str);
@@ -46,14 +46,14 @@ void kprint(char *str);
 void printk(char *str, ...);
 // input.c
 void input(char *ptr, int len);
-void input_No_El(char *ptr, int len);
+void input_no_endl(char *ptr, int len);
 // Input_Stack.c
 void Input_Stack_Init(void);
-void Input_Stack_Put(char *str);
-int Get_Now();
+void input_stack_put(char *str);
+int input_stack_get_now();
 int Get_times();
-char *Pop_Stack();
-void Set_Now(int now);
+char *input_stack_pop();
+void input_stack_set_now(int now);
 int get_free();
 // HighTextMode.c
 void clear_HighTextMode(struct tty *res);
