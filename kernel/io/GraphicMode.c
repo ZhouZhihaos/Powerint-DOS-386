@@ -131,9 +131,9 @@ void AddShell_GraphicMode() {
   struct SHEET* sht_win = sheet_alloc(shtctl);
   sht_win->Close = NULL;
   vram_t* vram1 =
-      (vram_t*)page_kmalloc(CMDLINEXSIZE * CMDLINEYSIZE * sizeof(color_t));
+      (vram_t*)page_malloc(CMDLINEXSIZE * CMDLINEYSIZE * sizeof(color_t));
   vram_t* vram2 =
-      (vram_t*)page_kmalloc(CMDLINEXSIZE * CMDLINEYSIZE * sizeof(color_t));
+      (vram_t*)page_malloc(CMDLINEXSIZE * CMDLINEYSIZE * sizeof(color_t));
   struct SHTCTL* shtctl2 = shtctl_init(vram2, CMDLINEXSIZE, CMDLINEYSIZE);
   struct SHEET* sht_win_ = sheet_alloc(shtctl2);
   sheet_setbuf(sht_win_, vram1, CMDLINEXSIZE, CMDLINEYSIZE, -1);
@@ -164,18 +164,18 @@ void AddShell_GraphicMode() {
   tty_set_reserved(ntty, (unsigned int)sht_b_cur, (unsigned int)sht_win, 0, 0);
   struct TASK* ntask =
       register_task("Cmdline", 3, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
-              (unsigned int)page_kmalloc(128 * 1024) + 128 * 1024);
-  char* kfifo = (struct FIFO8*)page_kmalloc(sizeof(struct FIFO8));
-  char* mfifo = (struct FIFO8*)page_kmalloc(sizeof(struct FIFO8));
-  char* kbuf = (char*)page_kmalloc(4096);
-  char* mbuf = (char*)page_kmalloc(4096);
+              (unsigned int)page_malloc(128 * 1024) + 128 * 1024);
+  char* kfifo = (struct FIFO8*)page_malloc(sizeof(struct FIFO8));
+  char* mfifo = (struct FIFO8*)page_malloc(sizeof(struct FIFO8));
+  char* kbuf = (char*)page_malloc(4096);
+  char* mbuf = (char*)page_malloc(4096);
   fifo8_init(kfifo, 4096, kbuf);
   fifo8_init(mfifo, 4096, mbuf);
   task_set_fifo(ntask, kfifo, mfifo);
-  int alloc_addr = (int)page_kmalloc(512 * 1024);
+  void *alloc_addr = (void *)page_malloc(512 * 1024);
   ntask->alloc_addr = alloc_addr;
   ntask->alloc_size = 512 * 1024;
-  init_mem(ntask);
+  ntask->mm = memory_init((uint32_t)alloc_addr, 512 * 1024);
   int fg = tty_set(ntask, ntty);
   //  printk("set vram = %08x\n",ntty->vram);
   ntty->clear(ntty);

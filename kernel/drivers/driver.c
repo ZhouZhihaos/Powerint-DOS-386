@@ -7,7 +7,7 @@
 #include <dos.h>
 struct driver_ctl* drv_ctl;
 void init_driver() {
-  drv_ctl = (struct driver_ctl*)page_kmalloc(sizeof(struct driver_ctl));
+  drv_ctl = (struct driver_ctl*)page_malloc(sizeof(struct driver_ctl));
   // printk("drv_ctl=%08x\n", drv_ctl);
   for (int i = 0; i < MAX_DRIVERS; i++) {
     drv_ctl->drivers[i].flags = DRIVER_FREE;

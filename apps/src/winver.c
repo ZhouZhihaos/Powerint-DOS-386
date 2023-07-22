@@ -5,7 +5,7 @@
 window_t mainWindow;
 button_t OK;
 int PowerMain() {
-  mainWindow = create_window(50, 50, 400, 200, "winver");
+  mainWindow = create_window(1, 50, 400, 200, "winver");
   OK = create_button(200 - 5, 200 - 90, 35, 40, mainWindow, "OK");
   Sputs(mainWindow, "Powerint DOS 386 v0.7a", 5, 28, 0x0, 400);
   Sputs(mainWindow, "Copyright (C) 2022 zhouzhihao & min0911_", 5, 57, 0x0, 400);

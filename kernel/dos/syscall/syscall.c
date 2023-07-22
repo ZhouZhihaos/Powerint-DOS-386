@@ -231,7 +231,7 @@ void inthandler36(int edi,
   } else if (eax == 0x1e) {
     while (FindForCount(1, vfs_now->path) != NULL) {
       // printk("%d\n",vfs_now->path->ctl->all);
-      page_kfree(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val,
+      page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val,
                  255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
       extern struct TASK* mouse_use_task;
@@ -240,7 +240,7 @@ void inthandler36(int edi,
       }
     }
     DeleteList(vfs_now->path);
-    page_kfree((int)vfs_now, sizeof(vfs_t));
+    page_free((void *)vfs_now, sizeof(vfs_t));
     extern uint32_t app_num;
     app_num--;
     printk("at the last\n");
@@ -302,10 +302,10 @@ void inthandler36(int edi,
       t->cs_base = task->cs_base;
       t->ds_base = task->ds_base;
       t->nfs = task->nfs;
-      char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* kbuf = (char*)page_kmalloc(4096);
-      char* mbuf = (char*)page_kmalloc(4096);
+      char* kfifo = (char*)page_malloc(sizeof(struct FIFO8));
+      char* mfifo = (char*)page_malloc(sizeof(struct FIFO8));
+      char* kbuf = (char*)page_malloc(4096);
+      char* mbuf = (char*)page_malloc(4096);
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
       task_set_fifo(t, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
@@ -437,8 +437,8 @@ void inthandler36(int edi,
   } else if (eax == 0x30) {
     current_task()->Pkeyfifo = malloc(sizeof(struct FIFO8));
     current_task()->Ukeyfifo = malloc(sizeof(struct FIFO8));
-    unsigned char* kbuf = (unsigned char*)page_kmalloc(4096);
-    unsigned char* mbuf = (unsigned char*)page_kmalloc(4096);
+    unsigned char* kbuf = (unsigned char*)page_malloc(4096);
+    unsigned char* mbuf = (unsigned char*)page_malloc(4096);
     fifo8_init(current_task()->Pkeyfifo, 4096, kbuf);
     fifo8_init(current_task()->Ukeyfifo, 4096, mbuf);
     current_task()->keyboard_press = kbd_press;
@@ -466,7 +466,7 @@ void inthandler36(int edi,
      }
      task->ds_base = (uint32_t)new_buf;
      task->alloc_size = task->gdt_data[1];
-     task->alloc_addr = (int)new_buf;
+     task->alloc_addr = (void *)new_buf;
   }
   return;
 }

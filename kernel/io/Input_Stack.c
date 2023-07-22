@@ -3,10 +3,10 @@ char **Input_Stack; // 1024个字符串
 struct Input_StacK *STACK = NULL;
 void Input_Stack_Init(void) {
   int i;
-  STACK = (struct Input_StacK *)page_kmalloc(sizeof(Input_Stack));
-  Input_Stack = (char *)page_kmalloc(sizeof(char *) * 1024);
+  STACK = (struct Input_StacK *)page_malloc(sizeof(Input_Stack));
+  Input_Stack = (char *)page_malloc(sizeof(char *) * 1024);
   for (i = 0; i < 1024; i++) {
-    Input_Stack[i] = (char *)page_kmalloc(sizeof(char) * 4096);
+    Input_Stack[i] = (char *)page_malloc(sizeof(char) * 4096);
   }
 
   for (i = 0; i < 1024; i++) {

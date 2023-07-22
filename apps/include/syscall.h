@@ -50,7 +50,7 @@ void timer_alloc();
 void timer_settime(unsigned int time);
 int timer_out();
 void timer_free();
-int have_msg();
+int haveMsg();
 void GetMessageAll(void *data);
 char PhyMemGetByte(int addr);
 void PhyMemSetByte(int addr, char data);
@@ -66,7 +66,7 @@ int get_day_of_week();
 int get_mon_hex();
 int get_year();
 int AddThread(char *name, unsigned int func, unsigned int stack);
-void task_lock();
+void TaskLock();
 void TaskUnlock();
 void SubThread(unsigned int taskID);
 int set_mode(int w, int h); // 设置显示模式（bpp不能设置，只能32位彩色）

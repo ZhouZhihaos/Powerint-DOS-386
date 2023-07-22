@@ -233,7 +233,7 @@ struct TASK *current_task() {
   return get_task(taskctl / 8 - 103);
 }
 void task_set_fifo(struct TASK *task, struct FIFO8 *keyfifo,
-                 struct FIFO8 *mousefifo) {
+                   struct FIFO8 *mousefifo) {
   task->keyfifo = keyfifo;
   task->mousefifo = mousefifo;
 }
@@ -246,8 +246,8 @@ struct FIFO8 *task_get_mouse_fifo(struct TASK *task) {
 static bool flags_once = false;
 char default_drive;
 static unsigned int default_drive_number;
-struct TASK *register_task(char *name, int level, int cs, int eip, int ds, int ss,
-                     int esp) {
+struct TASK *register_task(char *name, int level, int cs, int eip, int ds,
+                           int ss, int esp) {
   if (!flags_once) {
     if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
         memcmp((void *)"FAT16   ", (void *)0x7c00 + BS_FileSysType, 8) == 0) {
@@ -275,7 +275,7 @@ struct TASK *register_task(char *name, int level, int cs, int eip, int ds, int s
   irq_mask_set(0);
   tasknum++;
   struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *)ADR_GDT;
-  struct TASK *task = (struct TASK *)page_kmalloc(sizeof(struct TASK));
+  struct TASK *task = (struct TASK *)page_malloc(sizeof(struct TASK));
   // GDT 0~2 系统用
   // GDT 3~103 程序用
   // GDT 104 ~ TSS用
@@ -356,8 +356,8 @@ struct TASK *register_task(char *name, int level, int cs, int eip, int ds, int s
   irq_mask_clear(0);
   return task;
 }
-struct TASK *register_user_task(char *name, int level, int cs, int eip, int ds, int ss,
-                         int esp) {
+struct TASK *register_user_task(char *name, int level, int cs, int eip, int ds,
+                                int ss, int esp) {
   if (!flags_once) {
     if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
         memcmp((void *)"FAT16   ", (void *)0x7c00 + BS_FileSysType, 8) == 0) {
@@ -385,7 +385,7 @@ struct TASK *register_user_task(char *name, int level, int cs, int eip, int ds, 
   irq_mask_set(0);
   tasknum++;
   struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *)ADR_GDT;
-  struct TASK *task = (struct TASK *)page_kmalloc(sizeof(struct TASK));
+  struct TASK *task = (struct TASK *)page_malloc(sizeof(struct TASK));
   // GDT 0~2 系统用
   // GDT 3~103 程序用
   // GDT 104 ~ TSS用
@@ -576,9 +576,9 @@ void __sub_task(struct TASK *task) {
   // }
   // // printf("\nTASKSEL:%d*8 TASKNUM:%d INDEX:%d
   // // BMPNUM:%d\n",task->sel/8,tasknum,index,bmpNum);
-  // page_kfree((int)task, sizeof(struct TASK));
+  // page_free((void *)task, sizeof(struct TASK));
   // for (int i = bmpNum - index + 1; i < bmpNum + index; i++) {
-  //   page_kfree((int)GetTask_NoSafe(i), sizeof(struct TASK));
+  //   page_free((void *)GetTask_NoSafe(i), sizeof(struct TASK));
   //   struct TASK* ntask =
   //       AddTask(GetTask_NoSafe(i)->name, GetTask_NoSafe(i)->level,
   //               GetTask_NoSafe(i)->tss.cs, GetTask_NoSafe(i)->tss.eip,
@@ -620,7 +620,7 @@ void __sub_task(struct TASK *task) {
       page_free_one(ptr);
     }
   }
-  page_kfree((int)task, sizeof(struct TASK));
+  page_free((void *)task, sizeof(struct TASK));
   mt_tr1 = 103 * 8;
   mt_tr2 = 103 * 8;
   mt_tr3 = 103 * 8;
@@ -687,7 +687,6 @@ struct TASK *_fork(int b) {
   int *eip = &b;
   int EIP = eip[-1];
   // printk("eip=%08x\n", EIP);
-  
 
   (void)(esp);
   int sz = current_task()->esp_start - ESP;
@@ -702,17 +701,17 @@ struct TASK *_fork(int b) {
       current_task()->name, current_task()->level, current_task()->tss.cs, EIP,
       current_task()->tss.ds, 1 * 8, (int)((uint32_t)stack - sz));
   irq_mask_set(0);
-  int alloc_addr = (int)page_kmalloc(512 * 1024);
+  void *alloc_addr = (void *)page_malloc(512 * 1024);
   task->alloc_addr = alloc_addr;
   task->alloc_size = 512 * 1024;
-  init_mem(task);
+  task->mm = memory_init((uint32_t)alloc_addr, 512 * 1024);
   task->drive = current_task()->drive;
   task->drive_number = current_task()->drive_number;
   task->TTY = current_task()->TTY;
-  char *kfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
-  char *mfifo = (char *)page_kmalloc(sizeof(struct FIFO8));
-  char *kbuf = (char *)page_kmalloc(4096);
-  char *mbuf = (char *)page_kmalloc(4096);
+  char *kfifo = (char *)page_malloc(sizeof(struct FIFO8));
+  char *mfifo = (char *)page_malloc(sizeof(struct FIFO8));
+  char *kbuf = (char *)page_malloc(4096);
+  char *mbuf = (char *)page_malloc(4096);
   fifo8_init((struct FIFO8 *)kfifo, 4096, (unsigned char *)kbuf);
   fifo8_init((struct FIFO8 *)mfifo, 4096, (unsigned char *)mbuf);
   task_set_fifo(task, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
@@ -726,7 +725,7 @@ struct TASK *_fork(int b) {
 }
 void task_delete(struct TASK *task) {
   int tid = get_tid(task);
-  task->running = 0;  // 不在运行状态中
+  task->running = 0;         // 不在运行状态中
   task_wake_up(get_task(1)); // 叫醒idle task
   while (get_task(tid))
     ;
@@ -749,8 +748,9 @@ void c_g() {
 static struct TASK *__clone_task(struct TASK *tk, int stack_sz) {
   irq_mask_set(0);
   void *stack = page_malloc(stack_sz);
-  struct TASK *result = register_task(tk->name, tk->level, tk->tss.cs, tk->eip_start,
-                                tk->tss.ds, tk->tss.ss, (int)stack);
+  struct TASK *result =
+      register_task(tk->name, tk->level, tk->tss.cs, tk->eip_start, tk->tss.ds,
+                    tk->tss.ss, (int)stack);
   change_page_task_id(get_tid(result), stack, stack_sz);
   irq_mask_clear(0);
   return result;

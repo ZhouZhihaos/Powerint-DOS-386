@@ -10,11 +10,11 @@ create_window:
   push esi ; 16
   push edi ; 20
   mov eax,0x01
-  mov ebx,[esp+4 + 20] ; x
-  mov ecx,[esp+8 + 20] ; y
-  mov edx,[esp+12 + 20] ; w
-  mov esi,[esp+16 + 20] ; h
-  mov edi,[esp+20 + 20] ; title
+  mov ebx,[ss:esp+4 + 20] ; x
+  mov ecx,[ss:esp+8 + 20] ; y
+  mov edx,[ss:esp+12 + 20] ; w
+  mov esi,[ss:esp+16 + 20] ; h
+  mov edi,[ss:esp+20 + 20] ; title
   int 0x72
   pop edi
   pop esi

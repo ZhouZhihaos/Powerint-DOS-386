@@ -21,8 +21,7 @@ LOADERPATH = ../Loader/out/
 
 MAKE     = make -r
 NASM     = nasm
-EDIMG    = ../tools/edimg
-FATTOOLS = $(FATTOOLSPATH)fattools -file $(IMGPATH)Powerint_DOS_386.img
+FATTOOLS = $(FATTOOLSPATH)fattools
 RULEFILE = make.rul
 COPY     = copy
 DEL      = rm
@@ -45,7 +44,7 @@ OBJS_BOOTPACK = $(OUTPATH)kernelc.o $(OUTPATH)screen.o $(OUTPATH)command.o $(OUT
 				$(OUTPATH)ntp.o $(OUTPATH)vdisk.o $(OUTPATH)rootfs.o $(OUTPATH)mount.o $(OUTPATH)network.o $(OUTPATH)rtl8139.o \
 				$(OUTPATH)GraphicMode.o $(OUTPATH)vfs.o $(OUTPATH)build.o $(OUTPATH)mst.o $(OUTPATH)str.o $(OUTPATH)pvector.o \
 				$(OUTPATH)psheet.o $(OUTPATH)pgui.o $(OUTPATH)box.o $(OUTPATH)pwindow.o $(OUTPATH)pbutton.o $(OUTPATH)ptextbox.o \
-				$(OUTPATH)pconsole.o
+				$(OUTPATH)pconsole.o $(OUTPATH)pgui_api.o
 
 # 默认动作
 
@@ -67,89 +66,89 @@ $(OUTPATH)boot.bin : $(BOOTPATH)boot.asm Makefile
 	$(NASM) $(BOOTPATH)boot.asm -o $(OUTPATH)boot.bin
 $(OUTPATH)boot32.bin : $(BOOTPATH)boot32.asm Makefile
 	$(NASM) $(BOOTPATH)boot32.asm -o $(OUTPATH)boot32.bin
+
 $(OUTPATH)kernel.bin : $(OBJS_BOOTPACK) Makefile
 	ld -m elf_i386 -static -Ttext 0x280000 -e KernelMain $(OBJS_BOOTPACK) -o $(OUTPATH)kernel.bin
 Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
-	$(EDIMG)   imgin:../tools/fdimg0at.tek \
-		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
-		copy from:$(LOADERPATH)dosldr.bin to:@: \
-		copy from:$(OUTPATH)kernel.bin to:@: \
-		copy from:$(RESPATH)autoexec.bat to:@: \
-		copy from:$(RESPATH)env.cfg to:@: \
-		copy from:$(OUTPATH)boot.bin to:@: \
-		copy from:$(OUTPATH)boot32.bin to:@: \
-		copy from:$(RESPATH)setup.bat to:@: \
-		copy from:$(APPSOUTPATH)setup1.bin to:@: \
-		copy from:$(APPSOUTPATH)CREUS.bin to:@: \
-		copy from:$(APPSOUTPATH)bainian.bin to:@: \
-		imgout:$(IMGPATH)Powerint_DOS_386.img
-		$(FATTOOLS) -mkdir other \
-		-copy other/font.bin ../tools/font/font.bin \
-		-copy other/HZK16 ../tools/font/HZK16 \
-		-copy other/copy.bin $(APPSOUTPATH)copy.bin \
-		-copy other/uname.bin $(APPSOUTPATH)uname.bin \
-		-copy other/coin.wav $(RESPATH)coin.wav
-	$(EDIMG)   imgin:../tools/fdimg0at.tek \
-		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
-		copy from:$(APPSOUTPATH)uigobang.bin to:@: \
-		copy from:$(APPSOUTPATH)aigobang.bin to:@: \
-		copy from:$(APPSOUTPATH)snake.bin to:@: \
-		copy from:$(APPSOUTPATH)cgobang.bin to:@: \
-		copy from:$(APPSOUTPATH)pfn.bin to:@: \
-		copy from:$(APPSOUTPATH)RandNum.bin to:@: \
-		copy from:$(APPSOUTPATH)bf.bin to:@: \
-		copy from:$(APPSOUTPATH)copy.bin to:@: \
-		copy from:$(APPSOUTPATH)basic.bin to:@: \
-		copy from:$(APPSOUTPATH)lua.bin to:@: \
-		copy from:$(APPSOUTPATH)cale.bin to:@: \
-		copy from:$(APPSOUTPATH)bitz.bin to:@: \
-		copy from:$(APPSOUTPATH)editor.bin to:@: \
-		copy from:$(APPSOUTPATH)calc.bin to:@: \
-		copy from:$(APPSOUTPATH)clock.bin to:@: \
-		copy from:$(APPSOUTPATH)Maze.bin to:@: \
-		copy from:$(APPSOUTPATH)winver.bin to:@: \
-		copy from:$(APPSOUTPATH)invader.bin to:@: \
-		copy from:$(RESPATH)make.rul to:@: \
-		copy from:$(BIDPATH)nask.bin to:@: \
-		copy from:$(BIDPATH)obj2bim.bin to:@: \
-		copy from:$(APPSOUTPATH)bim2hrb.bin to:@: \
-		copy from:$(BIDPATH)plib.lib to:@: \
-		imgout:$(IMGPATH)Disk2.img
-	$(EDIMG)   imgin:../tools/fdimg0at.tek \
-		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
-		copy from:$(APPSOUTPATH)ttf.bin to:@: \
-		copy from:$(RESPATH)font.ttf to:@: \
-		copy from:$(APPSOUTPATH)tedit.bin to:@: \
-		copy from:$(APPSOUTPATH)image.bin to:@: \
-		copy from:$(APPSOUTPATH)c4.bin to:@: \
-		copy from:$(APPSOUTPATH)luac.bin to:@: \
-		imgout:$(IMGPATH)Disk3.img
-	$(EDIMG)   imgin:../tools/fdimg0at.tek \
-		wbinimg src:$(OUTPATH)boot.bin len:512 from:0 to:0 \
-		copy from:$(RESPATH)hello.nas to:@: \
-		copy from:$(RESPATH)asm.lua to:@: \
-		copy from:$(RESPATH)coin.wav to:@: \
-		copy from:$(RESPATH)test.wav to:@: \
-		copy from:$(RESPATH)desktop.jpg to:@: \
-		copy from:$(RESPATH)huaji.jpg to:@: \
-		copy from:$(RESPATH)load.jpg to:@: \
-		copy from:$(RESPATH)io.bas to:@: \
-		copy from:$(RESPATH)shot.png to:@: \
-		copy from:$(RESPATH)shot1.png to:@: \
-		copy from:$(RESPATH)test.htm to:@: \
-		copy from:$(RESPATH)test1.htm to:@: \
-		copy from:$(RESPATH)yee.bmp to:@: \
-		copy from:$(RESPATH)fib.lua to:@: \
-		copy from:$(RESPATH)guess.lua to:@: \
-		copy from:$(RESPATH)gobang.lua to:@: \
-		copy from:$(RESPATH)bainian.lua to:@: \
-		copy from:$(RESPATH)window.lua to:@: \
-		copy from:$(RESPATH)pluaui.lua to:@: \
-		copy from:$(RESPATH)uicalc.lua to:@: \
-		copy from:$(RESPATH)chinese.txt to:@: \
-		copy from:$(RESPATH)bf.txt to:@: \
-		copy from:../apps/src/c4.c to:@: \
-		imgout:$(IMGPATH)res.img
+	$(FATTOOLS) -file $(IMGPATH)Powerint_DOS_386.img \
+		-format $(OUTPATH)boot.bin 12 \
+		-copy $(LOADERPATH)dosldr.bin dosldr.bin \
+		-copy $(OUTPATH)kernel.bin kernel.bin \
+		-copy $(RESPATH)autoexec.bat autoexec.bat \
+		-copy $(RESPATH)env.cfg env.cfg \
+		-copy $(OUTPATH)boot.bin boot.bin \
+		-copy $(OUTPATH)boot32.bin boot32.bin \
+		-copy $(RESPATH)setup.bat setup.bat \
+		-copy $(APPSOUTPATH)setup1.bin setup1.bin \
+		-copy $(APPSOUTPATH)CREUS.bin creus.bin \
+		-copy $(APPSOUTPATH)bainian.bin bainian.bin \
+		-copy $(APPSOUTPATH)winver.bin winver.bin \
+		-mkdir other \
+		-copy $(FONTPATH)font.bin other/font.bin \
+		-copy $(FONTPATH)HZK16 other/HZK16 \
+		-copy $(APPSOUTPATH)copy.bin other/copy.bin \
+		-copy $(APPSOUTPATH)uname.bin other/uname.bin \
+		-copy $(RESPATH)coin.wav other/coin.wav
+	$(FATTOOLS) -file $(IMGPATH)Disk2.img \
+		-format $(OUTPATH)boot.bin 12 \
+		-copy $(APPSOUTPATH)uigobang.bin uigobang.bin \
+		-copy $(APPSOUTPATH)aigobang.bin aigobang.bin \
+		-copy $(APPSOUTPATH)snake.bin snake.bin \
+		-copy $(APPSOUTPATH)cgobang.bin cgobang.bin \
+		-copy $(APPSOUTPATH)pfn.bin pfn.bin \
+		-copy $(APPSOUTPATH)RandNum.bin RandNum.bin \
+		-copy $(APPSOUTPATH)bf.bin bf.bin \
+		-copy $(APPSOUTPATH)copy.bin copy.bin \
+		-copy $(APPSOUTPATH)basic.bin basic.bin \
+		-copy $(APPSOUTPATH)lua.bin lua.bin \
+		-copy $(APPSOUTPATH)cale.bin cale.bin \
+		-copy $(APPSOUTPATH)bitz.bin bitz.bin \
+		-copy $(APPSOUTPATH)editor.bin editor.bin \
+		-copy $(APPSOUTPATH)calc.bin calc.bin \
+		-copy $(APPSOUTPATH)clock.bin clock.bin \
+		-copy $(APPSOUTPATH)Maze.bin Maze.bin \
+		-copy $(APPSOUTPATH)winver.bin winver.bin \
+		-copy $(APPSOUTPATH)invader.bin invader.bin \
+		-copy $(RESPATH)make.rul make.rul \
+		-copy $(BIDPATH)nask.bin nask.bin \
+		-copy $(BIDPATH)obj2bim.bin obj2bim.bin \
+		-copy $(APPSOUTPATH)bim2hrb.bin bim2hrb.bin \
+		-copy $(BIDPATH)plib.lib plib.lib \
+		-copy $(RESPATH)asm.lua asm.lua
+	$(FATTOOLS) -file $(IMGPATH)Disk3.img \
+		-format $(OUTPATH)boot.bin 12 \
+		-copy $(APPSOUTPATH)ttf.bin ttf.bin \
+		-copy $(RESPATH)font.ttf font.ttf \
+		-copy $(APPSOUTPATH)tedit.bin tedit.bin \
+		-copy $(APPSOUTPATH)image.bin image.bin \
+		-copy $(APPSOUTPATH)c4.bin c4.bin \
+		-copy $(APPSOUTPATH)luac.bin luac.bin
+	$(FATTOOLS) -file $(IMGPATH)res.img \
+		-format $(OUTPATH)boot.bin 12 \
+		-copy $(RESPATH)hello.nas hello.nas \
+		-copy $(RESPATH)asm.lua asm.lua \
+		-copy $(RESPATH)coin.wav coin.wav \
+		-copy $(RESPATH)test.wav test.wav \
+		-copy $(RESPATH)desktop.jpg desktop.jpg \
+		-copy $(RESPATH)huaji.jpg huaji.jpg \
+		-copy $(RESPATH)load.jpg load.jpg \
+		-copy $(RESPATH)io.bas io.bas \
+		-copy $(RESPATH)shot.png shot.png \
+		-copy $(RESPATH)shot1.png shot1.png \
+		-copy $(RESPATH)test.htm test.htm \
+		-copy $(RESPATH)test1.htm test1.htm \
+		-copy $(RESPATH)yee.bmp yee.bmp \
+		-copy $(RESPATH)fib.lua fib.lua \
+		-copy $(RESPATH)guess.lua guess.lua \
+		-copy $(RESPATH)gobang.lua gobang.lua \
+		-copy $(RESPATH)bainian.lua bainian.lua \
+		-copy $(RESPATH)window.lua window.lua \
+		-copy $(RESPATH)pluaui.lua pluaui.lua \
+		-copy $(RESPATH)uicalc.lua uicalc.lua \
+		-copy $(RESPATH)chinese.txt chinese.txt \
+		-copy $(RESPATH)bf.txt bf.txt \
+		-copy ../apps/src/c4.c c4.c
+
 
 # 运行程序
 
@@ -164,7 +163,7 @@ img_run :
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
-	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
 full :
 	$(MAKE) -C $(DOSPATH)
 	$(MAKE) -C $(IOPATH)

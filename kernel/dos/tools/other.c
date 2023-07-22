@@ -342,11 +342,11 @@ void ERROR(int CODE, char* TIPS) {
 void KILLAPP(int eip, int ec) {
   while (FindForCount(1, vfs_now->path) != NULL) {
     // printk("%d\n",vfs_now->path->ctl->all);
-    page_kfree(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
+    page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
     DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
   }
   DeleteList(vfs_now->path);
-  page_kfree((int)vfs_now, sizeof(vfs_t));
+  page_free((void *)vfs_now, sizeof(vfs_t));
   struct TASK* task = current_task();
   if (task->is_child) {
     task = task->thread.father;  // 找你家长，乱搞！
@@ -367,11 +367,11 @@ void KILLAPP(int eip, int ec) {
 void KILLAPP0(int ec, int tn) {
   while (FindForCount(1, vfs_now->path) != NULL) {
     // printk("%d\n",vfs_now->path->ctl->all);
-    page_kfree(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
+    page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
     DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
   }
   DeleteList(vfs_now->path);
-  page_kfree((int)vfs_now, sizeof(vfs_t));
+  page_free((void *)vfs_now, sizeof(vfs_t));
   struct TASK* task = get_task(tn);
   struct tty* t = task->TTY;
   t = tty_set(current_task(), t);

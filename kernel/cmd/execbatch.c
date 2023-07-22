@@ -172,10 +172,10 @@ int cmd_app(char* cmdline) {
       (void)(n);
       change_level(current_task(), 3);
       io_cli();
-      char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* kbuf = (char*)page_kmalloc(4096);
-      char* mbuf = (char*)page_kmalloc(4096);
+      char* kfifo = (char*)page_malloc(sizeof(struct FIFO8));
+      char* mfifo = (char*)page_malloc(sizeof(struct FIFO8));
+      char* kbuf = (char*)page_malloc(4096);
+      char* mbuf = (char*)page_malloc(4096);
       init_ok_flag = 0;
       struct TASK* this_task =
           register_user_task(name, 1, ((3 + app_num * 2) * 8), 0x1b,
@@ -185,10 +185,9 @@ int cmd_app(char* cmdline) {
       this_task->ds_base = (int)q;
       this_task->cs_start = this_task->tss.cs;
       this_task->ss_start = this_task->tss.ss;
-      this_task->alloc_addr = (int)((uint32_t)q + segsiz);
+      this_task->alloc_addr = (void *)((uint32_t)q + segsiz);
       this_task->alloc_size = alloc_data_size;
       this_task->gdt_data = gdt_data;
-      // init_mem(this_task);
       this_task->app = 1;
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
@@ -242,10 +241,10 @@ int cmd_app(char* cmdline) {
       change_level(current_task(), now);
       task_wake_up(current_task());
       app_task_num = -1;
-      page_kfree((int)kfifo, sizeof(struct FIFO8));
-      page_kfree((int)mfifo, sizeof(struct FIFO8));
-      page_kfree((int)kbuf, 4096);
-      page_kfree((int)mbuf, 4096);
+      page_free((void *)kfifo, sizeof(struct FIFO8));
+      page_free((void *)mfifo, sizeof(struct FIFO8));
+      page_free((void *)kbuf, 4096);
+      page_free((void *)mbuf, 4096);
       page_free(stack, 64 * 1024);
       page_free(p, fsize);
       page_free(q, segsiz - 1 + alloc_data_size);
@@ -280,10 +279,10 @@ int cmd_app(char* cmdline) {
       (void)(n);
       change_level(current_task(), 3);
       io_cli();
-      char* kfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* mfifo = (char*)page_kmalloc(sizeof(struct FIFO8));
-      char* kbuf = (char*)page_kmalloc(4096);
-      char* mbuf = (char*)page_kmalloc(4096);
+      char* kfifo = (char*)page_malloc(sizeof(struct FIFO8));
+      char* mfifo = (char*)page_malloc(sizeof(struct FIFO8));
+      char* kbuf = (char*)page_malloc(4096);
+      char* mbuf = (char*)page_malloc(4096);
       init_ok_flag = 0;
       struct TASK* this_task = register_user_task(name, 1, ((3 + app_num * 2) * 8),
                                            entry, ((4 + app_num * 2) * 8),
@@ -294,11 +293,10 @@ int cmd_app(char* cmdline) {
       this_task->cs_start = this_task->tss.cs;
       this_task->ss_start = this_task->tss.ss;
       this_task->alloc_addr =
-          (int)((uint32_t)q +
+          (void *)((uint32_t)q +
                 (alloc_size - ELF32_HEAP_SIZE));
       this_task->alloc_size = ELF32_HEAP_SIZE;
       this_task->gdt_data = gdt_data;
-      // init_mem(this_task);
       this_task->app = 1;
       stack = (unsigned char*)page_malloc(64 * 1024);
       this_task->tss.esp0 = (int)((uint32_t)stack + 64 * 1024);
@@ -351,10 +349,10 @@ int cmd_app(char* cmdline) {
       change_level(current_task(), now);
       task_wake_up(current_task());
       app_task_num = -1;
-      page_kfree((int)kfifo, sizeof(struct FIFO8));
-      page_kfree((int)mfifo, sizeof(struct FIFO8));
-      page_kfree((int)kbuf, 4096);
-      page_kfree((int)mbuf, 4096);
+      page_free((void *)kfifo, sizeof(struct FIFO8));
+      page_free((void *)mfifo, sizeof(struct FIFO8));
+      page_free((void *)kbuf, 4096);
+      page_free((void *)mbuf, 4096);
       page_free(q, alloc_size);
       free(gdt_data);
       print("\n");

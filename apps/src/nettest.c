@@ -6,11 +6,11 @@ int main() {
     printf("ICMP Packet error.");
     return 0;
   }
-  socket_t socket = socket_alloc(UDP_PROTOCOL);
+  socket_t socket = Socket_Alloc(UDP_PROTOCOL);
   Socket_Init(socket, GetIP() & 0xffffff00 + 0x01, 2115, GetIP(), 2115);
   unsigned char *buf = (unsigned char *)malloc(512);
   Socket_Recv(socket, buf, 512);
   printf("%s\n", buf);
-  socket_free(socket);
+  Socket_Free(socket);
   return 0;
 }

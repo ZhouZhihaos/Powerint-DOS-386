@@ -89,25 +89,25 @@ void Draw_Box_TextMode(struct tty *res, int x, int y, int x1, int y1,
   io_sti();
 }
 void AddShell_TextMode() {
-  char *vram = page_kmalloc(160 * 25);
+  char *vram = page_malloc(160 * 25);
   struct tty *ntty =
       tty_alloc(vram, 80, 25, putchar_TextMode, MoveCursor_TextMode,
                 clear_TextMode, screen_ne_TextMode, Draw_Box_TextMode);
   io_cli();
   struct TASK *ntask =
       register_task("Shell", 1, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
-              (unsigned int)page_kmalloc(128 * 1024) + 128 * 1024);
-  char *kfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
-  char *mfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
-  char *kbuf = (char *)page_kmalloc(4096);
-  char *mbuf = (char *)page_kmalloc(4096);
+              (unsigned int)page_malloc(128 * 1024) + 128 * 1024);
+  char *kfifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+  char *mfifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+  char *kbuf = (char *)page_malloc(4096);
+  char *mbuf = (char *)page_malloc(4096);
   fifo8_init(kfifo, 4096, kbuf);
   fifo8_init(mfifo, 4096, mbuf);
   task_set_fifo(ntask, kfifo, mfifo);
-  int alloc_addr = (int)page_kmalloc(512 * 1024);
+  void *alloc_addr = (void *)page_malloc(512 * 1024);
   ntask->alloc_addr = alloc_addr;
   ntask->alloc_size = 512 * 1024;
-  init_mem(ntask);
+  ntask->mm = memory_init((uint32_t)alloc_addr, 512 * 1024);
   ntask->fifosleep = 3;
   int fg = tty_set(ntask, ntty);
   //  printk("set vram = %08x\n",ntty->vram);
@@ -135,7 +135,7 @@ void SwitchShell_TextMode(int i) {
     return;
   }
   // 交换
-  unsigned char *buf = page_kmalloc(160 * 25);
+  unsigned char *buf = page_malloc(160 * 25);
   memcpy(buf, t->vram, 160 * 25);
   memcpy(t->vram, n->vram, 160 * 25);
   memcpy(n->vram, buf, 160 * 25);
@@ -155,7 +155,7 @@ void SwitchShell_TextMode(int i) {
       }
     }
   }
-  page_kfree(buf, 160 * 25);
+  page_free(buf, 160 * 25);
   buf = t->vram;
   t->vram = n->vram;
   n->vram = buf;

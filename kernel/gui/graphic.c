@@ -154,10 +154,10 @@ void graphic(void) {
   fifo8_init(cmdline_kfifo, 128, cmdline_kbuf);
   fifo8_init(cmdline_mfifo, 128, cmdline_mbuf);
   task_set_fifo(Task_cmdline, cmdline_kfifo, cmdline_mfifo);
-  int alloc_addr = (int)page_malloc(512 * 1024);
+  void *alloc_addr = (void *)page_malloc(512 * 1024);
   Task_cmdline->alloc_addr = alloc_addr;
   Task_cmdline->alloc_size = 512 * 1024;
-  init_mem(Task_cmdline);
+  Task_cmdline->mm = memory_init((uint32_t)alloc_addr, 512 * 1024);
   sht_win->task = Task_cmdline;
   mouse_ready(&mdec);
   struct TIMER *timer;
@@ -492,7 +492,7 @@ void graphic(void) {
         for (int j = 1; FindForCount(j, list_ipc) != NULL; j++) {
           int tid = FindForCount(j, list_ipc)->val;
           unsigned int tmp;
-          GetIPCMessageTID(tid, &tmp, -3);
+          get_ipc_message_by_tid(tid, &tmp, -3);
           DeleteVal(j, list_ipc);
         }
         io_sti();

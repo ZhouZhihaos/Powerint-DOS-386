@@ -284,7 +284,7 @@ CHECK_OK:
       printf("#%d %s\n", i, s);
       FILE* fp = fopen(s, "rb");
       printf("fp=%08x\n", fp);
-      HttpFile* f = page_kmalloc(sizeof(HttpFile));
+      HttpFile* f = page_malloc(sizeof(HttpFile));
       f->buf = (char*)fp->buffer;
       strcpy(f->path, s);
       AddVal((int)f, httpFileList);
@@ -838,7 +838,20 @@ CHECK_OK:
         vfs_change_disk(cmdline[5]);
       }
     }
-  } else if (cmdline[1] == ':' && cmdline[2] == '\0') {
+  } else if(strincmp(cmdline,"set ",4) == 0) {
+    char buf[100]; // 变量名称
+    char buf1[100]; // 值
+    Get_Arg(buf,cmdline,1);
+    Get_Arg(buf1,cmdline,2);
+    env_write(buf,buf1);
+  } 
+  else if(stricmp(cmdline,"env") == 0) {
+    extern MST_Object* env;
+    char *s = MST_build_to_string(env);
+    printf("%s\n",s);
+    free(s);
+  }
+  else if (cmdline[1] == ':' && cmdline[2] == '\0') {
     if (!vfs_check_mount(cmdline[0])) {
       if (!vfs_mount_disk(cmdline[0], cmdline[0])) {
         printf("Disk not ready!\n");

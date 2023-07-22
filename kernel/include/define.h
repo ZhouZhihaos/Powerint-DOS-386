@@ -51,14 +51,24 @@ struct PAGE_INFO {
   unsigned flag : 2;
   unsigned task_id : 6;
 } __attribute__((packed));
-#define MEMMAN_FREES 4090
-struct FREEINFO {
-  unsigned int addr, size;
-};
-struct MEMMAN {
-  int frees, maxfrees, lostsize, losts;
-  struct FREEINFO free[MEMMAN_FREES];
-};
+#define FREE_MAX_NUM 4096
+#define ERRNO_NOPE 0
+#define ERRNO_NO_ENOGHT_MEMORY 1
+#define ERRNO_NO_MORE_FREE_MEMBER 2
+#define MEM_MAX(a, b) (a) > (b) ? (a) : (b)
+typedef struct {
+  uint32_t start;
+  uint32_t end; // end和start都等于0说明这个free结构没有使用
+} free_member;
+typedef struct freeinfo freeinfo;
+typedef struct freeinfo {
+  free_member *f;
+  freeinfo *next;
+} freeinfo;
+typedef struct {
+  freeinfo *freeinf;
+  int memerrno;
+} memory;
 struct SEGMENT_DESCRIPTOR {
   short limit_low, base_low;
   char base_mid, access_right;
@@ -136,8 +146,8 @@ struct TASK {
   struct FIFO8 *keyfifo, *mousefifo; // 基本输入设备的缓冲区
   int fifosleep;
   int cs_base, ds_base;
-  int alloc_addr;
-  struct MEMMAN *mm;
+  void *alloc_addr;
+  memory *mm;
   int alloc_size;
   struct IPC_Header IPC_header;
   struct TIMER *timer;

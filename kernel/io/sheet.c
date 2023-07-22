@@ -20,7 +20,7 @@ struct SHTCTL* shtctl_init(vram_t* vram, int xsize, int ysize) {
   }
   ctl->map = (unsigned char*)page_malloc(xsize * ysize);
   if (ctl->map == 0) {
-    page_free((int)ctl, sizeof(struct SHTCTL));
+    page_free((void *)ctl, sizeof(struct SHTCTL));
     goto err;
   }
   ctl->vram = vram;
@@ -38,9 +38,9 @@ err:
 void ctl_free(struct SHTCTL* ctl) {
   if (ctl != 0) {
     if (ctl->map != 0) {
-      page_free((int)ctl->map, ctl->xsize * ctl->ysize);
+      page_free((void *)ctl->map, ctl->xsize * ctl->ysize);
     }
-    page_free((int)ctl, sizeof(struct SHTCTL));
+    page_free((void *)ctl, sizeof(struct SHTCTL));
   }
 }
 struct SHEET* sheet_alloc(struct SHTCTL* ctl) {

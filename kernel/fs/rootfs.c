@@ -16,8 +16,8 @@ static void Write(char drive,
   printf("[dev fs]don't try to write!\n");
 }
 static bool dev_check(uint8_t disk_number) {
-  uint32_t **b = page_kmalloc(512);
-  *b = page_kmalloc(4);
+  uint32_t **b = page_malloc(512);
+  *b = page_malloc(4);
   uint32_t *bmp  = *b;
 
   Disk_Read(0,1,b,disk_number);
@@ -26,13 +26,13 @@ static bool dev_check(uint8_t disk_number) {
   }
   if(**b) {
     printk("this.\n");
-    page_kfree(b,512);
-    page_kfree(*b,4);
+    page_free(b,512);
+    page_free(*b,4);
     return true;
   } else {
     printk("false.\n");
-    page_kfree(b,512);
-    page_kfree(*b,4);
+    page_free(b,512);
+    page_free(*b,4);
     return false;
   }
 }

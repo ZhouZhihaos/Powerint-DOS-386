@@ -243,7 +243,7 @@ int Copy_in(char *path, char *path1) {
     printf("file not found\n");
     return -1;
   }
-  printf("-----------------------------\n");
+  // printf("-----------------------------\n");
   Fat_CreateFile(path1);
 
   path1_file_buffer = (unsigned char *)_malloc(Fat_FileSize(path) + 1);
@@ -437,31 +437,23 @@ void file_saveinfo(struct FAT_FILEINFO *directory) {
 }
 void file_savefat(int *fat, int clustno, int length) {
   unsigned char *img = (unsigned char *)ADR_DISKIMG + Fat1Address;
-  unsigned char *img1 = (unsigned char *)ADR_DISKIMG + Fat2Address;
   int size, sec;
   if (type == 12) {
-    if (clustno % 2 != 0) {
-      clustno--;
-      length++;
+    for (int i = 0; i <= length; i++) {
+	  if ((clustno + i) % 2 == 0) {
+		img[(clustno + i) * 3 / 2 + 0] = fat[clustno + i] & 0xff;
+        img[(clustno + i) * 3 / 2 + 1] = (fat[clustno + i] >> 8 | (img[(clustno + i) * 3 / 2 + 1] & 0xf0)) & 0xff;
+	  } else if ((clustno + i) % 2 != 0) {
+		img[(clustno + i - 1) * 3 / 2 + 1] = ((img[(clustno + i - 1) * 3 / 2 + 1] & 0x0f) | fat[clustno + i] << 4) & 0xff;
+		img[(clustno + i - 1) * 3 / 2 + 2] = (fat[clustno + i] >> 4) & 0xff;
+	  }
     }
-    for (int i = 0; i <= (length / 3 + 1) * 2; i += 2) {
-      img[(clustno + i) * 3 / 2 + 0] = fat[clustno + i + 0] & 0xff;
-      img[(clustno + i) * 3 / 2 + 1] =
-          (fat[(clustno + i) + 0] >> 8 | fat[clustno + i + 1] << 4) & 0xff;
-      img[(clustno + i) * 3 / 2 + 2] = (fat[clustno + i + 1] >> 4) & 0xff;
-      img1[(clustno + i) * 3 / 2 + 0] = fat[clustno + i + 0] & 0xff;
-      img1[(clustno + i) * 3 / 2 + 1] =
-          (fat[(clustno + i) + 0] >> 8 | fat[clustno + i + 1] << 4) & 0xff;
-      img1[(clustno + i) * 3 / 2 + 2] = (fat[clustno + i + 1] >> 4) & 0xff;
-    }
-    size = length * 3 / 2;
+    size = length * 3 / 2 - 1;
     sec = clustno * 3 / 2;
   } else if (type == 16) {
     for (int i = 0; i <= length; i++) {
       img[(clustno + i) * 2 + 0] = fat[clustno + i] & 0xff;
       img[(clustno + i) * 2 + 1] = (fat[clustno + i] >> 8) & 0xff;
-      img1[(clustno + i) * 2 + 0] = fat[clustno + i] & 0xff;
-      img1[(clustno + i) * 2 + 1] = (fat[clustno + i] >> 8) & 0xff;
     }
     size = length * 2 - 1;
     sec = clustno * 2;
@@ -471,10 +463,6 @@ void file_savefat(int *fat, int clustno, int length) {
       img[(clustno + i) * 4 + 1] = (fat[clustno + i] >> 8) & 0xff;
       img[(clustno + i) * 4 + 2] = (fat[clustno + i] >> 16) & 0xff;
       img[(clustno + i) * 4 + 3] = fat[clustno + i] >> 24;
-      img1[(clustno + i) * 4 + 0] = fat[clustno + i] & 0xff;
-      img1[(clustno + i) * 4 + 1] = (fat[clustno + i] >> 8) & 0xff;
-      img1[(clustno + i) * 4 + 2] = (fat[clustno + i] >> 16) & 0xff;
-      img1[(clustno + i) * 4 + 3] = fat[clustno + i] >> 24;
     }
     size = length * 4 - 1;
     sec = clustno * 4;
@@ -482,7 +470,7 @@ void file_savefat(int *fat, int clustno, int length) {
   Disk_Write((Fat1Address + sec) / SectorBytes, size / SectorBytes + 1,
              ADR_DISKIMG + Fat1Address);
   Disk_Write((Fat2Address + sec) / SectorBytes, size / SectorBytes + 1,
-             ADR_DISKIMG + Fat2Address);
+             ADR_DISKIMG + Fat1Address);
   /*write_fat( ADR_DISKIMG +  Fat1Address, fat,
              FatMaxTerms,  type);
   write_fat( ADR_DISKIMG +  Fat2Address, fat,
@@ -1633,48 +1621,21 @@ void command_run(string commands) {
       printf("Undefined type.\n\n");
     }
   } else if (strncmp(commands.c_str(), "rename ", 7) == 0) {
-    char *ptr = (char *)commands.c_str();
-    char path[100];
-    ptr += 7;
-    int i;
-    for (i = 0; *ptr != ' '; ptr++, i++)
-      path[i] = *ptr;
-    path[i] = 0;
-    ptr++;
-    if (Fat_FileSize(path) == -1) {
-      printf("File not find.\n");
-      return;
-    }
-    Fat_RenameFile(path, ptr);
+    char path_1[100];
+    char path_2[100];
+    sscanf(commands.c_str(), "rename %s %s", path_1, path_2);
+    Fat_RenameFile(path_1, path_2);
   } else if (strncmp(commands.c_str(), "mkdir ", 6) == 0) {
     Fat_CreateDict((char *)commands.c_str() + 6);
   } else if (strncmp(commands.c_str(), "copy_in ", 8) == 0) {
-    char *ptr = (char *)commands.c_str();
     char path_1[100];
     char path_2[100];
-    ptr += 8;
-    int i;
-    for (i = 0; *ptr != ' '; ptr++, i++)
-      path_1[i] = *ptr;
-    path_1[i] = 0;
-    ptr++;
-    for (i = 0; *ptr != 0; ptr++, i++)
-      path_2[i] = *ptr;
-    path_2[i] = 0;
+    sscanf(commands.c_str(), "copy_in %s %s", path_1, path_2);
     Copy_in(path_1, path_2);
   } else if (strncmp(commands.c_str(), "copy_out ", 9) == 0) {
-    char *ptr = (char *)commands.c_str();
     char path_1[100];
     char path_2[100];
-    ptr += 9;
-    int i;
-    for (i = 0; *ptr != ' '; ptr++, i++)
-      path_1[i] = *ptr;
-    path_1[i] = 0;
-    ptr++;
-    for (i = 0; *ptr != 0; ptr++, i++)
-      path_2[i] = *ptr;
-    path_2[i] = 0;
+    sscanf(commands.c_str(), "copy_out %s %s", path_1, path_2);
     Copy_out(path_1, path_2);
   } else if (strncmp(commands.c_str(), "format ", 7) == 0) {
     char mbr_path[100];

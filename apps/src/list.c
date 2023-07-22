@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "mst.h"
 #define page_kmalloc malloc
-#define page_kfree(p,sz) free((p))
+#define page_free(p,sz) free((p))
 void AddVal(uintptr_t val, struct List* Obj) {
   while (Obj->next != NULL)
     Obj = Obj->next;
@@ -53,7 +53,7 @@ void DeleteVal(size_t count, struct List* Obj) {
     prev->next = next;
     next->prev = prev;
   }
-  page_kfree((int)Will_Free, sizeof(struct List));
+  page_free((void *)Will_Free, sizeof(struct List));
   Obj->ctl->all--;
 }
 struct List* NewList() {
@@ -82,9 +82,9 @@ int GetLastCount(struct List* Obj) {
 }
 void DeleteList(struct List* Obj) {
   Obj = Obj->ctl->start;
-  page_kfree((int)Obj->ctl, sizeof(struct ListCtl));
+  page_free((void *)Obj->ctl, sizeof(struct ListCtl));
   for (; Obj->next != (struct List*)NULL; Obj = Obj->next) {
-    page_kfree((int)Obj, sizeof(struct List));
+    page_free((void *)Obj, sizeof(struct List));
   }
   return;
 }

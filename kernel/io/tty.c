@@ -61,7 +61,7 @@ struct tty *tty_alloc(void *vram, int xsize, int ysize,
                       void (*screen_ne)(struct tty *res),
                       void (*Draw_Box)(struct tty *res, int x, int y, int x1,
                                        int y1, unsigned char color)) {
-  struct tty *res = (struct tty *)page_kmalloc(sizeof(struct tty));
+  struct tty *res = (struct tty *)page_malloc(sizeof(struct tty));
   res->using1 = 1;
   res->x = 0;
   res->y = 0;
@@ -84,7 +84,7 @@ void tty_free(struct tty *res) {
   for (i = 0; FindForCount(i, tty_list) != (int)res; i++)
     ;
   DeleteVal(i, tty_list);
-  free((void *)res);
+  page_free((void *)res, sizeof(struct tty));
   return;
 }
 struct tty *tty_set(struct TASK *task, struct tty *res) {

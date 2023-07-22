@@ -14,7 +14,7 @@ int send_ipc_message(int to_tid, void *data, unsigned int size, char type) {
     irq_mask_clear(0);
     return -1;
   }
-  void *now_data = page_kmalloc(size);
+  void *now_data = page_malloc(size);
   memcpy(now_data, data, size);
   to_task->IPC_header.data[to_task->IPC_header.now] = now_data;
   to_task->IPC_header.size[to_task->IPC_header.now] = size;
@@ -22,6 +22,7 @@ int send_ipc_message(int to_tid, void *data, unsigned int size, char type) {
       (this_task->sel / 8) - 103;
   to_task->IPC_header.now++;
   int now = to_task->IPC_header.now;
+  task_run(to_task);
   irq_mask_clear(0);
   if (type == synchronous) { // 同步
     change_level(this_task, 3);
@@ -50,7 +51,7 @@ int get_ipc_message(void *data, int from_tid) {
       // this_task->IPC_header.now);
       memcpy(data, this_task->IPC_header.data[i],
              this_task->IPC_header.size[i]);
-      page_kfree((int)this_task->IPC_header.data[i], this_task->IPC_header.size[i]);
+      page_free((void *)this_task->IPC_header.data[i], this_task->IPC_header.size[i]);
       // printk("%08x\n",*(unsigned int*)data);
       if (i == MAX_IPC_MESSAGE - 1) {
         this_task->IPC_header.data[i] = 0;
@@ -75,7 +76,7 @@ int get_ipc_message(void *data, int from_tid) {
   // sleep(10);
   return -1;
 }
-int GetIPCMessageTID(int tid, void *data, int from_tid) {
+int get_ipc_message_by_tid(int tid, void *data, int from_tid) {
   irq_mask_set(0);
   struct TASK *this_task = get_task(tid);
   if (this_task->IPC_header.now == 0) {
@@ -89,7 +90,7 @@ int GetIPCMessageTID(int tid, void *data, int from_tid) {
       // this_task->IPC_header.now);
       memcpy(data, this_task->IPC_header.data[i],
              this_task->IPC_header.size[i]);
-      page_kfree((int)this_task->IPC_header.data[i], this_task->IPC_header.size[i]);
+      page_free((void *)this_task->IPC_header.data[i], this_task->IPC_header.size[i]);
       // printk("%08x\n",*(unsigned int*)data);
       if (i == MAX_IPC_MESSAGE - 1) {
         this_task->IPC_header.data[i] = 0;
@@ -148,7 +149,7 @@ int send_ipc_message_by_tid(int to_tid,        // 收信人
     irq_mask_clear(0);
     return -1;
   }
-  void *now_data = page_kmalloc(size);
+  void *now_data = page_malloc(size);
   memcpy(now_data, data, size);
   to_task->IPC_header.data[to_task->IPC_header.now] = now_data;
   to_task->IPC_header.size[to_task->IPC_header.now] = size;
@@ -195,7 +196,7 @@ int get_msg_all(void *data) {
     if (this_task->IPC_header.from_tid[i] != 0) {
       memcpy(data, this_task->IPC_header.data[i],
              this_task->IPC_header.size[i]);
-      page_kfree((int)this_task->IPC_header.data[i], this_task->IPC_header.size[i]);
+      page_free((void *)this_task->IPC_header.data[i], this_task->IPC_header.size[i]);
       if (i == MAX_IPC_MESSAGE - 1) {
         this_task->IPC_header.data[i] = 0;
         this_task->IPC_header.size[i] = 0;

@@ -7,7 +7,7 @@ void AddVal(uintptr_t val, struct List* Obj) {
   while (Obj->next != NULL)
     Obj = Obj->next;
   Obj = Obj->ctl->end;
-  struct List* new = (struct List*)page_kmalloc(sizeof(struct List));
+  struct List* new = (struct List*)page_malloc(sizeof(struct List));
   Obj->next = new;
   Obj->ctl->end = new;
   new->prev = Obj;
@@ -53,12 +53,12 @@ void DeleteVal(size_t count, struct List* Obj) {
     prev->next = next;
     next->prev = prev;
   }
-  page_kfree((int)Will_Free, sizeof(struct List));
+  page_free((void *)Will_Free, sizeof(struct List));
   Obj->ctl->all--;
 }
 struct List* NewList() {
-  struct List* Obj = (struct List*)page_kmalloc(sizeof(struct List));
-  struct ListCtl* ctl = (struct ListCtl*)page_kmalloc(sizeof(struct ListCtl));
+  struct List* Obj = (struct List*)page_malloc(sizeof(struct List));
+  struct ListCtl* ctl = (struct ListCtl*)page_malloc(sizeof(struct ListCtl));
   Obj->ctl = ctl;
   Obj->ctl->start = Obj;
   Obj->ctl->end = Obj;
@@ -82,12 +82,12 @@ int GetLastCount(struct List* Obj) {
 }
 void DeleteList(struct List* Obj) {
   Obj = Obj->ctl->start;
-  page_kfree((int)Obj->ctl, sizeof(struct ListCtl));
+  page_free((void *)Obj->ctl, sizeof(struct ListCtl));
   for (; Obj != (struct List*)NULL;) {
     //printf("Will free: %llx\n", Obj);
     struct List* tmp = Obj;
     Obj = Obj->next;
-    page_kfree((int)tmp, sizeof(struct List));
+    page_free((void *)tmp, sizeof(struct List));
   }
   return;
 }

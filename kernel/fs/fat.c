@@ -181,31 +181,23 @@ void file_saveinfo(struct FAT_FILEINFO *directory, vfs_t *vfs) {
 }
 void file_savefat(int *fat, int clustno, int length, vfs_t *vfs) {
   unsigned char *img = get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat1Address;
-  unsigned char *img1 = get_dm(vfs).ADR_DISKIMG + get_dm(vfs).Fat2Address;
   int size, sec;
   if (get_dm(vfs).type == 12) {
-    if (clustno % 2 != 0) {
-      clustno--;
-      length++;
+    for (int i = 0; i <= length; i++) {
+	  if ((clustno + i) % 2 == 0) {
+		img[(clustno + i) * 3 / 2 + 0] = fat[clustno + i] & 0xff;
+        img[(clustno + i) * 3 / 2 + 1] = (fat[clustno + i] >> 8 | (img[(clustno + i) * 3 / 2 + 1] & 0xf0)) & 0xff;
+	  } else if ((clustno + i) % 2 != 0) {
+		img[(clustno + i - 1) * 3 / 2 + 1] = ((img[(clustno + i - 1) * 3 / 2 + 1] & 0x0f) | fat[clustno + i] << 4) & 0xff;
+		img[(clustno + i - 1) * 3 / 2 + 2] = (fat[clustno + i] >> 4) & 0xff;
+	  }
     }
-    for (int i = 0; i <= (length / 3 + 1) * 2; i += 2) {
-      img[(clustno + i) * 3 / 2 + 0] = fat[clustno + i + 0] & 0xff;
-      img[(clustno + i) * 3 / 2 + 1] =
-          (fat[(clustno + i) + 0] >> 8 | fat[clustno + i + 1] << 4) & 0xff;
-      img[(clustno + i) * 3 / 2 + 2] = (fat[clustno + i + 1] >> 4) & 0xff;
-      img1[(clustno + i) * 3 / 2 + 0] = fat[clustno + i + 0] & 0xff;
-      img1[(clustno + i) * 3 / 2 + 1] =
-          (fat[(clustno + i) + 0] >> 8 | fat[clustno + i + 1] << 4) & 0xff;
-      img1[(clustno + i) * 3 / 2 + 2] = (fat[clustno + i + 1] >> 4) & 0xff;
-    }
-    size = length * 3 / 2;
+    size = length * 3 / 2 - 1;
     sec = clustno * 3 / 2;
   } else if (get_dm(vfs).type == 16) {
     for (int i = 0; i <= length; i++) {
       img[(clustno + i) * 2 + 0] = fat[clustno + i] & 0xff;
       img[(clustno + i) * 2 + 1] = (fat[clustno + i] >> 8) & 0xff;
-      img1[(clustno + i) * 2 + 0] = fat[clustno + i] & 0xff;
-      img1[(clustno + i) * 2 + 1] = (fat[clustno + i] >> 8) & 0xff;
     }
     size = length * 2 - 1;
     sec = clustno * 2;
@@ -215,10 +207,6 @@ void file_savefat(int *fat, int clustno, int length, vfs_t *vfs) {
       img[(clustno + i) * 4 + 1] = (fat[clustno + i] >> 8) & 0xff;
       img[(clustno + i) * 4 + 2] = (fat[clustno + i] >> 16) & 0xff;
       img[(clustno + i) * 4 + 3] = fat[clustno + i] >> 24;
-      img1[(clustno + i) * 4 + 0] = fat[clustno + i] & 0xff;
-      img1[(clustno + i) * 4 + 1] = (fat[clustno + i] >> 8) & 0xff;
-      img1[(clustno + i) * 4 + 2] = (fat[clustno + i] >> 16) & 0xff;
-      img1[(clustno + i) * 4 + 3] = fat[clustno + i] >> 24;
     }
     size = length * 4 - 1;
     sec = clustno * 4;
@@ -368,14 +356,14 @@ struct FAT_FILEINFO *Get_File_Address(char *path1, vfs_t *vfs) {
     finfo = dict_search(temp_name, bmpDict, get_dm(vfs).RootMaxFiles);
     if (finfo == 0) {
       if (path[i] != '\0') {
-        page_free((int)temp_name, 128);
-        page_free((int)bmp, strlen(path1) + 1);
+        page_free((void *)temp_name, 128);
+        page_free((void *)bmp, strlen(path1) + 1);
         return 0;
       }
       finfo = file_search(temp_name, bmpDict, get_dm(vfs).RootMaxFiles);
       if (finfo == 0) {
-        page_free((int)temp_name, 128);
-        page_free((int)bmp, strlen(path1) + 1);
+        page_free((void *)temp_name, 128);
+        page_free((void *)bmp, strlen(path1) + 1);
         return 0;
       } else {
         goto END;
@@ -406,8 +394,8 @@ struct FAT_FILEINFO *Get_File_Address(char *path1, vfs_t *vfs) {
   }
 END:
   // printk("file_search:%s finfo:%08x\n", temp_name, finfo);
-  page_free((int)temp_name, 128);
-  page_free((int)bmp, strlen(path1) + 1);
+  page_free((void *)temp_name, 128);
+  page_free((void *)bmp, strlen(path1) + 1);
   return finfo;
 }
 struct FAT_FILEINFO *Get_dictaddr(char *path1, vfs_t *vfs) {
@@ -493,8 +481,8 @@ struct FAT_FILEINFO *Get_dictaddr(char *path1, vfs_t *vfs) {
     }
   }
 END:
-  page_free((int)temp_name, 128);
-  page_free((int)bmp, strlen(path1) + 1);
+  page_free((void *)temp_name, 128);
+  page_free((void *)bmp, strlen(path1) + 1);
   // printf("bmpDict=%08x root=%08x\n", bmpDict,
   //       get_dm(vfs).root_directory);
   return bmpDict;
@@ -797,7 +785,7 @@ int changedict(char *dictname, vfs_t *vfs) {
 
   if (strcmp(dictname, "/") == 0) {
     while (vfs->path->ctl->all != 0) {
-      page_kfree(FindForCount(vfs->path->ctl->all, vfs->path)->val, 255);
+      page_free(FindForCount(vfs->path->ctl->all, vfs->path)->val, 255);
       DeleteVal(vfs->path->ctl->all, vfs->path);
     }
     get_now_dir(vfs) = get_dm(vfs).root_directory;
@@ -813,7 +801,7 @@ int changedict(char *dictname, vfs_t *vfs) {
   if (get_clustno(finfo->clustno_high, finfo->clustno_low) == 0) {
     //根目录
     while (vfs->path->ctl->all != 0) {
-      page_kfree(FindForCount(vfs->path->ctl->all, vfs->path)->val, 255);
+      page_free(FindForCount(vfs->path->ctl->all, vfs->path)->val, 255);
       DeleteVal(vfs->path->ctl->all, vfs->path);
     }
     get_now_dir(vfs) = get_dm(vfs).root_directory;
@@ -823,13 +811,13 @@ int changedict(char *dictname, vfs_t *vfs) {
   //.不进行处理
   //其他按照下面的方式处理
   if (strcmp(dictname, "..") != 0 && strcmp(dictname, ".") != 0) {
-    char *dict = page_kmalloc(255);
+    char *dict = page_malloc(255);
     strcpy(dict, dictname);
     AddVal(dict, vfs->path);
   }
 
   if (strcmp(dictname, "..") == 0) {
-    page_kfree(FindForCount(vfs->path->ctl->all, vfs->path)->val, 255);
+    page_free(FindForCount(vfs->path->ctl->all, vfs->path)->val, 255);
     DeleteVal(vfs->path->ctl->all, vfs->path);
   }
   for (int count = 1;

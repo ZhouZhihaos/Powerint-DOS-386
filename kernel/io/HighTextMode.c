@@ -197,7 +197,7 @@ void SwitchToHighTextMode() {
 void AddShell_HighTextMode() {
   io_cli();
   struct TASK *task = current_task();
-  vram_t *vram = page_kmalloc((task->TTY->xsize * 8 + 1) *
+  vram_t *vram = page_malloc((task->TTY->xsize * 8 + 1) *
                               (task->TTY->ysize * 16 + 1) * sizeof(color_t));
   struct SHEET *sht_scr = sheet_alloc(shtctl0);
   sheet_setbuf(sht_scr, vram, task->TTY->xsize * 8, task->TTY->ysize * 16, -2);
@@ -208,18 +208,18 @@ void AddShell_HighTextMode() {
                                screen_ne_HighTextMode, Draw_Box_HighTextMode);
   struct TASK *ntask =
       register_task("Shell", 1, 2 * 8, (int)shell_handler, 1 * 8, 1 * 8,
-              (unsigned int)page_kmalloc(128 * 1024) + 128 * 1024);
-  char *kfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
-  char *mfifo = (struct FIFO8 *)page_kmalloc(sizeof(struct FIFO8));
-  char *kbuf = (char *)page_kmalloc(4096);
-  char *mbuf = (char *)page_kmalloc(4096);
+              (unsigned int)page_malloc(128 * 1024) + 128 * 1024);
+  char *kfifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+  char *mfifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
+  char *kbuf = (char *)page_malloc(4096);
+  char *mbuf = (char *)page_malloc(4096);
   fifo8_init(kfifo, 4096, kbuf);
   fifo8_init(mfifo, 4096, mbuf);
   task_set_fifo(ntask, kfifo, mfifo);
-  int alloc_addr = (int)page_kmalloc(512 * 1024);
+  void *alloc_addr = (void *)page_malloc(512 * 1024);
   ntask->alloc_addr = alloc_addr;
   ntask->alloc_size = 512 * 1024;
-  init_mem(ntask);
+  ntask->mm = memory_init((uint32_t)alloc_addr, 512 * 1024);
   ntask->fifosleep = 3;
   int fg = tty_set(ntask, ntty);
   //  printk("set vram = %08x\n",ntty->vram);

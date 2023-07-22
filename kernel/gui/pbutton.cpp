@@ -43,7 +43,7 @@ PButton::PButton(PSheetBase* ps,
   this->updown(1);
   this->name = new char[strlen(name) + 1];
   this->callback = callback;
-  this->val = val;
+  this->val = val == -1 ? (uint32_t)this : val;
   strcpy(this->name, name);
   draw(name, argb(0, 211, 211, 211));
   this->regiser_box_left(0, 0, this->get_xsize(), this->get_ysize(),

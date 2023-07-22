@@ -87,7 +87,7 @@ static void handle() {
         }
       }
       if (fifo8_status(task_get_key_fifo(current_task())) != 0) {
-        int i = fifo8_get(task_get_mouse_fifo(current_task()));
+        int i = fifo8_get(task_get_key_fifo(current_task()));
         struct SHEET *sht = ctl->sheets[ctl->top - 1];
         ((PSheetBase *)sht->args)->key_press_handle(i);
       }
@@ -140,19 +140,19 @@ void pgui_shell() {
     ;
 }
 void start(PButton *pbtn, uint32_t val) {
-  struct FIFO8 *fifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
-  struct FIFO8 *fifo2 = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
-  uint8_t *fifobuf = (uint8_t *)page_malloc(128);
-  uint8_t *fifobuf2 = (uint8_t *)page_malloc(128);
+  struct FIFO8 *fifo = new struct FIFO8;
+  struct FIFO8 *fifo2 = new struct FIFO8;
+  uint8_t *fifobuf = new uint8_t[128];
+  uint8_t *fifobuf2 = new uint8_t[128];
   io_cli();
   fifo8_init(fifo, 128, fifobuf);
   fifo8_init(fifo2, 128, fifobuf2);
   struct TASK *t = register_task("cmdline", 1, 2 * 8, (int)pgui_shell, 1 * 8, 1 * 8,
-                           (int)page_kmalloc(32 * 1024) + 32 * 1024);
-  int alloc_addr = (int)page_kmalloc(512 * 1024);
+                           (int)page_malloc(32 * 1024) + 32 * 1024);
+  void *alloc_addr = (void *)page_malloc(512 * 1024);
   t->alloc_addr = alloc_addr;
   t->alloc_size = 512 * 1024;
-  init_mem(t);
+  t->mm = memory_init((uint32_t)alloc_addr, 512 * 1024);
   task_set_fifo(t, fifo, fifo2);
   task_sleep_fifo(t);
   PConsole *pcons = new PConsole(ctl, 100, 100, t);
@@ -164,7 +164,7 @@ void pgui_main() {
   click_left = new WindowBox();
   click_right = new WindowBox();
   stay_box = new WindowBox();
-  vbinfo = (struct VBEINFO *)page_malloc(sizeof(struct VBEINFO));
+  vbinfo = new struct VBEINFO;
   struct VBEINFO *vbinfo0 = (struct VBEINFO *)VBEINFO_ADDRESS;
   vbinfo->vram = vbinfo0->vram;
   vbinfo->xsize = vbinfo0->xsize;
@@ -186,8 +186,8 @@ void pgui_main() {
   pgmx = 0;
   pgmy = 0;
   Window *wnd = new Window(ctl, "RabbitWindow", 300, 100, 400, 250);
-  wnd1 = new Window(ctl, "RabbitWindow1", 300, 100, 400, 250);
-  w_btn = new PButton(wnd1, "start", 2, 28, 100, 20, 0, btn_click4);
+  // wnd1 = new Window(ctl, "RabbitWindow1", 300, 100, 400, 250);
+  // w_btn = new PButton(wnd1, "start", 2, 28, 100, 20, 0, btn_click4);
   PTextBox *pt = new PTextBox(wnd, 2, 50, 200, 20);
   PButton *btn = new PButton(wnd, "sb16", 2, 28, 100, 20, 0, btn_click);
   PButton *btn1 = new PButton(wnd, "start", 103, 28, 100, 20, 0, start);

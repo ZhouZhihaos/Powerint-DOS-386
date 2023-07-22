@@ -79,7 +79,7 @@ retry:
 }
 void shell_handler() {
   struct TASK* task = current_task();
-  task->line = (char*)page_kmalloc(1024);
+  task->line = (char*)page_malloc(1024);
   char buf[255];
   while (1) {
     vfs_getPath(buf);

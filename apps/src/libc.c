@@ -7,29 +7,45 @@
 typedef unsigned int uintmax_t;
 typedef uintmax_t uintptr_t;
 typedef int intmax_t;
-#define asuint(f) ((union{float _f; uint32_t _i;}){f})._i
-#define asfloat(i) ((union{uint32_t _i; float _f;}){i})._f
-#define asuint64(f) ((union{double _f; uint64_t _i;}){f})._i
-#define asdouble(i) ((union{uint64_t _i; double _f;}){i})._f
+#define asuint(f) \
+  ((union {       \
+    float _f;     \
+    uint32_t _i;  \
+  }){f})          \
+      ._i
+#define asfloat(i) \
+  ((union {        \
+    uint32_t _i;   \
+    float _f;      \
+  }){i})           \
+      ._f
+#define asuint64(f) \
+  ((union {         \
+    double _f;      \
+    uint64_t _i;    \
+  }){f})            \
+      ._i
+#define asdouble(i) \
+  ((union {         \
+    uint64_t _i;    \
+    double _f;      \
+  }){i})            \
+      ._f
 #define predict_true(x) __builtin_expect(!!(x), 1)
 #define predict_false(x) __builtin_expect(x, 0)
-static inline double eval_as_double(double x)
-{
-	double y = x;
-	return y;
+static inline double eval_as_double(double x) {
+  double y = x;
+  return y;
 }
-static inline double fp_barrier(double x)
-{
-	volatile double y = x;
-	return y;
+static inline double fp_barrier(double x) {
+  volatile double y = x;
+  return y;
 }
-double __math_divzero(uint32_t sign)
-{
-	return fp_barrier(sign ? -1.0 : 1.0) / 0.0;
+double __math_divzero(uint32_t sign) {
+  return fp_barrier(sign ? -1.0 : 1.0) / 0.0;
 }
-double __math_invalid(double x)
-{
-	return (x - x) / (x - x);
+double __math_invalid(double x) {
+  return (x - x) / (x - x);
 }
 int errno = 0;
 FILE* stdout;
@@ -1413,186 +1429,408 @@ void* memmove(void* dest, const void* src, int n) {
   }
   return dest;
 }
-#define MEMMAN_FREES 4090
-struct FREEINFO {
-  unsigned int addr, size;
-};
-struct MEMMAN {
-  int frees, maxfrees, lostsize, losts;
-  struct FREEINFO free[MEMMAN_FREES];
-};
-int flag = 0;
-int total_size = 0;
-char* start;
-void memman_init(struct MEMMAN* man) {
-  man->frees = 0;    /* 可用信息数目 */
-  man->maxfrees = 0; /* 用于观察可用状况：frees的最大值 */
-  man->lostsize = 0; /* 释放失败的内存的大小总和 */
-  man->losts = 0;    /* 释放失败次数 */
-  return;
-}
 
-unsigned int memman_total(struct MEMMAN* man)
-/* 报告空余内存大小的合计 */
-{
-  unsigned int i, t = 0;
-  for (i = 0; i < man->frees; i++) {
-    t += man->free[i].size;
-  }
-  return t;
+#define FREE_MAX_NUM 4096
+#define ERRNO_NOPE 0
+#define ERRNO_NO_ENOGHT_MEMORY 1
+#define ERRNO_NO_MORE_FREE_MEMBER 2
+#define MEM_MAX(a, b) (a) > (b) ? (a) : (b)
+typedef struct {
+  uint32_t start;
+  uint32_t end;  // end和start都等于0说明这个free结构没有使用
+} free_member;
+typedef struct freeinfo freeinfo;
+typedef struct freeinfo {
+  free_member* f;
+  freeinfo* next;
+} freeinfo;
+typedef struct {
+  freeinfo* freeinf;
+  int memerrno;
+} memory;
+memory* mm;
+char* alloc_start;
+uint32_t total_size;
+void swap(free_member* a, free_member* b) {
+  free_member temp = *a;
+  *a = *b;
+  *b = temp;
 }
+int cmp(free_member a, free_member b) {
+  return a.start <= b.start;
+}
+int partition(free_member* arr, int low, int high) {
+  free_member pivot = arr[high];
+  int i = (low - 1);
 
-unsigned int memman_alloc(struct MEMMAN* man, unsigned int size)
-/* 分配 */
-{
-  unsigned int i, a;
-  for (i = 0; i < man->frees; i++) {
-    if (man->free[i].size >= size) {
-      /* 找到了足够大的内存 */
-      a = man->free[i].addr;
-      man->free[i].addr += size;
-      man->free[i].size -= size;
-      if (man->free[i].size == 0) {
-        /* 如果free[i]变成了0，就减掉一条可用信息 */
-        man->frees--;
-        for (; i < man->frees; i++) {
-          man->free[i] = man->free[i + 1]; /* 代入结构体 */
-        }
-      }
-      return a;
+  for (int j = low; j <= high - 1; j++) {
+    if (cmp(arr[j], pivot)) {
+      i++;
+      swap(&arr[i], &arr[j]);
     }
   }
-  // printf("no more memmory! %d then try to sbrk\n", size);
-  if (size <= 4 * 1024) {
-    sbrk(size * 2);
-    memman_free(man, start + total_size, size * 2);
-    total_size += size * 2;
-  } else {
-    sbrk(size);
-    memman_free(man, start + total_size, size);
-    total_size += size;
-  }
-  // printf("then retry........\n");
-  return memman_alloc(man, size); /* 没有可用空间 */
+
+  swap(&arr[i + 1], &arr[high]);
+  return (i + 1);
 }
 
-int memman_free(struct MEMMAN* man, unsigned int addr, unsigned int size)
-/* 释放 */
-{
-  int i, j;
-  /* 为便于归纳内存，将free[]按照addr的顺序排列 */
-  /* 所以，先决定应该放在哪里 */
-  for (i = 0; i < man->frees; i++) {
-    if (man->free[i].addr > addr) {
+void quicksort(free_member* arr, int low, int high) {
+  if (low < high) {
+    int pi = partition(arr, low, high);
+    quicksort(arr, low, pi - 1);
+    quicksort(arr, pi + 1, high);
+  }
+}
+freeinfo* make_next_freeinfo(memory* mem) {
+  const int size = FREE_MAX_NUM * sizeof(free_member) + sizeof(freeinfo);
+  freeinfo* fi = NULL;
+  freeinfo* finf = mem->freeinf;
+  freeinfo* old = NULL;
+  uint32_t s, n;
+  while (finf) {
+    old = finf;
+    for (int i = 0; i < FREE_MAX_NUM; i++) {
+      if (finf->f[i].start + finf->f[i].end == 0) {
+        break;
+      }
+      if (finf->f[i].end - finf->f[i].start >= size) {
+        uint32_t start = finf->f[i].start;
+        s = finf->f[i].start;
+        n = finf->f[i].end;
+        mem_delete(i, finf);
+        fi = (freeinfo*)start;
+        break;
+      }
+    }
+    if (fi) {
       break;
     }
+    finf = finf->next;
   }
-  /* free[i - 1].addr < addr < free[i].addr */
-  if (i > 0) {
-    /* 前面有可用内存 */
-    if (man->free[i - 1].addr + man->free[i - 1].size == addr) {
-      /* 可以与前面的可用内存归纳到一起 */
-      man->free[i - 1].size += size;
-      if (i < man->frees) {
-        /* 后面也有 */
-        if (addr + size == man->free[i].addr) {
-          /* 也可以与后面的可用内存归纳到一起 */
-          man->free[i - 1].size += man->free[i].size;
-          /* man->free[i]删除 */
-          /* free[i]变成0后归纳到前面去 */
-          man->frees--;
-          for (; i < man->frees; i++) {
-            man->free[i] = man->free[i + 1]; /* 结构体赋值 */
+  if (!fi) {
+    mem->memerrno = ERRNO_NO_ENOGHT_MEMORY;
+    return NULL;
+  }
+  fi->next = 0;
+  while (finf) {
+    old = finf;
+    finf = finf->next;
+  }
+  old->next = fi;
+  fi->f = (free_member*)((uint32_t)fi + sizeof(freeinfo));
+  for (int i = 0; i < FREE_MAX_NUM; i++) {
+    fi->f[i].start = 0;
+    fi->f[i].end = 0;
+  }
+
+  if (n - s > size) {
+    mem_free_finf(mem, fi, s + size, n - s - size);  // 一点也不浪费
+  }
+
+  return fi;
+}
+free_member* mem_insert(int pos, freeinfo* finf) {
+  int j = 0;
+  for (int i = 0; i < FREE_MAX_NUM; i++) {
+    if (finf->f[i].start + finf->f[i].end != 0) {
+      ++j;
+    }
+  }
+  if (j == FREE_MAX_NUM) {
+    return NULL;
+  }
+  for (int i = j - 1; i >= pos; i--) {
+    finf->f[i + 1] = finf->f[i];
+  }
+  return &(finf->f[pos]);
+}
+free_member* mem_add(freeinfo* finf) {
+  int j = 0;
+  for (int i = 0; i < FREE_MAX_NUM; i++) {
+    if (finf->f[i].start + finf->f[i].end != 0) {
+      ++j;
+    }
+  }
+  if (j == FREE_MAX_NUM) {
+    return NULL;
+  }
+  return &(finf->f[j]);
+}
+void mem_delete(int pos, freeinfo* finf) {
+  int i;
+  for (i = pos; i < FREE_MAX_NUM - 1; i++) {
+    if (finf->f[i].start == 0 && finf->f[i].end == 0) {
+      return;
+    }
+    finf->f[i] = finf->f[i + 1];
+  }
+  finf->f[i].start = 0;
+  finf->f[i].end = 0;
+}
+uint32_t mem_get_all_finf(freeinfo* finf) {
+  for (int i = 0; i < FREE_MAX_NUM; i++) {
+    if (finf->f[i].start + finf->f[i].end == 0) {
+      return i;
+    }
+  }
+  return FREE_MAX_NUM;
+}
+// 内存整理
+void mem_defragmenter(freeinfo* finf) {
+  for (int i = 0; i < FREE_MAX_NUM - 1; i++) {
+    if (finf->f[i].start + finf->f[i].end == 0) {
+      break;
+    }
+    if (finf->f[i].end == finf->f[i + 1].start) {
+      int end = finf->f[i + 1].end;
+      mem_delete(i + 1, finf);
+      finf->f[i].end = end;
+    }
+    if (finf->f[i + 1].start == finf->f[i].start) {
+      int end = MEM_MAX(finf->f[i].end, finf->f[i + 1].end);
+      mem_delete(i + 1, finf);
+      finf->f[i].end = end;
+    }
+    if (finf->f[i + 1].start < finf->f[i].end) {
+      int end = MEM_MAX(finf->f[i].end, finf->f[i + 1].end);
+      mem_delete(i + 1, finf);
+      finf->f[i].end = end;
+    }
+  }
+}
+// 内存分割
+uint32_t mem_partition(freeinfo* finf,
+                       uint32_t start,
+                       uint32_t end,
+                       uint32_t index) {
+  if (finf->f[index].start == start && finf->f[index].end == end) {
+    return index;
+  }
+  int times = 0;
+  int result = 0;
+  if (finf->f[index].start == start || finf->f[index].end == end) {
+    times = 1;
+  } else if (finf->f[index].start < start) {
+    times = 2;
+  }
+  if (times == 0) {
+    printf("bug\n");
+    for (;;)
+      ;
+  }
+  switch (times) {
+    case 1:
+      if (finf->f[index].start == start) {
+        uint32_t i = finf->f[index].start;
+        uint32_t j = finf->f[index].end;
+        free_member* f = mem_insert(index, finf);
+        if (!f) {
+          return -1;
+        }
+        f->start = start;
+        f->end = end;
+        finf->f[index + 1].start = end;
+        finf->f[index + 1].end = j;
+        result = index;
+      } else if (finf->f[index].end == end) {
+        int i = finf->f[index].start;
+        int j = finf->f[index].end;
+        free_member* f = mem_insert(index, finf);
+        if (!f) {
+          return -1;
+        }
+        f->start = i;
+        f->end = start;
+        finf->f[index + 1].start = start;
+        finf->f[index + 1].end = end;
+        result = index + 1;
+      }
+      return result;
+    case 2: {
+      int i = finf->f[index].start;
+      int j = finf->f[index].end;
+      free_member* f;
+      f = mem_insert(index, finf);
+      if (!f) {
+        return -1;
+      }
+      f = mem_insert(index, finf);
+      if (!f) {
+        mem_delete(index, finf);  // 上面成功了，所以要删掉
+        return -1;
+      }
+      f->start = i;
+      f->end = start;
+      finf->f[index + 1].start = start;
+      finf->f[index + 1].end = end;
+      finf->f[index + 2].start = end;
+      finf->f[index + 2].end = j;
+      return index;
+    }
+    default:
+      // the code mustn't exec here
+      break;
+  }
+}
+int mem_free_finf(memory* mem, freeinfo* finf, void* p, uint32_t size) {
+  free_member* f = mem_add(finf);
+  if (!f) {
+    int flag = 0;
+    for (int i = 0; i < FREE_MAX_NUM - 1; i++) {
+      if (finf->f[i].start + finf->f[i].end == 0) {
+        break;
+      }
+      if (finf->f[i].end == (uint32_t)p) {
+        flag = 1;
+        int end = (uint32_t)p + size;
+        finf->f[i].end = end;
+      } else if ((uint32_t)p == finf->f[i].start) {
+        flag = 1;
+        int end = MEM_MAX(finf->f[i].end, (uint32_t)p + size);
+        finf->f[i].end = end;
+      } else if ((uint32_t)p < finf->f[i].end) {
+        flag = 1;
+        int end = MEM_MAX(finf->f[i].end, (uint32_t)p + size);
+        finf->f[i].end = end;
+      }
+    }
+    if (flag) {
+      mem_defragmenter(finf);
+      mem->memerrno = ERRNO_NOPE;
+      return 1;
+    } else {
+      mem->memerrno = ERRNO_NO_MORE_FREE_MEMBER;
+      return 0;
+    }
+  }
+  mem->memerrno = ERRNO_NOPE;
+  f->start = (uint32_t)p;
+  f->end = (uint32_t)p + size;
+  quicksort(finf->f, 0, mem_get_all_finf(finf) - 1);
+  mem_defragmenter(finf);
+  return 1;
+}
+void* mem_alloc_finf(memory* mem,
+                     freeinfo* finf,
+                     uint32_t size,
+                     freeinfo* if_nomore) {
+  for (int i = 0; i < FREE_MAX_NUM; i++) {
+    if (finf->f[i].start == 0 && finf->f[i].end == 0) {
+      break;
+    }
+    if (finf->f[i].end - finf->f[i].start >= size) {
+      uint32_t start = finf->f[i].start;
+      uint32_t idx = mem_partition(finf, start, start + size, i);
+      if (idx == -1) {
+        if (if_nomore) {
+          if (FREE_MAX_NUM - mem_get_all_finf(if_nomore) >= 1) {
+            int e = finf->f[i].end;
+            mem_delete(i, finf);
+            mem_defragmenter(finf);
+            mem_free_finf(mem, finf, (void *)start, e - start);
+            return mem_alloc_finf(mem, if_nomore, size, NULL);
           }
         }
+        mem->memerrno = ERRNO_NO_MORE_FREE_MEMBER;
+        mem_defragmenter(finf);
+        return NULL;
       }
-      return 0; /* 成功完成 */
+      mem->memerrno = ERRNO_NOPE;
+      mem_delete(idx, finf);
+      mem_defragmenter(finf);
+	  memset(start, 0, size);
+      return (void *)start;
     }
   }
-  /* 不能与前面的可用空间归纳到一起 */
-  if (i < man->frees) {
-    /* 后面还有 */
-    if (addr + size == man->free[i].addr) {
-      /* 可以与后面的内容归纳到一起 */
-      man->free[i].addr = addr;
-      man->free[i].size += size;
-      return 0; /* 成功完成 */
+  mem->memerrno = ERRNO_NO_ENOGHT_MEMORY;
+  return NULL;
+}
+void* mem_alloc(memory* mem, uint32_t size) {
+  freeinfo* finf = mem->freeinf;
+  int flag = 0;
+  freeinfo* if_nomore = NULL;
+  while (finf) {
+    if (flag && !if_nomore) {
+      break;
+      ;
+    }
+    void* result = mem_alloc_finf(mem, finf, size, if_nomore);
+    if (mem->memerrno != ERRNO_NOPE) {
+      if (mem->memerrno == ERRNO_NO_MORE_FREE_MEMBER) {
+        if (!flag) {
+          if_nomore = finf;
+          flag = 1;
+        }
+      }
+    } else {
+      return result;
+    }
+    if (flag) {
+      if_nomore = if_nomore->next;
+    } else {
+      finf = finf->next;
     }
   }
-  /* 既不能与前面归纳到一起，也不能与后面归纳到一起 */
-  if (man->frees < MEMMAN_FREES) {
-    /* free[i]之后的，向后移动，腾出一点可用空间 */
-    for (j = man->frees; j > i; j--) {
-      man->free[j] = man->free[j - 1];
+  if (flag) {
+    freeinfo* new_f = make_next_freeinfo(mem);
+    if (!new_f) {
+      return NULL;
     }
-    man->frees++;
-    if (man->maxfrees < man->frees) {
-      man->maxfrees = man->frees; /* 更新最大值 */
-    }
-    man->free[i].addr = addr;
-    man->free[i].size = size;
-    return 0; /* 成功完成 */
+    return mem_alloc(mem, size);
   }
-  /* 不能往后移动 */
-  man->losts++;
-  man->lostsize += size;
-  return -1; /* 失败 */
+  return NULL;
 }
-
-unsigned int memman_alloc_4k(struct MEMMAN* man, unsigned int size) {
-  unsigned int a;
-  size = (size + 0xfff) & 0xfffff000;
-  a = memman_alloc(man, size);
-  return a;
+void mem_free(memory* mem, void* p, uint32_t size) {
+  freeinfo* finf = mem->freeinf;
+  while (finf) {
+    if (mem_free_finf(mem, finf, p, size)) {
+      return;
+    }
+    finf = finf->next;
+  }
+  freeinfo* new_f = make_next_freeinfo(mem);
+  if (new_f) {
+    mem_free_finf(mem, new_f, p, size);
+  }
 }
-
-int memman_free_4k(struct MEMMAN* man, unsigned int addr, unsigned int size) {
-  int i;
-  size = (size + 0xfff) & 0xfffff000;
-  i = memman_free(man, addr, size);
-  return i;
+void* mem_alloc_nb(memory* mem, uint32_t size, uint32_t n) {
+  size = ((size - 1) / n + 1) * n;
+  return mem_alloc(mem, size);
 }
-unsigned int memman_alloc_2k(struct MEMMAN* man, unsigned int size) {
-  unsigned int a;
-  size = (size + 0x7ff) & 0xfffff800;
-  a = memman_alloc(man, size);
-  return a;
+void mem_free_nb(memory* mem, void* p, uint32_t size, uint32_t n) {
+  size = ((size - 1) / n + 1) * n;
+  mem_free(mem, p, size);
 }
-
-int memman_free_2k(struct MEMMAN* man, unsigned int addr, unsigned int size) {
-  int i;
-  size = (size + 0x7ff) & 0xfffff800;
-  i = memman_free(man, addr, size);
-  return i;
+memory* memory_init(uint32_t start, uint32_t size) {
+  memory* mem;
+  mem = (memory*)start;
+  start += sizeof(memory);
+  size -= sizeof(memory);
+  mem->freeinf = (freeinfo*)start;
+  start += sizeof(freeinfo);
+  size -= sizeof(freeinfo);
+  mem->freeinf->next = 0;
+  mem->freeinf->f = (free_member*)start;
+  start += FREE_MAX_NUM * sizeof(free_member);
+  size -= FREE_MAX_NUM * sizeof(free_member);
+  for (int i = 0; i < FREE_MAX_NUM; i++) {
+    mem->freeinf->f[i].start = 0;
+    mem->freeinf->f[i].end = 0;
+  }
+  mem_free(mem, (void *)start, size);
+  return mem;
 }
-unsigned int memman_alloc_128b(struct MEMMAN* man, unsigned int size) {
-  unsigned int a;
-  size = (size + 0x7f) & 0xffffff80;
-  a = memman_alloc(man, size);
-  return a;
-}
-
-int memman_free_128b(struct MEMMAN* man, unsigned int addr, unsigned int size) {
-  int i;
-  size = (size + 0x7f) & 0xffffff80;
-  i = memman_free(man, addr, size);
-  return i;
-}
-struct MEMMAN* mm;
+char flag = 0;
 void init_mem() {
-  start = api_malloc(1);
-  mm = start;
-  memman_init((struct MEMMAN*)start);
-  start += sizeof(struct MEMMAN);
-  memman_free(mm, start, api_heapsize() - sizeof(struct MEMMAN));
-  total_size = api_heapsize() - sizeof(struct MEMMAN);
+  alloc_start = api_malloc(1);
+  mm = memory_init(alloc_start, api_heapsize());
+  total_size = api_heapsize();
   flag = 1;
 }
 void* malloc(int size) {
+  // printf("malloc.\n");
   if (flag) {
-    void* p = memman_alloc_128b(mm, size + sizeof(int));
-    if (p == NULL)
-      return NULL;
+    void* p = mem_alloc_nb(mm, size + sizeof(int), 64);
     *(int*)p = size;
     return (char*)p + sizeof(int);
   } else {
@@ -1603,7 +1841,7 @@ void free(void* p) {
   if (p == NULL)
     return;
   int size = *(int*)((char*)p - sizeof(int));
-  memman_free_128b(mm, (char*)p - sizeof(int), size + sizeof(int));
+  mem_free_nb(mm, (char*)p - sizeof(int), size + sizeof(int), 64);
 }
 int _Znaj(uint32_t size) {
   // printk("_Znaj:%d\n", size);
@@ -3755,218 +3993,220 @@ void getenv() {
 #define weak __attribute__((__weak__))
 #define hidden __attribute__((__visibility__("hidden")))
 #define weak_alias(old, new) \
-	extern __typeof(old) new __attribute__((__weak__, __alias__(#old)))
+  extern __typeof(old) new __attribute__((__weak__, __alias__(#old)))
 #define LOG2_TABLE_BITS 6
 #define LOG2_POLY_ORDER 7
 #define LOG2_POLY1_ORDER 11
 extern hidden const struct log2_data {
-	double invln2hi;
-	double invln2lo;
-	double poly[LOG2_POLY_ORDER - 1];
-	double poly1[LOG2_POLY1_ORDER - 1];
-	struct {
-		double invc, logc;
-	} tab[1 << LOG2_TABLE_BITS];
+  double invln2hi;
+  double invln2lo;
+  double poly[LOG2_POLY_ORDER - 1];
+  double poly1[LOG2_POLY1_ORDER - 1];
+  struct {
+    double invc, logc;
+  } tab[1 << LOG2_TABLE_BITS];
 #if !__FP_FAST_FMA
-	struct {
-		double chi, clo;
-	} tab2[1 << LOG2_TABLE_BITS];
+  struct {
+    double chi, clo;
+  } tab2[1 << LOG2_TABLE_BITS];
 #endif
 } __log2_data;
 #define N (1 << LOG2_TABLE_BITS)
 
 const struct log2_data __log2_data = {
-// First coefficient: 0x1.71547652b82fe1777d0ffda0d24p0
-.invln2hi = 0x1.7154765200000p+0,
-.invln2lo = 0x1.705fc2eefa200p-33,
-.poly1 = {
-// relative error: 0x1.2fad8188p-63
-// in -0x1.5b51p-5 0x1.6ab2p-5
--0x1.71547652b82fep-1,
-0x1.ec709dc3a03f7p-2,
--0x1.71547652b7c3fp-2,
-0x1.2776c50f05be4p-2,
--0x1.ec709dd768fe5p-3,
-0x1.a61761ec4e736p-3,
--0x1.7153fbc64a79bp-3,
-0x1.484d154f01b4ap-3,
--0x1.289e4a72c383cp-3,
-0x1.0b32f285aee66p-3,
-},
-.poly = {
-// relative error: 0x1.a72c2bf8p-58
-// abs error: 0x1.67a552c8p-66
-// in -0x1.f45p-8 0x1.f45p-8
--0x1.71547652b8339p-1,
-0x1.ec709dc3a04bep-2,
--0x1.7154764702ffbp-2,
-0x1.2776c50034c48p-2,
--0x1.ec7b328ea92bcp-3,
-0x1.a6225e117f92ep-3,
-},
-/* Algorithm:
+    // First coefficient: 0x1.71547652b82fe1777d0ffda0d24p0
+    .invln2hi = 0x1.7154765200000p+0,
+    .invln2lo = 0x1.705fc2eefa200p-33,
+    .poly1 =
+        {
+            // relative error: 0x1.2fad8188p-63
+            // in -0x1.5b51p-5 0x1.6ab2p-5
+            -0x1.71547652b82fep-1,
+            0x1.ec709dc3a03f7p-2,
+            -0x1.71547652b7c3fp-2,
+            0x1.2776c50f05be4p-2,
+            -0x1.ec709dd768fe5p-3,
+            0x1.a61761ec4e736p-3,
+            -0x1.7153fbc64a79bp-3,
+            0x1.484d154f01b4ap-3,
+            -0x1.289e4a72c383cp-3,
+            0x1.0b32f285aee66p-3,
+        },
+    .poly =
+        {
+            // relative error: 0x1.a72c2bf8p-58
+            // abs error: 0x1.67a552c8p-66
+            // in -0x1.f45p-8 0x1.f45p-8
+            -0x1.71547652b8339p-1,
+            0x1.ec709dc3a04bep-2,
+            -0x1.7154764702ffbp-2,
+            0x1.2776c50034c48p-2,
+            -0x1.ec7b328ea92bcp-3,
+            0x1.a6225e117f92ep-3,
+        },
+    /* Algorithm:
 
-	x = 2^k z
-	log2(x) = k + log2(c) + log2(z/c)
-	log2(z/c) = poly(z/c - 1)
+            x = 2^k z
+            log2(x) = k + log2(c) + log2(z/c)
+            log2(z/c) = poly(z/c - 1)
 
-where z is in [1.6p-1; 1.6p0] which is split into N subintervals and z falls
-into the ith one, then table entries are computed as
+    where z is in [1.6p-1; 1.6p0] which is split into N subintervals and z falls
+    into the ith one, then table entries are computed as
 
-	tab[i].invc = 1/c
-	tab[i].logc = (double)log2(c)
-	tab2[i].chi = (double)c
-	tab2[i].clo = (double)(c - (double)c)
+            tab[i].invc = 1/c
+            tab[i].logc = (double)log2(c)
+            tab2[i].chi = (double)c
+            tab2[i].clo = (double)(c - (double)c)
 
-where c is near the center of the subinterval and is chosen by trying +-2^29
-floating point invc candidates around 1/center and selecting one for which
+    where c is near the center of the subinterval and is chosen by trying +-2^29
+    floating point invc candidates around 1/center and selecting one for which
 
-	1) the rounding error in 0x1.8p10 + logc is 0,
-	2) the rounding error in z - chi - clo is < 0x1p-64 and
-	3) the rounding error in (double)log2(c) is minimized (< 0x1p-68).
+            1) the rounding error in 0x1.8p10 + logc is 0,
+            2) the rounding error in z - chi - clo is < 0x1p-64 and
+            3) the rounding error in (double)log2(c) is minimized (< 0x1p-68).
 
-Note: 1) ensures that k + logc can be computed without rounding error, 2)
-ensures that z/c - 1 can be computed as (z - chi - clo)*invc with close to a
-single rounding error when there is no fast fma for z*invc - 1, 3) ensures
-that logc + poly(z/c - 1) has small error, however near x == 1 when
-|log2(x)| < 0x1p-4, this is not enough so that is special cased.  */
-.tab = {
-{0x1.724286bb1acf8p+0, -0x1.1095feecdb000p-1},
-{0x1.6e1f766d2cca1p+0, -0x1.08494bd76d000p-1},
-{0x1.6a13d0e30d48ap+0, -0x1.00143aee8f800p-1},
-{0x1.661ec32d06c85p+0, -0x1.efec5360b4000p-2},
-{0x1.623fa951198f8p+0, -0x1.dfdd91ab7e000p-2},
-{0x1.5e75ba4cf026cp+0, -0x1.cffae0cc79000p-2},
-{0x1.5ac055a214fb8p+0, -0x1.c043811fda000p-2},
-{0x1.571ed0f166e1ep+0, -0x1.b0b67323ae000p-2},
-{0x1.53909590bf835p+0, -0x1.a152f5a2db000p-2},
-{0x1.5014fed61adddp+0, -0x1.9217f5af86000p-2},
-{0x1.4cab88e487bd0p+0, -0x1.8304db0719000p-2},
-{0x1.49539b4334feep+0, -0x1.74189f9a9e000p-2},
-{0x1.460cbdfafd569p+0, -0x1.6552bb5199000p-2},
-{0x1.42d664ee4b953p+0, -0x1.56b23a29b1000p-2},
-{0x1.3fb01111dd8a6p+0, -0x1.483650f5fa000p-2},
-{0x1.3c995b70c5836p+0, -0x1.39de937f6a000p-2},
-{0x1.3991c4ab6fd4ap+0, -0x1.2baa1538d6000p-2},
-{0x1.3698e0ce099b5p+0, -0x1.1d98340ca4000p-2},
-{0x1.33ae48213e7b2p+0, -0x1.0fa853a40e000p-2},
-{0x1.30d191985bdb1p+0, -0x1.01d9c32e73000p-2},
-{0x1.2e025cab271d7p+0, -0x1.e857da2fa6000p-3},
-{0x1.2b404cf13cd82p+0, -0x1.cd3c8633d8000p-3},
-{0x1.288b02c7ccb50p+0, -0x1.b26034c14a000p-3},
-{0x1.25e2263944de5p+0, -0x1.97c1c2f4fe000p-3},
-{0x1.234563d8615b1p+0, -0x1.7d6023f800000p-3},
-{0x1.20b46e33eaf38p+0, -0x1.633a71a05e000p-3},
-{0x1.1e2eefdcda3ddp+0, -0x1.494f5e9570000p-3},
-{0x1.1bb4a580b3930p+0, -0x1.2f9e424e0a000p-3},
-{0x1.19453847f2200p+0, -0x1.162595afdc000p-3},
-{0x1.16e06c0d5d73cp+0, -0x1.f9c9a75bd8000p-4},
-{0x1.1485f47b7e4c2p+0, -0x1.c7b575bf9c000p-4},
-{0x1.12358ad0085d1p+0, -0x1.960c60ff48000p-4},
-{0x1.0fef00f532227p+0, -0x1.64ce247b60000p-4},
-{0x1.0db2077d03a8fp+0, -0x1.33f78b2014000p-4},
-{0x1.0b7e6d65980d9p+0, -0x1.0387d1a42c000p-4},
-{0x1.0953efe7b408dp+0, -0x1.a6f9208b50000p-5},
-{0x1.07325cac53b83p+0, -0x1.47a954f770000p-5},
-{0x1.05197e40d1b5cp+0, -0x1.d23a8c50c0000p-6},
-{0x1.03091c1208ea2p+0, -0x1.16a2629780000p-6},
-{0x1.0101025b37e21p+0, -0x1.720f8d8e80000p-8},
-{0x1.fc07ef9caa76bp-1, 0x1.6fe53b1500000p-7},
-{0x1.f4465d3f6f184p-1, 0x1.11ccce10f8000p-5},
-{0x1.ecc079f84107fp-1, 0x1.c4dfc8c8b8000p-5},
-{0x1.e573a99975ae8p-1, 0x1.3aa321e574000p-4},
-{0x1.de5d6f0bd3de6p-1, 0x1.918a0d08b8000p-4},
-{0x1.d77b681ff38b3p-1, 0x1.e72e9da044000p-4},
-{0x1.d0cb5724de943p-1, 0x1.1dcd2507f6000p-3},
-{0x1.ca4b2dc0e7563p-1, 0x1.476ab03dea000p-3},
-{0x1.c3f8ee8d6cb51p-1, 0x1.7074377e22000p-3},
-{0x1.bdd2b4f020c4cp-1, 0x1.98ede8ba94000p-3},
-{0x1.b7d6c006015cap-1, 0x1.c0db86ad2e000p-3},
-{0x1.b20366e2e338fp-1, 0x1.e840aafcee000p-3},
-{0x1.ac57026295039p-1, 0x1.0790ab4678000p-2},
-{0x1.a6d01bc2731ddp-1, 0x1.1ac056801c000p-2},
-{0x1.a16d3bc3ff18bp-1, 0x1.2db11d4fee000p-2},
-{0x1.9c2d14967feadp-1, 0x1.406464ec58000p-2},
-{0x1.970e4f47c9902p-1, 0x1.52dbe093af000p-2},
-{0x1.920fb3982bcf2p-1, 0x1.651902050d000p-2},
-{0x1.8d30187f759f1p-1, 0x1.771d2cdeaf000p-2},
-{0x1.886e5ebb9f66dp-1, 0x1.88e9c857d9000p-2},
-{0x1.83c97b658b994p-1, 0x1.9a80155e16000p-2},
-{0x1.7f405ffc61022p-1, 0x1.abe186ed3d000p-2},
-{0x1.7ad22181415cap-1, 0x1.bd0f2aea0e000p-2},
-{0x1.767dcf99eff8cp-1, 0x1.ce0a43dbf4000p-2},
-},
+    Note: 1) ensures that k + logc can be computed without rounding error, 2)
+    ensures that z/c - 1 can be computed as (z - chi - clo)*invc with close to a
+    single rounding error when there is no fast fma for z*invc - 1, 3) ensures
+    that logc + poly(z/c - 1) has small error, however near x == 1 when
+    |log2(x)| < 0x1p-4, this is not enough so that is special cased.  */
+    .tab =
+        {
+            {0x1.724286bb1acf8p+0, -0x1.1095feecdb000p-1},
+            {0x1.6e1f766d2cca1p+0, -0x1.08494bd76d000p-1},
+            {0x1.6a13d0e30d48ap+0, -0x1.00143aee8f800p-1},
+            {0x1.661ec32d06c85p+0, -0x1.efec5360b4000p-2},
+            {0x1.623fa951198f8p+0, -0x1.dfdd91ab7e000p-2},
+            {0x1.5e75ba4cf026cp+0, -0x1.cffae0cc79000p-2},
+            {0x1.5ac055a214fb8p+0, -0x1.c043811fda000p-2},
+            {0x1.571ed0f166e1ep+0, -0x1.b0b67323ae000p-2},
+            {0x1.53909590bf835p+0, -0x1.a152f5a2db000p-2},
+            {0x1.5014fed61adddp+0, -0x1.9217f5af86000p-2},
+            {0x1.4cab88e487bd0p+0, -0x1.8304db0719000p-2},
+            {0x1.49539b4334feep+0, -0x1.74189f9a9e000p-2},
+            {0x1.460cbdfafd569p+0, -0x1.6552bb5199000p-2},
+            {0x1.42d664ee4b953p+0, -0x1.56b23a29b1000p-2},
+            {0x1.3fb01111dd8a6p+0, -0x1.483650f5fa000p-2},
+            {0x1.3c995b70c5836p+0, -0x1.39de937f6a000p-2},
+            {0x1.3991c4ab6fd4ap+0, -0x1.2baa1538d6000p-2},
+            {0x1.3698e0ce099b5p+0, -0x1.1d98340ca4000p-2},
+            {0x1.33ae48213e7b2p+0, -0x1.0fa853a40e000p-2},
+            {0x1.30d191985bdb1p+0, -0x1.01d9c32e73000p-2},
+            {0x1.2e025cab271d7p+0, -0x1.e857da2fa6000p-3},
+            {0x1.2b404cf13cd82p+0, -0x1.cd3c8633d8000p-3},
+            {0x1.288b02c7ccb50p+0, -0x1.b26034c14a000p-3},
+            {0x1.25e2263944de5p+0, -0x1.97c1c2f4fe000p-3},
+            {0x1.234563d8615b1p+0, -0x1.7d6023f800000p-3},
+            {0x1.20b46e33eaf38p+0, -0x1.633a71a05e000p-3},
+            {0x1.1e2eefdcda3ddp+0, -0x1.494f5e9570000p-3},
+            {0x1.1bb4a580b3930p+0, -0x1.2f9e424e0a000p-3},
+            {0x1.19453847f2200p+0, -0x1.162595afdc000p-3},
+            {0x1.16e06c0d5d73cp+0, -0x1.f9c9a75bd8000p-4},
+            {0x1.1485f47b7e4c2p+0, -0x1.c7b575bf9c000p-4},
+            {0x1.12358ad0085d1p+0, -0x1.960c60ff48000p-4},
+            {0x1.0fef00f532227p+0, -0x1.64ce247b60000p-4},
+            {0x1.0db2077d03a8fp+0, -0x1.33f78b2014000p-4},
+            {0x1.0b7e6d65980d9p+0, -0x1.0387d1a42c000p-4},
+            {0x1.0953efe7b408dp+0, -0x1.a6f9208b50000p-5},
+            {0x1.07325cac53b83p+0, -0x1.47a954f770000p-5},
+            {0x1.05197e40d1b5cp+0, -0x1.d23a8c50c0000p-6},
+            {0x1.03091c1208ea2p+0, -0x1.16a2629780000p-6},
+            {0x1.0101025b37e21p+0, -0x1.720f8d8e80000p-8},
+            {0x1.fc07ef9caa76bp-1, 0x1.6fe53b1500000p-7},
+            {0x1.f4465d3f6f184p-1, 0x1.11ccce10f8000p-5},
+            {0x1.ecc079f84107fp-1, 0x1.c4dfc8c8b8000p-5},
+            {0x1.e573a99975ae8p-1, 0x1.3aa321e574000p-4},
+            {0x1.de5d6f0bd3de6p-1, 0x1.918a0d08b8000p-4},
+            {0x1.d77b681ff38b3p-1, 0x1.e72e9da044000p-4},
+            {0x1.d0cb5724de943p-1, 0x1.1dcd2507f6000p-3},
+            {0x1.ca4b2dc0e7563p-1, 0x1.476ab03dea000p-3},
+            {0x1.c3f8ee8d6cb51p-1, 0x1.7074377e22000p-3},
+            {0x1.bdd2b4f020c4cp-1, 0x1.98ede8ba94000p-3},
+            {0x1.b7d6c006015cap-1, 0x1.c0db86ad2e000p-3},
+            {0x1.b20366e2e338fp-1, 0x1.e840aafcee000p-3},
+            {0x1.ac57026295039p-1, 0x1.0790ab4678000p-2},
+            {0x1.a6d01bc2731ddp-1, 0x1.1ac056801c000p-2},
+            {0x1.a16d3bc3ff18bp-1, 0x1.2db11d4fee000p-2},
+            {0x1.9c2d14967feadp-1, 0x1.406464ec58000p-2},
+            {0x1.970e4f47c9902p-1, 0x1.52dbe093af000p-2},
+            {0x1.920fb3982bcf2p-1, 0x1.651902050d000p-2},
+            {0x1.8d30187f759f1p-1, 0x1.771d2cdeaf000p-2},
+            {0x1.886e5ebb9f66dp-1, 0x1.88e9c857d9000p-2},
+            {0x1.83c97b658b994p-1, 0x1.9a80155e16000p-2},
+            {0x1.7f405ffc61022p-1, 0x1.abe186ed3d000p-2},
+            {0x1.7ad22181415cap-1, 0x1.bd0f2aea0e000p-2},
+            {0x1.767dcf99eff8cp-1, 0x1.ce0a43dbf4000p-2},
+        },
 #if !__FP_FAST_FMA
-.tab2 = {
-{0x1.6200012b90a8ep-1, 0x1.904ab0644b605p-55},
-{0x1.66000045734a6p-1, 0x1.1ff9bea62f7a9p-57},
-{0x1.69fffc325f2c5p-1, 0x1.27ecfcb3c90bap-55},
-{0x1.6e00038b95a04p-1, 0x1.8ff8856739326p-55},
-{0x1.71fffe09994e3p-1, 0x1.afd40275f82b1p-55},
-{0x1.7600015590e1p-1, -0x1.2fd75b4238341p-56},
-{0x1.7a00012655bd5p-1, 0x1.808e67c242b76p-56},
-{0x1.7e0003259e9a6p-1, -0x1.208e426f622b7p-57},
-{0x1.81fffedb4b2d2p-1, -0x1.402461ea5c92fp-55},
-{0x1.860002dfafcc3p-1, 0x1.df7f4a2f29a1fp-57},
-{0x1.89ffff78c6b5p-1, -0x1.e0453094995fdp-55},
-{0x1.8e00039671566p-1, -0x1.a04f3bec77b45p-55},
-{0x1.91fffe2bf1745p-1, -0x1.7fa34400e203cp-56},
-{0x1.95fffcc5c9fd1p-1, -0x1.6ff8005a0695dp-56},
-{0x1.9a0003bba4767p-1, 0x1.0f8c4c4ec7e03p-56},
-{0x1.9dfffe7b92da5p-1, 0x1.e7fd9478c4602p-55},
-{0x1.a1fffd72efdafp-1, -0x1.a0c554dcdae7ep-57},
-{0x1.a5fffde04ff95p-1, 0x1.67da98ce9b26bp-55},
-{0x1.a9fffca5e8d2bp-1, -0x1.284c9b54c13dep-55},
-{0x1.adfffddad03eap-1, 0x1.812c8ea602e3cp-58},
-{0x1.b1ffff10d3d4dp-1, -0x1.efaddad27789cp-55},
-{0x1.b5fffce21165ap-1, 0x1.3cb1719c61237p-58},
-{0x1.b9fffd950e674p-1, 0x1.3f7d94194cep-56},
-{0x1.be000139ca8afp-1, 0x1.50ac4215d9bcp-56},
-{0x1.c20005b46df99p-1, 0x1.beea653e9c1c9p-57},
-{0x1.c600040b9f7aep-1, -0x1.c079f274a70d6p-56},
-{0x1.ca0006255fd8ap-1, -0x1.a0b4076e84c1fp-56},
-{0x1.cdfffd94c095dp-1, 0x1.8f933f99ab5d7p-55},
-{0x1.d1ffff975d6cfp-1, -0x1.82c08665fe1bep-58},
-{0x1.d5fffa2561c93p-1, -0x1.b04289bd295f3p-56},
-{0x1.d9fff9d228b0cp-1, 0x1.70251340fa236p-55},
-{0x1.de00065bc7e16p-1, -0x1.5011e16a4d80cp-56},
-{0x1.e200002f64791p-1, 0x1.9802f09ef62ep-55},
-{0x1.e600057d7a6d8p-1, -0x1.e0b75580cf7fap-56},
-{0x1.ea00027edc00cp-1, -0x1.c848309459811p-55},
-{0x1.ee0006cf5cb7cp-1, -0x1.f8027951576f4p-55},
-{0x1.f2000782b7dccp-1, -0x1.f81d97274538fp-55},
-{0x1.f6000260c450ap-1, -0x1.071002727ffdcp-59},
-{0x1.f9fffe88cd533p-1, -0x1.81bdce1fda8bp-58},
-{0x1.fdfffd50f8689p-1, 0x1.7f91acb918e6ep-55},
-{0x1.0200004292367p+0, 0x1.b7ff365324681p-54},
-{0x1.05fffe3e3d668p+0, 0x1.6fa08ddae957bp-55},
-{0x1.0a0000a85a757p+0, -0x1.7e2de80d3fb91p-58},
-{0x1.0e0001a5f3fccp+0, -0x1.1823305c5f014p-54},
-{0x1.11ffff8afbaf5p+0, -0x1.bfabb6680bac2p-55},
-{0x1.15fffe54d91adp+0, -0x1.d7f121737e7efp-54},
-{0x1.1a00011ac36e1p+0, 0x1.c000a0516f5ffp-54},
-{0x1.1e00019c84248p+0, -0x1.082fbe4da5dap-54},
-{0x1.220000ffe5e6ep+0, -0x1.8fdd04c9cfb43p-55},
-{0x1.26000269fd891p+0, 0x1.cfe2a7994d182p-55},
-{0x1.2a00029a6e6dap+0, -0x1.00273715e8bc5p-56},
-{0x1.2dfffe0293e39p+0, 0x1.b7c39dab2a6f9p-54},
-{0x1.31ffff7dcf082p+0, 0x1.df1336edc5254p-56},
-{0x1.35ffff05a8b6p+0, -0x1.e03564ccd31ebp-54},
-{0x1.3a0002e0eaeccp+0, 0x1.5f0e74bd3a477p-56},
-{0x1.3e000043bb236p+0, 0x1.c7dcb149d8833p-54},
-{0x1.4200002d187ffp+0, 0x1.e08afcf2d3d28p-56},
-{0x1.460000d387cb1p+0, 0x1.20837856599a6p-55},
-{0x1.4a00004569f89p+0, -0x1.9fa5c904fbcd2p-55},
-{0x1.4e000043543f3p+0, -0x1.81125ed175329p-56},
-{0x1.51fffcc027f0fp+0, 0x1.883d8847754dcp-54},
-{0x1.55ffffd87b36fp+0, -0x1.709e731d02807p-55},
-{0x1.59ffff21df7bap+0, 0x1.7f79f68727b02p-55},
-{0x1.5dfffebfc3481p+0, -0x1.180902e30e93ep-54},
-},
+    .tab2 =
+        {
+            {0x1.6200012b90a8ep-1, 0x1.904ab0644b605p-55},
+            {0x1.66000045734a6p-1, 0x1.1ff9bea62f7a9p-57},
+            {0x1.69fffc325f2c5p-1, 0x1.27ecfcb3c90bap-55},
+            {0x1.6e00038b95a04p-1, 0x1.8ff8856739326p-55},
+            {0x1.71fffe09994e3p-1, 0x1.afd40275f82b1p-55},
+            {0x1.7600015590e1p-1, -0x1.2fd75b4238341p-56},
+            {0x1.7a00012655bd5p-1, 0x1.808e67c242b76p-56},
+            {0x1.7e0003259e9a6p-1, -0x1.208e426f622b7p-57},
+            {0x1.81fffedb4b2d2p-1, -0x1.402461ea5c92fp-55},
+            {0x1.860002dfafcc3p-1, 0x1.df7f4a2f29a1fp-57},
+            {0x1.89ffff78c6b5p-1, -0x1.e0453094995fdp-55},
+            {0x1.8e00039671566p-1, -0x1.a04f3bec77b45p-55},
+            {0x1.91fffe2bf1745p-1, -0x1.7fa34400e203cp-56},
+            {0x1.95fffcc5c9fd1p-1, -0x1.6ff8005a0695dp-56},
+            {0x1.9a0003bba4767p-1, 0x1.0f8c4c4ec7e03p-56},
+            {0x1.9dfffe7b92da5p-1, 0x1.e7fd9478c4602p-55},
+            {0x1.a1fffd72efdafp-1, -0x1.a0c554dcdae7ep-57},
+            {0x1.a5fffde04ff95p-1, 0x1.67da98ce9b26bp-55},
+            {0x1.a9fffca5e8d2bp-1, -0x1.284c9b54c13dep-55},
+            {0x1.adfffddad03eap-1, 0x1.812c8ea602e3cp-58},
+            {0x1.b1ffff10d3d4dp-1, -0x1.efaddad27789cp-55},
+            {0x1.b5fffce21165ap-1, 0x1.3cb1719c61237p-58},
+            {0x1.b9fffd950e674p-1, 0x1.3f7d94194cep-56},
+            {0x1.be000139ca8afp-1, 0x1.50ac4215d9bcp-56},
+            {0x1.c20005b46df99p-1, 0x1.beea653e9c1c9p-57},
+            {0x1.c600040b9f7aep-1, -0x1.c079f274a70d6p-56},
+            {0x1.ca0006255fd8ap-1, -0x1.a0b4076e84c1fp-56},
+            {0x1.cdfffd94c095dp-1, 0x1.8f933f99ab5d7p-55},
+            {0x1.d1ffff975d6cfp-1, -0x1.82c08665fe1bep-58},
+            {0x1.d5fffa2561c93p-1, -0x1.b04289bd295f3p-56},
+            {0x1.d9fff9d228b0cp-1, 0x1.70251340fa236p-55},
+            {0x1.de00065bc7e16p-1, -0x1.5011e16a4d80cp-56},
+            {0x1.e200002f64791p-1, 0x1.9802f09ef62ep-55},
+            {0x1.e600057d7a6d8p-1, -0x1.e0b75580cf7fap-56},
+            {0x1.ea00027edc00cp-1, -0x1.c848309459811p-55},
+            {0x1.ee0006cf5cb7cp-1, -0x1.f8027951576f4p-55},
+            {0x1.f2000782b7dccp-1, -0x1.f81d97274538fp-55},
+            {0x1.f6000260c450ap-1, -0x1.071002727ffdcp-59},
+            {0x1.f9fffe88cd533p-1, -0x1.81bdce1fda8bp-58},
+            {0x1.fdfffd50f8689p-1, 0x1.7f91acb918e6ep-55},
+            {0x1.0200004292367p+0, 0x1.b7ff365324681p-54},
+            {0x1.05fffe3e3d668p+0, 0x1.6fa08ddae957bp-55},
+            {0x1.0a0000a85a757p+0, -0x1.7e2de80d3fb91p-58},
+            {0x1.0e0001a5f3fccp+0, -0x1.1823305c5f014p-54},
+            {0x1.11ffff8afbaf5p+0, -0x1.bfabb6680bac2p-55},
+            {0x1.15fffe54d91adp+0, -0x1.d7f121737e7efp-54},
+            {0x1.1a00011ac36e1p+0, 0x1.c000a0516f5ffp-54},
+            {0x1.1e00019c84248p+0, -0x1.082fbe4da5dap-54},
+            {0x1.220000ffe5e6ep+0, -0x1.8fdd04c9cfb43p-55},
+            {0x1.26000269fd891p+0, 0x1.cfe2a7994d182p-55},
+            {0x1.2a00029a6e6dap+0, -0x1.00273715e8bc5p-56},
+            {0x1.2dfffe0293e39p+0, 0x1.b7c39dab2a6f9p-54},
+            {0x1.31ffff7dcf082p+0, 0x1.df1336edc5254p-56},
+            {0x1.35ffff05a8b6p+0, -0x1.e03564ccd31ebp-54},
+            {0x1.3a0002e0eaeccp+0, 0x1.5f0e74bd3a477p-56},
+            {0x1.3e000043bb236p+0, 0x1.c7dcb149d8833p-54},
+            {0x1.4200002d187ffp+0, 0x1.e08afcf2d3d28p-56},
+            {0x1.460000d387cb1p+0, 0x1.20837856599a6p-55},
+            {0x1.4a00004569f89p+0, -0x1.9fa5c904fbcd2p-55},
+            {0x1.4e000043543f3p+0, -0x1.81125ed175329p-56},
+            {0x1.51fffcc027f0fp+0, 0x1.883d8847754dcp-54},
+            {0x1.55ffffd87b36fp+0, -0x1.709e731d02807p-55},
+            {0x1.59ffff21df7bap+0, 0x1.7f79f68727b02p-55},
+            {0x1.5dfffebfc3481p+0, -0x1.180902e30e93ep-54},
+        },
 #endif
 };
-
-
 
 #define T __log2_data.tab
 #define T2 __log2_data.tab2
@@ -3977,109 +4217,103 @@ that logc + poly(z/c - 1) has small error, however near x == 1 when
 #define OFF 0x3fe6000000000000
 
 /* Top 16 bits of a double.  */
-static inline uint32_t top16(double x)
-{
-	return asuint64(x) >> 48;
+static inline uint32_t top16(double x) {
+  return asuint64(x) >> 48;
 }
 
-double log2(double x)
-{
-	double_t z, r, r2, r4, y, invc, logc, kd, hi, lo, t1, t2, t3, p;
-	uint64_t ix, iz, tmp;
-	uint32_t top;
-	int k, i;
+double log2(double x) {
+  double_t z, r, r2, r4, y, invc, logc, kd, hi, lo, t1, t2, t3, p;
+  uint64_t ix, iz, tmp;
+  uint32_t top;
+  int k, i;
 
-	ix = asuint64(x);
-	top = top16(x);
+  ix = asuint64(x);
+  top = top16(x);
 #define LO asuint64(1.0 - 0x1.5b51p-5)
 #define HI asuint64(1.0 + 0x1.6ab2p-5)
-	if (predict_false(ix - LO < HI - LO)) {
-		/* Handle close to 1.0 inputs separately.  */
-		/* Fix sign of zero with downward rounding when x==1.  */
-		if (predict_false(ix == asuint64(1.0)))
-			return 0;
-		r = x - 1.0;
+  if (predict_false(ix - LO < HI - LO)) {
+    /* Handle close to 1.0 inputs separately.  */
+    /* Fix sign of zero with downward rounding when x==1.  */
+    if (predict_false(ix == asuint64(1.0)))
+      return 0;
+    r = x - 1.0;
 #if __FP_FAST_FMA
-		hi = r * InvLn2hi;
-		lo = r * InvLn2lo + __builtin_fma(r, InvLn2hi, -hi);
+    hi = r * InvLn2hi;
+    lo = r * InvLn2lo + __builtin_fma(r, InvLn2hi, -hi);
 #else
-		double_t rhi, rlo;
-		rhi = asdouble(asuint64(r) & -1ULL << 32);
-		rlo = r - rhi;
-		hi = rhi * InvLn2hi;
-		lo = rlo * InvLn2hi + r * InvLn2lo;
+    double_t rhi, rlo;
+    rhi = asdouble(asuint64(r) & -1ULL << 32);
+    rlo = r - rhi;
+    hi = rhi * InvLn2hi;
+    lo = rlo * InvLn2hi + r * InvLn2lo;
 #endif
-		r2 = r * r; /* rounding error: 0x1p-62.  */
-		r4 = r2 * r2;
-		/* Worst-case error is less than 0.54 ULP (0.55 ULP without fma).  */
-		p = r2 * (B[0] + r * B[1]);
-		y = hi + p;
-		lo += hi - y + p;
-		lo += r4 * (B[2] + r * B[3] + r2 * (B[4] + r * B[5]) +
-			    r4 * (B[6] + r * B[7] + r2 * (B[8] + r * B[9])));
-		y += lo;
-		return eval_as_double(y);
-	}
-	if (predict_false(top - 0x0010 >= 0x7ff0 - 0x0010)) {
-		/* x < 0x1p-1022 or inf or nan.  */
-		if (ix * 2 == 0)
-			return __math_divzero(1);
-		if (ix == asuint64(INFINITY)) /* log(inf) == inf.  */
-			return x;
-		if ((top & 0x8000) || (top & 0x7ff0) == 0x7ff0)
-			return __math_invalid(x);
-		/* x is subnormal, normalize it.  */
-		ix = asuint64(x * 0x1p52);
-		ix -= 52ULL << 52;
-	}
+    r2 = r * r; /* rounding error: 0x1p-62.  */
+    r4 = r2 * r2;
+    /* Worst-case error is less than 0.54 ULP (0.55 ULP without fma).  */
+    p = r2 * (B[0] + r * B[1]);
+    y = hi + p;
+    lo += hi - y + p;
+    lo += r4 * (B[2] + r * B[3] + r2 * (B[4] + r * B[5]) +
+                r4 * (B[6] + r * B[7] + r2 * (B[8] + r * B[9])));
+    y += lo;
+    return eval_as_double(y);
+  }
+  if (predict_false(top - 0x0010 >= 0x7ff0 - 0x0010)) {
+    /* x < 0x1p-1022 or inf or nan.  */
+    if (ix * 2 == 0)
+      return __math_divzero(1);
+    if (ix == asuint64(INFINITY)) /* log(inf) == inf.  */
+      return x;
+    if ((top & 0x8000) || (top & 0x7ff0) == 0x7ff0)
+      return __math_invalid(x);
+    /* x is subnormal, normalize it.  */
+    ix = asuint64(x * 0x1p52);
+    ix -= 52ULL << 52;
+  }
 
-	/* x = 2^k z; where z is in range [OFF,2*OFF) and exact.
-	   The range is split into N subintervals.
-	   The ith subinterval contains z and c is near its center.  */
-	tmp = ix - OFF;
-	i = (tmp >> (52 - LOG2_TABLE_BITS)) % N;
-	k = (int64_t)tmp >> 52; /* arithmetic shift */
-	iz = ix - (tmp & 0xfffULL << 52);
-	invc = T[i].invc;
-	logc = T[i].logc;
-	z = asdouble(iz);
-	kd = (double_t)k;
+  /* x = 2^k z; where z is in range [OFF,2*OFF) and exact.
+     The range is split into N subintervals.
+     The ith subinterval contains z and c is near its center.  */
+  tmp = ix - OFF;
+  i = (tmp >> (52 - LOG2_TABLE_BITS)) % N;
+  k = (int64_t)tmp >> 52; /* arithmetic shift */
+  iz = ix - (tmp & 0xfffULL << 52);
+  invc = T[i].invc;
+  logc = T[i].logc;
+  z = asdouble(iz);
+  kd = (double_t)k;
 
-	/* log2(x) = log2(z/c) + log2(c) + k.  */
-	/* r ~= z/c - 1, |r| < 1/(2*N).  */
+  /* log2(x) = log2(z/c) + log2(c) + k.  */
+  /* r ~= z/c - 1, |r| < 1/(2*N).  */
 #if __FP_FAST_FMA
-	/* rounding error: 0x1p-55/N.  */
-	r = __builtin_fma(z, invc, -1.0);
-	t1 = r * InvLn2hi;
-	t2 = r * InvLn2lo + __builtin_fma(r, InvLn2hi, -t1);
+  /* rounding error: 0x1p-55/N.  */
+  r = __builtin_fma(z, invc, -1.0);
+  t1 = r * InvLn2hi;
+  t2 = r * InvLn2lo + __builtin_fma(r, InvLn2hi, -t1);
 #else
-	double_t rhi, rlo;
-	/* rounding error: 0x1p-55/N + 0x1p-65.  */
-	r = (z - T2[i].chi - T2[i].clo) * invc;
-	rhi = asdouble(asuint64(r) & -1ULL << 32);
-	rlo = r - rhi;
-	t1 = rhi * InvLn2hi;
-	t2 = rlo * InvLn2hi + r * InvLn2lo;
+  double_t rhi, rlo;
+  /* rounding error: 0x1p-55/N + 0x1p-65.  */
+  r = (z - T2[i].chi - T2[i].clo) * invc;
+  rhi = asdouble(asuint64(r) & -1ULL << 32);
+  rlo = r - rhi;
+  t1 = rhi * InvLn2hi;
+  t2 = rlo * InvLn2hi + r * InvLn2lo;
 #endif
 
-	/* hi + lo = r/ln2 + log2(c) + k.  */
-	t3 = kd + logc;
-	hi = t3 + t1;
-	lo = t3 - hi + t1 + t2;
+  /* hi + lo = r/ln2 + log2(c) + k.  */
+  t3 = kd + logc;
+  hi = t3 + t1;
+  lo = t3 - hi + t1 + t2;
 
-	/* log2(r+1) = r/ln2 + r^2*poly(r).  */
-	/* Evaluation is optimized assuming superscalar pipelined execution.  */
-	r2 = r * r; /* rounding error: 0x1p-54/N^2.  */
-	r4 = r2 * r2;
-	/* Worst-case error if |y| > 0x1p-4: 0.547 ULP (0.550 ULP without fma).
-	   ~ 0.5 + 2/N/ln2 + abs-poly-error*0x1p56 ULP (+ 0.003 ULP without fma).  */
-	p = A[0] + r * A[1] + r2 * (A[2] + r * A[3]) + r4 * (A[4] + r * A[5]);
-	y = lo + r2 * p + hi;
-	return eval_as_double(y);
+  /* log2(r+1) = r/ln2 + r^2*poly(r).  */
+  /* Evaluation is optimized assuming superscalar pipelined execution.  */
+  r2 = r * r; /* rounding error: 0x1p-54/N^2.  */
+  r4 = r2 * r2;
+  /* Worst-case error if |y| > 0x1p-4: 0.547 ULP (0.550 ULP without fma).
+     ~ 0.5 + 2/N/ln2 + abs-poly-error*0x1p56 ULP (+ 0.003 ULP without fma).  */
+  p = A[0] + r * A[1] + r2 * (A[2] + r * A[3]) + r4 * (A[4] + r * A[5]);
+  y = lo + r2 * p + hi;
+  return eval_as_double(y);
 }
-void __dso_handle() {
-}
-void __cxa_atexit() {
-}
-
-
+void __dso_handle() {}
+void __cxa_atexit() {}
