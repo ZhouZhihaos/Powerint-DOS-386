@@ -48,6 +48,19 @@ void TestWrite(char drive,
   // printk("TestRW:Write Lba %d,Write Sectors number %d\n", lba, number);
   memcpy(ramdisk + lba * 512, buffer, number * 512);
 }
+void show_mem(memory* mem) {
+  freeinfo* finf = mem->freeinf;
+  while (finf) {
+    for (int i = 0; i < FREE_MAX_NUM; i++) {
+      if (finf->f[i].start == 0 && finf->f[i].end == 0) {
+        break;
+      }
+      printf("START: %08x END: %08x SIZE: %08x Bytes\n", finf->f[i].start, finf->f[i].end,
+             finf->f[i].end - finf->f[i].start);
+    }
+    finf = finf->next;
+  }
+}
 // socket测试例子
 static void TCP_Socket_Handler(struct Socket* socket, void* base) {
   struct TCPMessage* tcp =
@@ -519,6 +532,8 @@ CHECK_OK:
       printf("%d\n", 5 / a);          // 输出结果
     }
   } else if (stricmp("FORK", cmdline) == 0) {
+    void *p = malloc(4);
+    free(p);
     // printf("FTP Test!\n");
 
     // extern uint32_t ip;
@@ -733,7 +748,10 @@ CHECK_OK:
     pcinfo();
   } else if (stricmp("MEM", cmdline) == 0) {
     mem();
-  } else if (strincmp("BEEP ", cmdline, 5) == 0) {
+  } else if(stricmp("SHOW_HEAP",cmdline) == 0) {
+    show_mem(current_task()->mm);
+  }
+  else if (strincmp("BEEP ", cmdline, 5) == 0) {
     int point, notes, dup;
     point = ascii2num(*(char*)(cmdline + 5));
     notes = ascii2num(*(char*)(cmdline + 7));

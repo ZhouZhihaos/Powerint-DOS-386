@@ -1,4 +1,4 @@
-FONTPATH = ../font/
+FONTPATH = ../tools/font/
 APPSPATH = ../apps/
 APPSOUTPATH = ../apps/out/
 BIDPATH = ../apps/build_tools_in_pdos/

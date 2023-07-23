@@ -1727,7 +1727,7 @@ void* mem_alloc_finf(memory* mem,
             int e = finf->f[i].end;
             mem_delete(i, finf);
             mem_defragmenter(finf);
-            mem_free_finf(mem, finf, (void *)start, e - start);
+            mem_free_finf(mem, finf, (void*)start, e - start);
             return mem_alloc_finf(mem, if_nomore, size, NULL);
           }
         }
@@ -1738,8 +1738,8 @@ void* mem_alloc_finf(memory* mem,
       mem->memerrno = ERRNO_NOPE;
       mem_delete(idx, finf);
       mem_defragmenter(finf);
-	  memset(start, 0, size);
-      return (void *)start;
+      memset(start, 0, size);
+      return (void*)start;
     }
   }
   mem->memerrno = ERRNO_NO_ENOGHT_MEMORY;
@@ -1793,31 +1793,77 @@ void mem_free(memory* mem, void* p, uint32_t size) {
     mem_free_finf(mem, new_f, p, size);
   }
 }
+void show_mem(memory* mem) {
+  freeinfo* finf = mem->freeinf;
+  while (finf) {
+    for (int i = 0; i < FREE_MAX_NUM; i++) {
+      if (finf->f[i].start == 0 && finf->f[i].end == 0) {
+        break;
+      }
+      printf("START: %08x END: %08x SIZE: %08x Bytes\n", finf->f[i].start,
+             finf->f[i].end, finf->f[i].end - finf->f[i].start);
+    }
+    finf = finf->next;
+  }
+}
+void* mm_alloc(uint32_t size) {
+  unsigned int a;
+//  size = (size + 0xfff) & 0xfffff000;
+retry:
+  a = mem_alloc(mm, size);
+  if (!a) {
+    sbrk(size);
+    mem_free(mm, alloc_start + total_size, size);
+    total_size += size;
+    goto retry;
+  }
+  return a;
+}
+void mm_free(uint32_t addr, uint32_t size) {
+  int i;
+  // size = (size + 0xfff) & 0xfffff000;
+  mem_free(mm, addr, size);
+}
 void* mem_alloc_nb(memory* mem, uint32_t size, uint32_t n) {
   size = ((size - 1) / n + 1) * n;
-  return mem_alloc(mem, size);
+  return mm_alloc(size);
 }
 void mem_free_nb(memory* mem, void* p, uint32_t size, uint32_t n) {
   size = ((size - 1) / n + 1) * n;
-  mem_free(mem, p, size);
+  mm_free(p, size);
 }
 memory* memory_init(uint32_t start, uint32_t size) {
   memory* mem;
   mem = (memory*)start;
   start += sizeof(memory);
   size -= sizeof(memory);
+  if (size < 0) {
+    printf("mm init error.\n");
+    for (;;)
+      ;
+  }
   mem->freeinf = (freeinfo*)start;
   start += sizeof(freeinfo);
   size -= sizeof(freeinfo);
+  if (size < 0) {
+    printf("mm init error.\n");
+    for (;;)
+      ;
+  }
   mem->freeinf->next = 0;
   mem->freeinf->f = (free_member*)start;
   start += FREE_MAX_NUM * sizeof(free_member);
   size -= FREE_MAX_NUM * sizeof(free_member);
+  if ((int)size < 0) {
+    printf("mm init error.\n");
+    for (;;)
+      ;
+  }
   for (int i = 0; i < FREE_MAX_NUM; i++) {
     mem->freeinf->f[i].start = 0;
     mem->freeinf->f[i].end = 0;
   }
-  mem_free(mem, (void *)start, size);
+  mem_free(mem, (void*)start, size);
   return mem;
 }
 char flag = 0;
@@ -1825,6 +1871,7 @@ void init_mem() {
   alloc_start = api_malloc(1);
   mm = memory_init(alloc_start, api_heapsize());
   total_size = api_heapsize();
+  //  printf("total size = %08x\n",total_size);
   flag = 1;
 }
 void* malloc(int size) {

@@ -70,7 +70,7 @@ void pgui_api(int edi,
       int x = *(int*)(base + 12), y = *(int*)(base + 16),
           color = *(int*)(base + 20), xsize = *(int*)(base + 24);
       Sputs(sht->get_vram(), str, x, y, color, xsize);
-      sht->refresh(x, y, x + 8, y + 16);
+      sht->refresh(x, y, x + strlen(str) * 8, y + 16);
     } else if (ebx == 0x0b) {
       int base = edx + ds_base + 12;
       PSheetBase* sht = (PSheetBase*)(*(int*)(base + 4));
