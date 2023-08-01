@@ -399,7 +399,7 @@ memory* memory_init(uint32_t start, uint32_t size) {
 
 void *malloc(int size) {
   void *p;
-  if (current_task()->mm != NULL) {
+  if (current_task()->mm != NULL && size < 4 * 1024 - sizeof(int)) {
     p = mem_alloc(current_task()->mm, size + sizeof(int));
     if (current_task()->mm->memerrno != ERRNO_NOPE) {
       p = page_malloc(size + sizeof(int));
@@ -423,4 +423,12 @@ void free(void *p) {
   } else {
     page_free((char *)p - sizeof(int), size + sizeof(int));
   }
+}
+void* realloc(void* ptr, uint32_t size) {
+  void* new = malloc(size);
+  if (ptr) {
+    memcpy(new, ptr, *(int*)((int)ptr - 4));
+    free(ptr);
+  }
+  return new;
 }

@@ -66,33 +66,8 @@ int getch() {
 int input_char_inSM() {
   int i;
   struct TASK* task = current_task();
-  struct SHEET* sht_win = (struct SHEET*)task->TTY->reserved[1];
-  struct TASK* cons = (struct TASK*)task->TTY->reserved[1];
-  extern struct SHTCTL* shtctl;
-
-  if (running_mode == POWERDESKTOP) {
-  //  printk("%08x %08x\n",cons,current_task());
-    while (1)
-      if ((fifo8_status(task_get_key_fifo(cons)) ==
-           0) &&  // 我们称此行为为偷菜行为（
-          !current_task()->forever) {
-            
-      } else {
-        // 返回扫描码
-     //   printk("yes.\n");
-        i = fifo8_get(task_get_key_fifo(cons));  // 从FIFO缓冲区中取出扫描码
-        if (i != -1) {
-          break;
-        }
-      }
-
-    return i;
-  }
   while (1) {
     if ((fifo8_status(task_get_key_fifo(current_task())) == 0) ||
-        (running_mode == POWERDESKTOP && current_task()->app &&
-         current_task()->forever &&
-         shtctl->sheets[shtctl->top - 1]->task != current_task()) ||
         (current_task()->TTY != now_tty() && current_task()->TTY->using1 == 1 &&
          !current_task()->forever)) {
       // 不返回扫描码的情况
@@ -116,10 +91,6 @@ int input_char_inSM() {
   return i;
 }
 int kbhit() {
-  // printk("kbhit : %d\n", fifo8_status(current_task()->keyfifo));
-  struct TASK* cons = (struct TASK*)current_task()->TTY->reserved[1];
-  if(running_mode == POWERDESKTOP)
-    return fifo8_status(cons->keyfifo);
   return fifo8_status(current_task()->keyfifo) !=
          0;  // 进程的键盘FIFO缓冲区是否为空
 }
@@ -187,7 +158,7 @@ void inthandler21(int* esp) {
     return;
   }
   // 快捷键处理
-  extern int app_task_num;  // 现在运行的程序（POWERDESKTOP/HIGHTEXTMODE模式下）
+  extern int app_task_num;  // 现在运行的程序（HIGHTEXTMODE模式下）
   if (data == 0x3b && !shift) {
     // 仅仅按下F1
     if (running_mode == POWERINTDOS) {
@@ -196,22 +167,18 @@ void inthandler21(int* esp) {
           // printf("Break EIP:%08x",esp[1]);
           //  POWERINTDOS模式下找到现在运行的程序（掌握TTY屏幕主导权 & 是程序）
           KILLAPP0(0xff, i);  // 0xff是快捷键结束程序的便条
-          break;
+          return;
         }
       }
+
     } else {
       if (app_task_num != -1) {  // 有程序在运行
         KILLAPP0(0xff, app_task_num);
       }
     }
+
     io_sti();
     return;
-  } else if (data == 0x3c && !shift) {
-    if (running_mode == POWERDESKTOP) {
-      AddShell_GraphicMode();
-      io_sti();
-      return;
-    }
   } else if (data >= 0x3b && data <= 0x47 && shift) {
     // 按下F1 ~ F12 & Shift
     if (running_mode == POWERINTDOS) {

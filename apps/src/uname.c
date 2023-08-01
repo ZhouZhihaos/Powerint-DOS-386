@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <syscall.h>
-#include <gui.h>
 #define SYSVERSION 1 << 1
 #define SYSNAME 1 << 2
 #define CREATETOR 1 << 3
@@ -22,7 +21,7 @@ void start_tips() {
   printf("P.D.O.S -CHECK: MODE GUI?=>");
   int color = get_cons_color();
   set_cons_color(0x0a);
-  printf("%s\n", IsGuiMode() ? "true" : "false");
+  printf("%s\n", "false");
   set_cons_color(color);
 }
 int main(int argc,char **argv) {

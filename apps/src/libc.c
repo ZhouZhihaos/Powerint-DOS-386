@@ -7,46 +7,7 @@
 typedef unsigned int uintmax_t;
 typedef uintmax_t uintptr_t;
 typedef int intmax_t;
-#define asuint(f) \
-  ((union {       \
-    float _f;     \
-    uint32_t _i;  \
-  }){f})          \
-      ._i
-#define asfloat(i) \
-  ((union {        \
-    uint32_t _i;   \
-    float _f;      \
-  }){i})           \
-      ._f
-#define asuint64(f) \
-  ((union {         \
-    double _f;      \
-    uint64_t _i;    \
-  }){f})            \
-      ._i
-#define asdouble(i) \
-  ((union {         \
-    uint64_t _i;    \
-    double _f;      \
-  }){i})            \
-      ._f
-#define predict_true(x) __builtin_expect(!!(x), 1)
-#define predict_false(x) __builtin_expect(x, 0)
-static inline double eval_as_double(double x) {
-  double y = x;
-  return y;
-}
-static inline double fp_barrier(double x) {
-  volatile double y = x;
-  return y;
-}
-double __math_divzero(uint32_t sign) {
-  return fp_barrier(sign ? -1.0 : 1.0) / 0.0;
-}
-double __math_invalid(double x) {
-  return (x - x) / (x - x);
-}
+
 int errno = 0;
 FILE* stdout;
 FILE* stdin;
@@ -1808,7 +1769,6 @@ void show_mem(memory* mem) {
 }
 void* mm_alloc(uint32_t size) {
   unsigned int a;
-//  size = (size + 0xfff) & 0xfffff000;
 retry:
   a = mem_alloc(mm, size);
   if (!a) {
@@ -1821,7 +1781,6 @@ retry:
 }
 void mm_free(uint32_t addr, uint32_t size) {
   int i;
-  // size = (size + 0xfff) & 0xfffff000;
   mem_free(mm, addr, size);
 }
 void* mem_alloc_nb(memory* mem, uint32_t size, uint32_t n) {
@@ -1877,7 +1836,7 @@ void init_mem() {
 void* malloc(int size) {
   // printf("malloc.\n");
   if (flag) {
-    void* p = mem_alloc_nb(mm, size + sizeof(int), 64);
+    void* p = mem_alloc_nb(mm, size + sizeof(int), 512);
     *(int*)p = size;
     return (char*)p + sizeof(int);
   } else {
@@ -1888,7 +1847,7 @@ void free(void* p) {
   if (p == NULL)
     return;
   int size = *(int*)((char*)p - sizeof(int));
-  mem_free_nb(mm, (char*)p - sizeof(int), size + sizeof(int), 64);
+  mem_free_nb(mm, (char*)p - sizeof(int), size + sizeof(int), 512);
 }
 int _Znaj(uint32_t size) {
   // printk("_Znaj:%d\n", size);

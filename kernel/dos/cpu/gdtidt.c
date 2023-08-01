@@ -94,7 +94,6 @@ void init_gdtidt(void) {
   set_gatedesc(idt + 0x20 + 15, (int)asm_ide_irq, 2 * 8,
                AR_INTGATE32);  // IDE中断
   set_gatedesc(idt + 0x30, (int)asm_net_api, 2 * 8, AR_INTGATE32 | 3 << 5);  // NET API
-  set_gatedesc(idt + 0x72, (int)asm_gui_api, 2 * 8, AR_INTGATE32 | 3 << 5);  // GUI API
   return;
 }
 // 注册中断处理函数

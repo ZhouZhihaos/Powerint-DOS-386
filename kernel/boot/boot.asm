@@ -3,7 +3,6 @@
 bootseg		equ		7c0h
 dataseg		equ		800h
 readsize	equ		144			; DOSLDR.BIN的大小
-HRBAT		equ		0x100000	; HRB格式文件的装载地址
 %define e_ident 0
 %define e_type 16
 %define e_machine 18
@@ -30,7 +29,7 @@ HRBAT		equ		0x100000	; HRB格式文件的装载地址
 
 
 jmp	short	start
-; FAT12文件系统定义
+; FAT12/FAT16文件系统定义
 	db	0x90
 	db	"POWERINT"
 	dw	512

@@ -93,7 +93,7 @@ void fpu_disable() {
   set_cr0(get_cr0() | (CR0_EM | CR0_TS));
 }
 void fpu_enable(struct TASK* task) {
-  // LOGK("fpu enable...\n");
+  //  printk("fpu enable...\n");
 
   set_cr0(get_cr0() & ~(CR0_EM | CR0_TS));
   // 如果使用的任务没有变化，则无需恢复浮点环境
@@ -103,15 +103,17 @@ void fpu_enable(struct TASK* task) {
   // 如果存在使用过浮点处理单元的进程，则保存浮点环境
   if (last_fpu_task && last_fpu_task->fpu_flag) {
     // assert(last_fpu_task->fpu);
+    //  printk("save");
     asm volatile("fnsave (%%eax) \n" ::"a"(last_fpu_task->fpu));
     last_fpu_task->fpu_flag = !last_fpu_task->fpu_flag;
+    task->fpu_flag = 1;
   }
 
   last_fpu_task = task;
 
   // 如果 fpu 不为空，则恢复浮点环境
   if (task->fpu) {
-   // printk("task->fpu=%08x\n", task->fpu_flag);
+    //   printk("task->fpu=%08x\n", task->fpu_flag);
     asm volatile("frstor (%%eax) \n" ::"a"(task->fpu));
   } else {
     // 否则，初始化浮点环境
@@ -188,15 +190,15 @@ bool has_fpu_error() {
 }
 void ERROR7(uint32_t eip) {
   // printk("ERROR7.\n");
-  //printk("FPU!\n");
+  // printk("FPU!\n");
   if (current_task()->fpu_flag > 1 || current_task()->fpu_flag < 0) {
-  //  printk("do nothing.\n");
-  //  printk("%d\n", current_task()->fpu);
+    //  printk("do nothing.\n");
+    //  printk("%d\n", current_task()->fpu);
     set_cr0(get_cr0() & ~(CR0_EM | CR0_TS));
     return;
   } else {
   }
- // printk("%08x\n", current_task()->fpu);
+  // printk("%08x\n", current_task()->fpu);
   fpu_enable(current_task());
 }
 void ERROR8(uint32_t eip) {
@@ -312,6 +314,8 @@ void ERROR(int CODE, char* TIPS) {
   printk("%s\n", TIPS);
   printk("Error Code: %d\n", CODE);
   SwitchToText8025_BIOS();
+  extern struct tty *tty_default;
+  tty_set(current_task(), tty_default);
   clear();
   int i, j;
   for (i = 0; i < 160; i++) {
@@ -346,7 +350,7 @@ void KILLAPP(int eip, int ec) {
     DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
   }
   DeleteList(vfs_now->path);
-  page_free((void *)vfs_now, sizeof(vfs_t));
+  page_free((void*)vfs_now, sizeof(vfs_t));
   struct TASK* task = current_task();
   if (task->is_child) {
     task = task->thread.father;  // 找你家长，乱搞！
@@ -357,10 +361,7 @@ void KILLAPP(int eip, int ec) {
     printf("\nSystem Protect:The program name:%s TASK ID:%d EC:%x EIP:%08x\n",
            task->name, task->sel / 8 - 103, ec, eip);
   }
-  task_sleep(task);
-  task->running = 0;
-  task_wake_up(get_task(1));  // 别睡了，起来帮我杀下进程
-  // 下半部会帮助我们结束程序
+  task_delete(task);
   for (;;)
     ;
 }
@@ -371,28 +372,17 @@ void KILLAPP0(int ec, int tn) {
     DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
   }
   DeleteList(vfs_now->path);
-  page_free((void *)vfs_now, sizeof(vfs_t));
+  page_free((void*)vfs_now, sizeof(vfs_t));
   struct TASK* task = get_task(tn);
-  struct tty* t = task->TTY;
-  t = tty_set(current_task(), t);
+  if (task->is_child) {
+    task = task->thread.father;  // 找你家长，乱搞！
+  }
   if (ec == 0xff) {  // 返回系统快捷键
-    printf("\n(%s)System Protect:Break Key(F1).\n", task->name);
-  } else {
-    printf("\nSystem Protect:The program name:%s TASK ID:%d EC:%x,EIP:%08x\n",
-           task->name, task->sel / 8 - 103, ec, task->tss.eip);
+    printf("\nSystem Protect:Break Key(F1).\n");
   }
-  tty_set(current_task(), t);
-  // SleepTask(task);
-  extern uint32_t app_num;
-  app_num--;
-  task->running = 0;
-  task_wake_up(get_task(1));  // 别睡了，起来帮我杀下进程
   io_sti();
-  irq_mask_clear(0);
-
-  for (;;) {
-    // printk("Wait.\n");
-  }
+  task_delete(task);
+  return;
 }
 char bcd2hex(char bcd) {
   char i;

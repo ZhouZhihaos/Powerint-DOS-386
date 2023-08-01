@@ -30,13 +30,16 @@ void init_pit(void) {
 }
 
 struct TIMER* timer_alloc(void) {
+  io_cli();
   int i;
   for (i = 0; i < MAX_TIMER; i++) {
     if (timerctl.timers0[i].flags == 0) {
       timerctl.timers0[i].flags = TIMER_FLAGS_ALLOC;
+      io_sti();
       return &timerctl.timers0[i];
     }
   }
+  io_sti();
   return 0; /* 没找到 */
 }
 

@@ -8,6 +8,22 @@ color_t color_table[16] = {COL_000000, COL_000084, COL_008400, COL_008484,
                            COL_840000, COL_840084, COL_848400, COL_C6C6C6,
                            COL_848484, COL_0000FF, COL_00FF00, COL_00FFFF,
                            COL_FF0000, COL_FF00FF, COL_FFFF00, COL_FFFFFF};
+static void Draw_Cur(vram_t* vram, int x, int y, int xsize) {
+  static char* CUR[16] = {"........", "........", "........", "........",
+                          "........", "........", "........", "........",
+                          "........", "........", "........", "........",
+                          "........", "........", "********", "********"};
+  int i, j;
+  for (i = 0; i < 16; i++) {
+    for (j = 0; j < 8; j++) {
+      if (CUR[i][j] == '.') {
+        vram[(y + i) * xsize + x + j] = COL_TRANSPARENT;
+      } else if (CUR[i][j] == '*') {
+        vram[(y + i) * xsize + x + j] = COL_FFFFFF;
+      }
+    }
+  }
+}
 static void put_sht(struct SHEET *sht, int x, int y, int l) {
   // boxfill(sht->buf, sht->bxsize, 0, x, y, x + l * 8 - 1, y + 15);
   sheet_refresh(sht, x, y, x + l * 8, y + 16);

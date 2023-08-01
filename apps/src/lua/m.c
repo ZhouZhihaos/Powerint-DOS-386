@@ -38,7 +38,6 @@
 #include <string.h>
 #include <syscall.h>
 #include <rand.h>
-#include <gui.h>
 /* setup for luaconf.h */
 #define LUA_CORE
 #define LUA_LIB
@@ -596,61 +595,10 @@ static int lua_Addthread(lua_State *L) {
   AddThread ("Thread",ThreadHandler,(unsigned int)(stack) - 4);
   return 0;
 }
-static int lua_is_gui(lua_State *L) {
-  lua_pushboolean(L,IsGuiMode());
-  return 1;
-}
-static int lua_MsgBox(lua_State *L) {
-  MsgBox(lua_tostring(L,1),lua_tostring(L,2));
-  return 0;
-}
 static int LChr(lua_State* L) {
   char result[2] = {lua_tointeger(L,1),0};
   lua_pushstring(L,result);
   return 1;
-}
-static int lua_open_window(lua_State *L) {
-  lua_pushinteger(L,create_window(lua_tointeger(L,1),lua_tointeger(L,2),lua_tointeger(L,3),lua_tointeger(L,4),lua_tostring(L,5)));
-  return 1;
-}
-static int lua_CreateButton(lua_State *L) {
-  lua_pushinteger(L,create_button(lua_tointeger(L,1),lua_tointeger(L,2),lua_tointeger(L,3),lua_tointeger(L,4),lua_tointeger(L,5),lua_tostring(L,6)));
-  return 1;
-}
-static int lua_CreateTextBox(lua_State *L) {
-  lua_pushinteger(L,MakeTextBox(lua_tointeger(L,1),lua_tointeger(L,2),lua_tointeger(L,3),lua_tointeger(L,4),lua_tointeger(L,5)));
-  return 1;
-}
-static int lua_GetText(lua_State *L) {
-  char *result = malloc(500);
-  GetTextBoxText(result,lua_tointeger(L,1));
-  lua_pushstring(L,result);
-  free(result);
-  return 1;
-}
-static int lua_dpx(lua_State *L) {
-  SDraw_Px(lua_tointeger(L,1),lua_tointeger(L,2),lua_tointeger(L,3),lua_tointeger(L,4),lua_tointeger(L,5));
-  return 0;
-}
-static int lua_dbox(lua_State *L) {
-  SDraw_Box(lua_tointeger(L,1),lua_tointeger(L,2),lua_tointeger(L,3),lua_tointeger(L,4),lua_tointeger(L,5),lua_tointeger(L,6),lua_tointeger(L,7));
-  return 0;
-}
-static int lua_dstr(lua_State *L) {
-  Sputs(lua_tointeger(L,1),lua_tostring(L,2),lua_tointeger(L,3),lua_tointeger(L,4),lua_tointeger(L,5),lua_tointeger(L,6));
-  return 0;
-}
-static int lua_close_window(lua_State *L) {
-  close_window(lua_tointeger(L,1));
-  return 0;
-}
-static int lua_delete_button(lua_State *L) {
-  delete_button(lua_tointeger(L,1));
-  return 0;
-}
-static int lua_delete_textBox(lua_State *L) {
-  DeleteTextBox(lua_tointeger(L,1));
-  return 0;
 }
 static int Leval(lua_State* L) {
   char *retline = malloc(strlen(lua_tostring(L,1))+8);
@@ -691,20 +639,6 @@ static const struct luaL_Reg os_lib[] = {{"exit", lua_exit},
                                          {"MessageLength", lua_MessageLength},
                                          {"AddThread",lua_Addthread},
                                          {NULL, NULL}};
-static const struct luaL_Reg gui_lib[] = {
-                                             {"is_gui", lua_is_gui},
-                                             {"OpenWindow", lua_open_window},
-                                             {"MsgBox", lua_MsgBox},
-                                             {"CreateButton", lua_CreateButton},
-                                             {"CreateTextBox", lua_CreateTextBox},
-                                             {"TextBox_GetText", lua_GetText},
-                                             {"px", lua_dpx},
-                                             {"box", lua_dbox},
-                                             {"str", lua_dstr},
-                                             {"close_window", lua_close_window},
-                                             {"delete_button", lua_delete_button},
-                                             {"delete_textBox", lua_delete_textBox},
-                                             {NULL, NULL}};
 /*
 ** Check whether 'status' signals a syntax error and the error
 ** message at the top of the stack ends with the above mark for
@@ -850,10 +784,6 @@ static int open_os(lua_State* L) {
   luaL_newlib(L,os_lib);
   return 1;
 }
-static int open_gui(lua_State* L) {
-  luaL_newlib(L,gui_lib);
-  return 1;
-}
 /*
 ** Main body of stand-alone interpreter (to be called in protected mode).
 ** Reads the options and handles them all.
@@ -881,7 +811,6 @@ static int pmain (lua_State *L) {
   luaL_setfuncs(L, my_lib_bsp, 0);
   luaL_requiref(L, "pio", open_io, 1);
   luaL_requiref(L, "os", open_os, 1);
-  luaL_requiref(L, "gui", open_gui, 1);
   luaL_openlibs(L);  /* open standard libraries */
   createargtable(L, argv, argc, script);  /* create table 'arg' */
   lua_gc(L, LUA_GCGEN, 0, 0);  /* GC in generational mode */

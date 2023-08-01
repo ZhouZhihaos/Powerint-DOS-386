@@ -62,6 +62,7 @@ void sysinit(void) {
   init_floppy();
   init_devfs();
   Register_fat_fileSys();
+  reg_pfs();
   memsize = memtest(0x00400000, 0xbfffffff);
   if (memsize / (1024 * 1024) < 32) {
     while (1) {

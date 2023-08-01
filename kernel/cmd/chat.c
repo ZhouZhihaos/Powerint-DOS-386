@@ -68,7 +68,7 @@ void chat_cmd() { // 用于接收用户想要发送的内容
   }
 }
 /* 声明用到的GUI控件 */
-static listBox_t *listbox;
+/*static listBox_t *listbox;
 static TextBox *textbox;
 static Button *button;
 static vram_t *buf_win;
@@ -151,4 +151,4 @@ void chat_gui() {
               1 * 8, stack + 64 * 1024);
   (void)(stack);
   (void)(out_put_task);
-}
+}*/

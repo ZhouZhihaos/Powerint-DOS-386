@@ -1,8 +1,8 @@
 #include <string.h>
 #include <syscall.h>
 #define All_Kernel_files_count 8
-#define All_App_files_count 38
-#define All_Res_files_count 22
+#define All_App_files_count 30
+#define All_Res_files_count 21
 #define Line_X 205
 #define Line_Y 186
 #define Left_Up 201
@@ -139,7 +139,7 @@ int main() {
     system("cls");
     return 0;
   }
-  system("C:");
+  system("rdrv C:");
   Set_Loading(100);
   int CopyFilesCount = 0;
 
@@ -214,6 +214,12 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
+    setState("Copy Apps --- Copy file: bin/editor.mst");
+    Copy("A:\\EDITOR.MST", "bin/editor.mst");
+    CopyFilesCount++;
+    Set_Loading(
+        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
+              100.0));
     // 2
     setState("Copy Apps --- Copy file: bin/bitz.bin");
     Copy("A:\\BITZ.BIN", "bin/bitz.bin");
@@ -222,13 +228,7 @@ int main() {
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
     // 3
-    setState("Copy Apps --- Copy file: bin/winver.bin");
-    Copy("A:\\WINVER.BIN", "bin/winver.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));
-        setState("Copy Apps --- Copy file: bin/nask.bin");
+    setState("Copy Apps --- Copy file: bin/nask.bin");
     Copy("A:\\NASK.BIN", "bin/nask.bin");
     CopyFilesCount++;
     Set_Loading(
@@ -265,12 +265,6 @@ int main() {
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
     // 4
-    setState("Copy Apps --- Copy file: bin/uicalc.bin");
-    Copy("A:\\UICALC.BIN", "bin/uicalc.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 5
     setState("Copy Apps --- Copy file: bin/cale.bin");
     Copy("A:\\CALE.BIN", "bin/cale.bin");
     CopyFilesCount++;
@@ -295,12 +289,6 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
-    setState("Copy Apps --- Copy file: bin/uigobang.bin");
-    Copy("A:\\UIGOBANG.BIN", "bin/uigobang.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 8
     setState("Copy Apps --- Copy file: bin/aigobang.bin");
     Copy("A:\\AIGOBANG.BIN", "bin/aigobang.bin");
     CopyFilesCount++;
@@ -319,12 +307,6 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));  // 12
-    setState("Copy Apps --- Copy file: bin/login.bin");
-    Copy("A:\\LOGIN.BIN", "bin/login.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 14
     setState("Copy Apps --- Copy file: bin/pwsh.bin");
     Copy("A:\\pwsh.BIN", "bin/pwsh.bin");
     CopyFilesCount++;
@@ -349,18 +331,6 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));  // 18
-    setState("Copy Apps --- Copy file: bin/student.bin");
-    Copy("A:\\STUDENT.BIN", "bin/student.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 19
-    setState("Copy Apps --- Copy file: bin/tetris.bin");
-    Copy("A:\\TETRIS.BIN", "bin/tetris.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));
     setState("Copy Apps --- Copy file: bin/cc.bin");
     Copy("A:\\CC.BIN", "bin/cc.bin");
     CopyFilesCount++;
@@ -373,24 +343,12 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
-    setState("Copy Apps --- Copy file: bin/ps2test.bin");
-    Copy("A:\\PS2TEST.BIN", "bin/ps2test.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));
     setState("Copy Apps --- Copy file: bin/bf.bin");
     Copy("A:\\BF.BIN", "bin/bf.bin");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));  // 20
-    setState("Copy Apps --- Copy file: bin/invader.bin");
-    Copy("A:\\invader.bin", "bin/invader.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));  // 21
     setState("Copy Apps --- Copy file: bin/basic.bin");
     Copy("A:\\basic.bin", "bin/basic.bin");
     CopyFilesCount++;
@@ -425,12 +383,6 @@ int main() {
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));  // 21
-    setState("Copy Apps --- Copy file: bin/tedit.bin");
-    Copy("A:\\tedit.bin", "bin/tedit.bin");
-    CopyFilesCount++;
-    Set_Loading(
-        (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
-              100.0));
     setState("Copy Apps --- Copy file: bin/c4.bin");
     Copy("A:\\c4.bin", "bin/c4.bin");
     CopyFilesCount++;
@@ -456,6 +408,12 @@ int main() {
       setState("Copy Apps --- mkdir res");
       mkdir("res");
 
+      setState("Copy Apps --- Copy file: res/asm.lua");
+      Copy("A:\\asm.lua", "res/asm.lua");
+      CopyFilesCount++;
+      Set_Loading(
+          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
+                100.0));
       setState("Copy Apps --- Copy file: res/bainian.lua");
       Copy("A:\\bainian.lua", "res/bainian.lua");
       CopyFilesCount++;
@@ -464,12 +422,6 @@ int main() {
                 100.0));
       setState("Copy Apps --- Copy file: res/fib.lua");
       Copy("A:\\fib.lua", "res/fib.lua");
-      CopyFilesCount++;
-      Set_Loading(
-          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
-                100.0));
-      setState("Copy Apps --- Copy file: res/pluaui.lua");
-      Copy("A:\\pluaui.lua", "res/pluaui.lua");
       CopyFilesCount++;
       Set_Loading(
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
@@ -486,14 +438,8 @@ int main() {
       Set_Loading(
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
                 100.0));
-      setState("Copy Apps --- Copy file: res/uicalc.lua");
-      Copy("A:\\uicalc.lua", "res/uicalc.lua");
-      CopyFilesCount++;
-      Set_Loading(
-          (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
-                100.0));
-      setState("Copy Apps --- Copy file: res/window.lua");
-      Copy("A:\\window.lua", "res/window.lua");
+      setState("Copy Apps --- Copy file: res/student.lua");
+      Copy("A:\\studnet.lua", "res/student.lua");
       CopyFilesCount++;
       Set_Loading(
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *

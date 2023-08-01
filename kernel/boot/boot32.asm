@@ -3,7 +3,29 @@
 bootseg		equ		7c0h
 dataseg		equ		800h
 readsize	equ		144			; DOSLDR.BIN的大小
-HRBAT		equ		0x100000	; HRB格式文件的装载地址
+%define e_ident 0
+%define e_type 16
+%define e_machine 18
+%define e_version 20
+%define e_entry 24
+%define e_phoff 28
+%define e_shoff 32
+%define e_flags 36
+%define e_ehsize 40
+%define e_phentsize 42
+%define e_phnum 44
+%define e_shentsize 46
+%define e_shnum 48
+%define e_shstrndx 50
+
+%define p_type     0
+%define p_offset   4
+%define p_vaddr    8
+%define p_paddr    12
+%define p_filesz   16
+%define p_memsz    20
+%define p_flags    24
+%define p_align    28
 
 serclus		equ		13
 numfats		equ		16
@@ -12,7 +34,7 @@ rootclus	equ		44
 drvnum		equ		64
 
 jmp	short	start
-; FAT12文件系统定义
+; FAT32文件系统定义
 	db	0x90
 	db	"POWERINT"
 	dw	512
@@ -55,13 +77,13 @@ start:
 	mov cl,0
 .lba_read_loop:
 	cmp cl,readsize
-	jae .hrb
+	jae .intoprotectmode
 	call read1sector
 	add word[packet.off],72*512
 	add dword[packet.lba],72
 	add cl,72
 	jmp .lba_read_loop
-.hrb:	; HRB格式文件
+.intoprotectmode:
 	; 1.让CPU支持1M以上内存、设置A20GATE
 	in	al,92h
 	or	al,00000010b
@@ -100,39 +122,60 @@ inprotectmode:
 	mov	ax,DataGDT
 	mov	ds,ax
 	mov	es,ax
-	mov	fs,ax
-	mov	gs,ax
+	;mov	fs,ax
+	;mov gs,ax
 	mov	ss,ax
 
-	cmp byte[0x8001],0x50
-	jne $
+
+	; 接下来，我们要复制Program Header到正确的内存地址
 	
-	; 1.传输HRB数据
-	mov	eax,0
+	xor eax,eax
 	mov	ax,dataseg	; 取出文件段地址
 	shl	eax,4	; 段地址*16+偏移地址=物理地址
+	; eax 此时是Loader的起始地址
+	xor ecx,ecx
+	mov word cx,[eax+e_phnum] ; 获取Program Header的数量
+	xor edx,edx
+	mov word dx,[eax+e_phentsize]   ; 获取一个Program header的大小
+	; 接下来，将ebx设置为第一个程序头的起始地址
+	mov ebx,[eax+e_phoff]
+	; 因为只是偏移量， 所以要加上eax才能表示其在内存中的位置
+	add ebx,eax
+.loop
+	cmp dword [ebx+p_filesz],0 ;如果file_sz是0，那么就没必要复制
+	je .skip1  ; 直接结束
+	mov edi,[ebx+p_vaddr] ; edi是dest  vaddr是这个Program Header应被装载到的地址
+	push eax
+	add eax,[ebx+p_offset] ; *(ebx+p_offset) 是这个Program Header在这个程序头的偏移
+						   ; eax则是文件在内存中的起始地址，所以此时eax是Program Header在内存中的位置
+	mov esi,eax			   ; 下面memcpy的src
+		push ecx
+		mov ecx,[ebx+p_filesz] ; 要复制几个字节？[ebx+p_filesz]指的是这个Program Header的大小
+			push ecx
+			call memcpy ; 上面已经设置了src和dest，所以这里直接复制
+			pop ecx
+		mov esi,[ebx+p_memsz] ; 我们现在要处理bss段，于是先获取这个Program Header在内存中的大小
+		cmp ecx,esi   ; 如果这个Program Header的大小比它在内存中的大小小，说明是bss段，要处理
+		jnb .1        ; 这个Program Header的大小比它在内存中的大小大，不处理
+		sub esi,ecx   ; 获取剩下没复制的大小
+		mov ecx,esi
+		call memset   ; memcpy已经将edi赋值到了p_vaddr+p_filesz的位置，直接调用
+.1		pop ecx
+	pop eax
+.skip1
+	add ebx,edx
+	loop .loop
 
-	mov	esi,eax
-	mov	edi,HRBAT
-	mov	ecx,readsize*512/4
-	call	memcpy
-	
-	; 3.HRB剩余任务
-	MOV	EBX,HRBAT
-	MOV	ECX,[EBX+16]
-	ADD	ECX,3			; ECX += 3;
-	SHR	ECX,2			; ECX /= 4;
-	JZ	.skip			; 传输完成
-	MOV	ESI,[EBX+20]	; 源
-	ADD	ESI,EBX
-	MOV	EDI,[EBX+12]	; 目标
-	CALL	memcpy
 .skip:
-	MOV	ESP,[EBX+12]	; 堆栈的初始化
 	; 4.跳转
 	finit
 	;cvttss2si eax, [esp+4] 
-	jmp	dword	4*8:0x0000001b
+	mov eax,[eax+e_entry]
+	;sub eax,0x100000
+	mov esp,0x00ffffff
+	push 4*8
+	push eax
+	jmp far [esp]
 
 memcpy:
 	mov	eax,[esi]
@@ -142,7 +185,13 @@ memcpy:
 	dec	ecx
 	jnz	memcpy
 	ret
-
+memset:
+	; edi: dest
+	mov	byte [edi],0
+	inc edi
+	dec	ecx
+	jnz	memset
+	ret
 packet:
 	db	10h
 	db	0
@@ -181,9 +230,9 @@ Code3GDT	equ	$-GDT0
 	; 跳转代码GDT
 	dw	0xffff
 	dw	0
-	db	0x10
+	db	0
 	db	0x9a
-	db	0x47
+	db	0xcf
 	db	0
 GDTR0:
 	dw	GDTR0-GDT0	; 临时GDT的大小

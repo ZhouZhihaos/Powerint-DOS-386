@@ -48,19 +48,6 @@ void TestWrite(char drive,
   // printk("TestRW:Write Lba %d,Write Sectors number %d\n", lba, number);
   memcpy(ramdisk + lba * 512, buffer, number * 512);
 }
-void show_mem(memory* mem) {
-  freeinfo* finf = mem->freeinf;
-  while (finf) {
-    for (int i = 0; i < FREE_MAX_NUM; i++) {
-      if (finf->f[i].start == 0 && finf->f[i].end == 0) {
-        break;
-      }
-      printf("START: %08x END: %08x SIZE: %08x Bytes\n", finf->f[i].start, finf->f[i].end,
-             finf->f[i].end - finf->f[i].start);
-    }
-    finf = finf->next;
-  }
-}
 // socket测试例子
 static void TCP_Socket_Handler(struct Socket* socket, void* base) {
   struct TCPMessage* tcp =
@@ -220,7 +207,7 @@ CHECK_OK:
     strcpy(current_task()->line, cmdline);
   }
   if (strincmp("FORMAT ", cmdline, 7) == 0) {
-    int res = vfs_format(cmdline[7], "FAT");
+    int res = vfs_format(cmdline[7], "PFS");
     if (res == 0) {
       printf("fatal error\n\n");
     } else if (res == 1) {
@@ -252,12 +239,8 @@ CHECK_OK:
     printf("\n");
   } else if (stricmp("SHOWPAGE", cmdline) == 0) {
     showPage();
-  } else if (stricmp("PCNET", cmdline) == 0) {
-    init_pcnet_card();
-  } else if (stricmp("CHAT", cmdline) == 0 && running_mode == POWERINTDOS) {
+  } else if (stricmp("CHAT", cmdline) == 0) {
     chat_cmd();
-  } else if (stricmp("CHAT", cmdline) == 0 && running_mode == POWERDESKTOP) {
-    chat_gui();
   } else if (stricmp("NETGOBANG", cmdline) == 0) {
     netgobang();
   } else if (strincmp("READPCI ", cmdline, 8) == 0) {
@@ -503,7 +486,7 @@ CHECK_OK:
     page_free(dns, strlen(cmdline + 9) + 1);
   } else if (strincmp("PING ", cmdline, 5) == 0) {
     cmd_ping(cmdline + 5);
-  } else if (strincmp("IPCONFIG", cmdline, 6) == 0) {
+  } else if (stricmp("IPCONFIG", cmdline) == 0) {
     extern uint32_t gateway, submask, dns, ip, dhcp_ip;
     printf("DCHP: %d.%d.%d.%d\n", (uint8_t)(dhcp_ip >> 24),
            (uint8_t)(dhcp_ip >> 16), (uint8_t)(dhcp_ip >> 8),
@@ -532,8 +515,6 @@ CHECK_OK:
       printf("%d\n", 5 / a);          // 输出结果
     }
   } else if (stricmp("FORK", cmdline) == 0) {
-    void *p = malloc(4);
-    free(p);
     // printf("FTP Test!\n");
 
     // extern uint32_t ip;
@@ -557,7 +538,8 @@ CHECK_OK:
     // struct TASK* task = AddUserTask("UsrTask", 1, 1146 * 8, usertasktest,
     // 1145*8,1145*8,(unsigned int)malloc(16*1024)+16*1024); task->tss.ss0 =
     // 1*8; task->tss.esp0 = malloc(16*1024)+16*1024; io_sti();
-
+  } else if(stricmp("SHOW_HEAP",cmdline) == 0) {
+    show_heap(current_task()->mm);
   } else if (strincmp("MOUNT ", cmdline, 6) == 0) {
     int c = mount(cmdline + 6);
     printf("mount file in %c:\\\n", c);
@@ -578,8 +560,6 @@ CHECK_OK:
       AddShell_TextMode();
     } else if (running_mode == HIGHTEXTMODE) {
       AddShell_HighTextMode();
-    } else if (running_mode == POWERDESKTOP) {
-      AddShell_GraphicMode();
     }
   } else if (strincmp("SWITCH ", cmdline, 7) == 0) {
     if (running_mode == POWERINTDOS) {
@@ -597,6 +577,7 @@ CHECK_OK:
     args[0] = (char*)malloc(256);
     Get_Arg(args[0], cmdline, 1);
     cmd_dir(args);
+    free(args[0]);
     return;
   } else if (stricmp("NTPTIME", cmdline) == 0) {
     uint32_t ts = ntp_get_server_time(NTPServer2);
@@ -748,10 +729,7 @@ CHECK_OK:
     pcinfo();
   } else if (stricmp("MEM", cmdline) == 0) {
     mem();
-  } else if(stricmp("SHOW_HEAP",cmdline) == 0) {
-    show_mem(current_task()->mm);
-  }
-  else if (strincmp("BEEP ", cmdline, 5) == 0) {
+  } else if (strincmp("BEEP ", cmdline, 5) == 0) {
     int point, notes, dup;
     point = ascii2num(*(char*)(cmdline + 5));
     notes = ascii2num(*(char*)(cmdline + 7));
@@ -874,7 +852,6 @@ CHECK_OK:
       if (!vfs_mount_disk(cmdline[0], cmdline[0])) {
         printf("Disk not ready!\n");
       } else {
-        
         vfs_change_disk(cmdline[0]);
       }
     } else {
@@ -887,6 +864,20 @@ CHECK_OK:
         return;
       }
     }
+  }
+}
+
+void show_heap(memory* mem) {
+  freeinfo* finf = mem->freeinf;
+  while (finf) {
+    for (int i = 0; i < FREE_MAX_NUM; i++) {
+      if (finf->f[i].start == 0 && finf->f[i].end == 0) {
+        break;
+      }
+      printf("START: %08x END: %08x SIZE: %08x Bytes\n", finf->f[i].start, finf->f[i].end,
+             finf->f[i].end - finf->f[i].start);
+    }
+    finf = finf->next;
   }
 }
 

@@ -18,21 +18,16 @@ A:
 C:
 copy A:\edit.bin bin/edit.bin
 copy A:\bitz.bin bin/bitz.bin
-copy A:\winver.bin bin/winver.bin
-copy A:\uicalc.bin bin/uicalc.bin
 copy A:\cale.bin bin/cale.bin
 copy A:\copy.bin bin/copy.bin
 copy A:\calc.bin bin/calc.bin
-copy A:\uigobang.bin bin/uigobang.bin
 copy A:\aigobang.bin bin/aigobang.bin
 copy A:\snake.bin bin/snake.bin
 copy A:\cgobang.bin bin/cgobang.bin
-copy A:\login.bin bin/login.bin
 copy A:\pwsh.bin bin/pwsh.bin
 copy A:\pfn.bin bin/pfn.bin
 copy A:\RandNum.bin bin/RandNum.bin
 copy A:\sort.bin bin/sort.bin
-copy A:\student.bin bin/student.bin
 copy A:\bf.bin bin/bf.bin
 copy A:\bf.txt bin/bf.txt
 copy A:\basic.bin bin/basic.bin

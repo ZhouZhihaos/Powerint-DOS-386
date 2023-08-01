@@ -1092,7 +1092,7 @@ int attrib(char *filename, ftype type) {
 }
 int format(char *mbr_path, int fat_type) {
   fstream in;
-  in.open(path, ios::in | ios::binary);
+  in.open(mbr_path, ios::in | ios::binary);
   if (!in.is_open()) {
     return 0;
   }
@@ -1103,6 +1103,7 @@ int format(char *mbr_path, int fat_type) {
   in.read(ptr, size);
   in.close();
   void *read_in = ptr;
+  memset(ADR_DISKIMG, 0, imgTotalSize);
   if (fat_type == 12 &&
       (memcmp(read_in + BS_FileSysType, "FAT12   ", 8) == 0 ||
        memcmp(read_in + BS_FileSysType, "FAT16   ", 8) == 0)) {
@@ -1119,11 +1120,11 @@ int format(char *mbr_path, int fat_type) {
     *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = 114514;
     memcpy((void *)&((unsigned char *)read_in)[BS_VolLab],
            (void *)"POWERINTDOS", 11);
-    Disk_Write(0, 1, (unsigned short *)read_in);
+    Disk_Write(0, 1, read_in);
     unsigned int *fat = (unsigned int *)_malloc(fatsz * 512);
     fat[0] = 0x00fffff0;
-    Disk_Write(1, fatsz, (unsigned short *)fat);
-    Disk_Write(1 + fatsz, fatsz, (unsigned short *)fat);
+    Disk_Write(1, fatsz, (void *)fat);
+    Disk_Write(1 + fatsz, fatsz, (void *)fat);
     free((void *)fat);
     void *null_sec = _malloc(512);
     clean((char *)null_sec, 512);
@@ -1156,7 +1157,7 @@ int format(char *mbr_path, int fat_type) {
     *(unsigned int *)(&((unsigned char *)read_in)[BS_VolD]) = rand();
     memcpy((void *)&((unsigned char *)read_in)[BS_VolLab],
            (void *)"POWERINTDOS", 11);
-    Disk_Write(0, 1, (unsigned short *)read_in);
+    Disk_Write(0, 1, read_in);
     unsigned short *fat = (unsigned short *)_malloc(fatsz * 512);
     fat[0] = 0xfff0;
     fat[1] = 0xffff;
@@ -1166,7 +1167,7 @@ int format(char *mbr_path, int fat_type) {
     void *null_sec = _malloc(512);
     clean((char *)null_sec, 512);
     for (int i = 0; i < 14 * clustno_size / 512; i++) {
-      Disk_Write(1 + fatsz * 2 + i, 1, (unsigned short *)null_sec);
+      Disk_Write(1 + fatsz * 2 + i, 1, null_sec);
     }
     free(null_sec);
   } else if (fat_type == 32 &&
@@ -1202,7 +1203,7 @@ int format(char *mbr_path, int fat_type) {
         rand();
     memcpy((void *)&((unsigned char *)read_in)[BS_VolLab + BPB_Fat32ExtByts],
            (void *)"POWERINTDOS", 11);
-    Disk_Write(0, 1, (unsigned short *)read_in);
+    Disk_Write(0, 1, read_in);
     unsigned int *fat = (unsigned int *)_malloc(fatsz * 512);
     fat[0] = 0xffffff0;
     fat[1] = 0xfffffff;
@@ -1212,7 +1213,7 @@ int format(char *mbr_path, int fat_type) {
     free((void *)fat);
     void *null_sec = _malloc(512);
     clean((char *)null_sec, 512);
-    Disk_Write(1 + fatsz * 2, 1, (unsigned short *)null_sec);
+    Disk_Write(1 + fatsz * 2, 1, null_sec);
     free(null_sec);
   }
   fat_InitFS();

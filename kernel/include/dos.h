@@ -5,7 +5,6 @@
 #include <define.h>
 #include <drivers.h>
 #include <fs.h>
-#include <gui.h>
 #include <interrupts.h>
 #include <io.h>
 #include <net.h>
@@ -229,6 +228,7 @@ void mem_free(memory *mem, void *p, uint32_t size);
 memory *memory_init(uint32_t start, uint32_t size);
 void *malloc(int size);
 void free(void *p);
+void* realloc(void* ptr, uint32_t size);
 // ipc.c
 int send_ipc_message(int to_tid, void *data, unsigned int size, char type);
 int send_ipc_message_by_name(char *tname, void *data, unsigned int size,

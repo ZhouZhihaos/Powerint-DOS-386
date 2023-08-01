@@ -105,7 +105,9 @@
         "stb_image_resize.h": "c",
         "mst.h": "c",
         "stdlib.h": "c",
-        "elf.h": "c"
+        "elf.h": "c",
+        "x86.h": "c",
+        "mstr.h": "c"
     },
     "cSpell.words": [],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [

@@ -1,7 +1,7 @@
 #ifndef __DOSLDR__H
 #define __DOSLDR__H
 #define page_kmalloc page_malloc
-#define page_kfree page_free
+#define page_free page_free
 #define page_malloc_one() page_malloc(4)
 typedef unsigned int size_t;
 #define NULL 0
@@ -122,6 +122,7 @@ struct FAT_CACHE {
   unsigned int ADR_DISKIMG;
   struct FAT_FILEINFO *root_directory;
   struct LIST *directory_list;
+  struct LIST *directory_max_list;
   struct LIST *directory_clustno_list;
   int *fat;
   int FatMaxTerms;

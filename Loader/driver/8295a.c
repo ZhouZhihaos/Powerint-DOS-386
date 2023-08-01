@@ -11,7 +11,7 @@
 #define PIC1_ICW2 0x00a1
 #define PIC1_ICW3 0x00a1
 #define PIC1_ICW4 0x00a1
-void irq_mask_clear(unsigned char irq) {
+void ClearMaskIrq(unsigned char irq) {
   unsigned short port;
   unsigned char value;
 
@@ -24,7 +24,7 @@ void irq_mask_clear(unsigned char irq) {
   value = io_in8(port) & ~(1 << irq);
   io_out8(port, value);
 }
-void irq_mask_set(unsigned char irq) {
+void Maskirq(unsigned char irq) {
   unsigned short port;
   unsigned char value;
 

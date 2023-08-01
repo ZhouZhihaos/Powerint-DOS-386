@@ -3,7 +3,6 @@ extern "C" {
 #include <dos.h>
 }
 #include <libstdc++.hpp>
-#include <pvec.hpp>
 string::string() {
   str = new char[1];
   str[0] = 0;
@@ -254,17 +253,6 @@ COUT& COUT::operator<<(const char* s) {
   return *this;
 }
 
-void CPPFUNC() {
-  PVector<char*> ps;
-  ps.push_back("hello");
-  ps.push_back("world");
-  for (int i = 0; i < ps.get_size(); i++) {
-    cout << ps[i] << endl;
-  }
-}
-extern "C" void cpptest() {
-  CPPFUNC();
-}
 void* operator new(size_t size) {
   return malloc(size);
 }
@@ -277,6 +265,5 @@ void* operator new[](size_t size) {
 }
 
 void operator delete[](void* ptr) {
-  printk(".");
   free(ptr);
 }

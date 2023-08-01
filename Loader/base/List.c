@@ -49,7 +49,7 @@ void DeleteVal(int count, struct List *Obj) {
     prev->next = next;
     next->prev = prev;
   }
-  page_free((int)Will_Free, sizeof(struct List));
+  page_free((void *)Will_Free, sizeof(struct List));
   Obj->ctl->all--;
 }
 struct List *NewList() {
@@ -76,9 +76,9 @@ void Change(int count, struct List *Obj, int val) {
 int GetLastCount(struct List *Obj) { return Obj->ctl->all; }
 void DeleteList(struct List* Obj) {
   Obj = Obj->ctl->start;
-  page_kfree((int)Obj->ctl, sizeof(struct ListCtl));
+  page_free((void *)Obj->ctl, sizeof(struct ListCtl));
   for (; Obj->next != (struct List*)NULL; Obj = Obj->next) {
-    page_kfree((int)Obj, sizeof(struct List));
+    page_free((void *)Obj, sizeof(struct List));
   }
   return;
 }

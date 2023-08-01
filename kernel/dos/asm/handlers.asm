@@ -112,23 +112,6 @@ asm_ide_irq:
 		IRETD
 asm_rtc_handler:
 		IRETD
-global asm_gui_api
-extern c_pgui_api
-asm_gui_api:
-		STI
-		PUSH	DS
-		PUSH	ES
-		PUSHAD			; 用于保存的PUSH
-		PUSHAD
-		MOV		AX,SS
-		MOV		DS,AX ; 将操作系统用段地址存入DS和ES
-		MOV		ES,AX
-		CALL	c_pgui_api
-		ADD		ESP,32
-		POPAD
-		POP		ES
-		POP		DS
-		IRETD
 global asm_net_api
 extern net_api
 asm_net_api:

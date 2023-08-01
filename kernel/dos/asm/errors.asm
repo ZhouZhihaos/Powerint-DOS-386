@@ -173,14 +173,14 @@ asm_error18:
 	iretd
 KILLAPP1:
 	cli
-	push	ax
-	mov	ax,1 * 8	; 切fs gs
-	mov	fs,ax
-	mov	gs,ax
-	pop	ax
-	sti
+	PUSHAD
+	mov	ax,ss	; 切fs gs
+	mov	ds,ax
+	mov	es,ax
+	POPAD
 	push ecx
 	push edx
+	sti
 	call	KILLAPP
 	add	esp,12
 	jmp	$

@@ -50,10 +50,12 @@ uint64_t IPParseMAC(uint32_t dstIP) {
     }
   }
   ARP_flags = 1;
+  //printk("send\n");
   ether_frame_provider_send(
       0xffffffffffff, 0x0806,
       ARP_Packet(0xffffffffffff, dstIP, *(uint64_t *)&mac0, ip, 1),
       sizeof(struct ARPMessage));
+      //printf("ok\n");
   uint32_t time = timerctl.count;
   while (ARP_flags) {
     if (timerctl.count - time > ARP_WAITTIME) {

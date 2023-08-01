@@ -6,6 +6,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <ctypes.h>
 typedef float	float_t;
 typedef double	double_t;
 
@@ -162,6 +163,46 @@ static __inline unsigned long long __DOUBLE_BITS(double __f)
 #define M_2_SQRTPI				1.12837916709551257390	/* 2/sqrt(pi) */
 #define M_SQRT2					1.41421356237309504880	/* sqrt(2) */
 #define M_SQRT1_2				0.70710678118654752440	/* 1/sqrt(2) */
+#define asuint(f) \
+  ((union {       \
+    float _f;     \
+    uint32_t _i;  \
+  }){f})          \
+      ._i
+#define asfloat(i) \
+  ((union {        \
+    uint32_t _i;   \
+    float _f;      \
+  }){i})           \
+      ._f
+#define asuint64(f) \
+  ((union {         \
+    double _f;      \
+    uint64_t _i;    \
+  }){f})            \
+      ._i
+#define asdouble(i) \
+  ((union {         \
+    uint64_t _i;    \
+    double _f;      \
+  }){i})            \
+      ._f
+#define predict_true(x) __builtin_expect(!!(x), 1)
+#define predict_false(x) __builtin_expect(x, 0)
+static inline double eval_as_double(double x) {
+  double y = x;
+  return y;
+}
+static inline double fp_barrier(double x) {
+  volatile double y = x;
+  return y;
+}
+static inline double __math_divzero(uint32_t sign) {
+  return fp_barrier(sign ? -1.0 : 1.0) / 0.0;
+}
+static inline double __math_invalid(double x) {
+  return (x - x) / (x - x);
+}
 float intpower(float a, int n);
 float ln(float x);
 int fact(int n);
@@ -171,7 +212,7 @@ double sqrt(double x);
 double abs(double x);
 double fabs(double x);
 double Bernoulli(int x);//伯努利数
-double log(double a);
+double log(double x);
 double nth(double x,int n);
 double absolute(double x);
 double Factorial(int x);

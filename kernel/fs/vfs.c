@@ -268,6 +268,7 @@ bool vfs_change_disk(uint8_t drive) {
                  255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
     }
+    free(vfs_now->cache);
     DeleteList(vfs_now->path);
     page_free(vfs_now, sizeof(vfs_t));
   }
@@ -295,6 +296,7 @@ bool vfs_change_disk_for_task(uint8_t drive, struct TASK *task) {
                  255);
       DeleteVal(vfs(task)->path->ctl->all, vfs(task)->path);
     }
+    free(vfs(task)->cache);
     DeleteList(vfs(task)->path);
     page_free(vfs(task), sizeof(vfs_t));
   }

@@ -50,7 +50,6 @@ retry:
   printf("Please choose your boot mode:\n");
   printf("1. TextMode 80 * 25\n");
   printf("2. HighTextMode 128 * 48\n");
-  printf("3. GraphicMode 1024 * 768\n\n");
   printf("Input:");
   unsigned char choice;
   for (;;) {
@@ -63,9 +62,6 @@ retry:
       running_mode = HIGHTEXTMODE;
       SwitchToHighTextMode();
       break;
-    } else if (choice == '3') {
-      running_mode = POWERDESKTOP;
-      c_pgui_main();
     }
   }
   if (fsz("AUTOEXEC.BAT") == -1) {

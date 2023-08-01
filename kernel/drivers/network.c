@@ -107,7 +107,7 @@ void init_card() {
       }
       
       for (uint8_t i = 1; i != 0; i++) {
-        //printk("%d\n",i);
+      // printk("%d\n",i);
         IPParseMAC((ip & 0xffffff00) | i);
       }
       break;

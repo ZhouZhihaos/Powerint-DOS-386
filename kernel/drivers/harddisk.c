@@ -58,33 +58,6 @@ void bios_write_hd_sec(unsigned LBA, unsigned char* buffer) {
 void drivers_idehdd_read(unsigned int LBA,
                          unsigned int number,
                          unsigned short* buffer) {
-  // if (running_mode == POWERDESKTOP) {
-  //   // io_cli();
-  //   // int a = current_task()->level;
-  //   // unsigned char* buf = buffer;
-  //   // for (int i = 0; i < number; i++) {
-  //   //   bios_read_hd_sec(LBA + i, buf + i * 512);
-  //   // }
-  //   // // io_sti();
-  //   packet_header h;
-  //   h.buffer = buffer;
-  //   h.lba = LBA;
-  //   h.number = number;
-  //   h.rw = 0;
-  //   unsigned char* flag = malloc(1);
-  //   *flag = 0;
-  //   h.ok_flag = flag;
-  //   SendIPCMessage(2, &h, sizeof(packet_header), asynchronous);
-  //   printk("flag = %08x\n", flag);
-  //   while (*flag != 0xff) {
-  //     // printk("*flag=%02x", *flag);
-  //   }
-  //   free(flag);
-  //   return;
-  // }
-  // /**互斥操作，不允许在读取时有其他任务切换*/
-  // io_cli();
-
   // unsigned int offset, i;
   // io_out8(0x1f7, 0x0c);
   // io_out16(0x1f2, number);              /**数量*/

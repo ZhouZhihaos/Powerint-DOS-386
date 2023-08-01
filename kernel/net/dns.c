@@ -15,10 +15,11 @@ uint32_t dns_parse_ip(uint8_t *name) {
   dns_header->RA = 0;
   dns_header->Z = 0;
   dns_header->RCODE = 0;
-  dns_header->QDcount = 1; // 1个Question
+  dns_header->QDcount = swap16(1); // 1个Question
   dns_header->ANcount = 0;
   dns_header->NScount = 0;
   dns_header->ARcount = 0;
+  dns_header->reserved = 0;
   uint8_t *new_name = data + sizeof(struct DNS_Header) - 1;
   name--;
   for (int i = 1, j = 0; i != strlen(name + 1) + 1; i++) {
@@ -46,7 +47,6 @@ uint32_t dns_parse_ip(uint8_t *name) {
   return dns_parse_ip_result;
 }
 void dns_handler(void *base) {
-  //printf("This?\n");
   struct DNS_Header *dns_header =
       (struct DNS_Header *)(base + sizeof(struct EthernetFrame_head) +
                             sizeof(struct IPV4Message) +

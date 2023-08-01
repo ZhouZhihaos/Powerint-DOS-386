@@ -20,7 +20,7 @@ void inthandler36(int edi,
   int alloc_addr = task->alloc_addr;  // malloc地址
   int alloc_size = task->alloc_size;
   int* reg = &eax + 1; /* eax后面的地址*/
-                            /*强行改写通过PUSHAD保存的值*/
+                       /*强行改写通过PUSHAD保存的值*/
   /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
   /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
   if (eax == 0x01) {
@@ -50,7 +50,7 @@ void inthandler36(int edi,
   } else if (eax == 0x04) {
     gotoxy(edx, ecx);
   } else if (eax == 0x05) {
-    //printf("get it! %08x\n",edx);
+    // printf("get it! %08x\n",edx);
     print((char*)edx + ds_base);
   } else if (eax == 0x06) {
     sleep(edx);
@@ -66,34 +66,7 @@ void inthandler36(int edi,
   } else if (eax == 0x0d) {
     beep(ebx, ecx, edx);
   } else if (eax == 0x0f) {
-    if (running_mode == POWERDESKTOP) {
-      extern int gmx, gmy;
-      struct SHEET* sht_win = (struct SHEET*)task->TTY->reserved[1];
-      for (;;) {
-        if ((mdec.btn & 0x01) != 0) {
-          reg[ECX] = (gmx - sht_win->vx0 - 5) / 8;
-          reg[EDX] = (gmy - sht_win->vy0 - 24) / 16;
-          reg[ESI] = 1;
-          return;
-        } else if ((mdec.btn & 0x02) != 0) {
-          reg[ECX] = (gmx - sht_win->vx0 - 5) / 8;
-          reg[EDX] = (gmy - sht_win->vy0 - 24) / 16;
-          reg[ESI] = 2;
-          return;
-        } else if ((mdec.btn & 0x04) != 0) {
-          reg[ECX] = (gmx - sht_win->vx0 - 5) / 8;
-          reg[EDX] = (gmy - sht_win->vy0 - 24) / 16;
-          reg[ESI] = 3;
-          return;
-        } else if (mdec.roll != MOUSE_ROLL_NONE) {
-          reg[ECX] = current_task()->mx;
-          reg[EDX] = current_task()->my;
-          reg[ESI] = 3 + mdec.roll;
-          mdec.roll = MOUSE_ROLL_NONE;
-          break;
-        }
-      }
-    } else if (running_mode == POWERINTDOS) {
+    if (running_mode == POWERINTDOS) {
       struct TASK* task = current_task();
       int i, mx1 = task->mx, my1 = task->my, bufx = task->mx * 8,
              bufy = task->my * 16;
@@ -220,10 +193,13 @@ void inthandler36(int edi,
   } else if (eax == 0x1b) {
     int i;
     char* bes = (char*)(edx + ds_base);
+    while (!task->line)
+      ;
     for (i = 0; i < strlen(task->line); i++) {
       bes[i] = task->line[i];
     }
     bes[i] = 0;
+    // printf("%s\n",bes);
   } else if (eax == 0x1c) {
     reg[EAX] = Copy((char*)(edx + ds_base), (char*)(esi + ds_base));
   } else if (eax == 0x1d) {
@@ -231,8 +207,7 @@ void inthandler36(int edi,
   } else if (eax == 0x1e) {
     while (FindForCount(1, vfs_now->path) != NULL) {
       // printk("%d\n",vfs_now->path->ctl->all);
-      page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val,
-                 255);
+      page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
       extern struct TASK* mouse_use_task;
       if (mouse_use_task == task) {
@@ -240,7 +215,7 @@ void inthandler36(int edi,
       }
     }
     DeleteList(vfs_now->path);
-    page_free((void *)vfs_now, sizeof(vfs_t));
+    page_free((void*)vfs_now, sizeof(vfs_t));
     extern uint32_t app_num;
     app_num--;
     printk("at the last\n");
@@ -289,9 +264,9 @@ void inthandler36(int edi,
       io_cli();  // 防止任务提前运行
       extern int init_ok_flag;
       init_ok_flag = 0;
-      struct TASK* t =
-          register_user_task((char*)(ecx + ds_base), task->level, task->cs_start, edx,
-                      task->ss_start, task->ss_start, esi);
+      struct TASK* t = register_user_task((char*)(ecx + ds_base), task->level,
+                                          task->cs_start, edx, task->ss_start,
+                                          task->ss_start, esi);
       init_ok_flag = 1;
       t->alloc_addr = task->alloc_addr;
       t->alloc_size = task->alloc_size;
@@ -428,7 +403,7 @@ void inthandler36(int edi,
     }
   } else if (eax == 0x2d) {
     reg[EAX] = ntp_time_stamp(get_year(), get_mon_hex(), get_day_of_month(),
-                            get_hour_hex(), get_min_hex(), get_sec_hex());
+                              get_hour_hex(), get_min_hex(), get_sec_hex());
   } else if (eax == 0x2e) {
     reg[EAX] = timerctl.count;
   } else if (eax == 0x2f) {
@@ -452,21 +427,21 @@ void inthandler36(int edi,
   } else if (eax == 0x34) {
     reg[EAX] = fifo8_get(current_task()->Ukeyfifo);
   } else if (eax == 0x35) {
-     char* new_buf = (char*)page_malloc(task->gdt_data[1] + ebx);
-     memcpy(new_buf,(void *)task->gdt_data[2], task->gdt_data[1]);
-     page_free((void *)task->gdt_data[2], task->gdt_data[1]);
-     task->gdt_data[2] = (uint32_t)new_buf;
-     task->gdt_data[1] = task->gdt_data[1] + ebx;
-     set_segmdesc((struct SEGMENT_DESCRIPTOR* )task->gdt_data[0], task->gdt_data[1], task->gdt_data[2],
-                  task->gdt_data[3]);
-     if(task->cs_base == task->ds_base) {
-       set_segmdesc((struct SEGMENT_DESCRIPTOR* )task->gdt_data[4], task->gdt_data[1], task->gdt_data[2],
-                  AR_CODE32_ER | 3 << 5);
-       task->cs_base = (uint32_t)new_buf;
-     }
-     task->ds_base = (uint32_t)new_buf;
-     task->alloc_size = task->gdt_data[1];
-     task->alloc_addr = (void *)new_buf;
+    char* new_buf = (char*)page_malloc(task->gdt_data[1] + ebx);
+    memcpy(new_buf, (void*)task->gdt_data[2], task->gdt_data[1]);
+    page_free((void*)task->gdt_data[2], task->gdt_data[1]);
+    task->gdt_data[2] = (uint32_t)new_buf;
+    task->gdt_data[1] = task->gdt_data[1] + ebx;
+    set_segmdesc((struct SEGMENT_DESCRIPTOR*)task->gdt_data[0],
+                 task->gdt_data[1], task->gdt_data[2], task->gdt_data[3]);
+    if (task->cs_base == task->ds_base) {
+      set_segmdesc((struct SEGMENT_DESCRIPTOR*)task->gdt_data[4],
+                   task->gdt_data[1], task->gdt_data[2], AR_CODE32_ER | 3 << 5);
+      task->cs_base = (uint32_t)new_buf;
+    }
+    task->ds_base = (uint32_t)new_buf;
+    task->alloc_size = task->gdt_data[1];
+    task->alloc_addr = (void*)new_buf;
   }
   return;
 }

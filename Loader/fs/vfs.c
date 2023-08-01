@@ -111,11 +111,11 @@ bool vfs_readfile(char *path, char *buffer) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(path) + 1);
+    page_free(new_path, strlen(path) + 1);
     return false;
   }
   int result = vfs->ReadFile(vfs, new_path, buffer);
-  page_kfree(new_path, strlen(path) + 1);
+  page_free(new_path, strlen(path) + 1);
   return result;
 }
 bool vfs_writefile(char *path, char *buffer, int size) {
@@ -124,11 +124,11 @@ bool vfs_writefile(char *path, char *buffer, int size) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(path) + 1);
+    page_free(new_path, strlen(path) + 1);
     return false;
   }
   int result = vfs->WriteFile(vfs, new_path, buffer, size);
-  page_kfree(new_path, strlen(path) + 1);
+  page_free(new_path, strlen(path) + 1);
   return result;
 }
 uint32_t vfs_filesize(char *filename) {
@@ -137,11 +137,11 @@ uint32_t vfs_filesize(char *filename) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(filename) + 1);
+    page_free(new_path, strlen(filename) + 1);
     return -1;
   }
   int result = vfs->FileSize(vfs, new_path); // 没找到文件统一返回-1
-  page_kfree(new_path, strlen(filename) + 1);
+  page_free(new_path, strlen(filename) + 1);
   return result;
 }
 List *vfs_listfile(char *dictpath) { // dictpath == "" 则表示当前路径
@@ -153,11 +153,11 @@ List *vfs_listfile(char *dictpath) { // dictpath == "" 则表示当前路径
     vfs_t *vfs = ParsePath(new_path);
     if (vfs == NULL) {
       WARNING_K("Attempt read a nonexistent disk");
-      page_kfree(new_path, strlen(dictpath) + 1);
+      page_free(new_path, strlen(dictpath) + 1);
       return NULL;
     }
     List *result = vfs->ListFile(vfs, new_path);
-    page_kfree(new_path, strlen(dictpath) + 1);
+    page_free(new_path, strlen(dictpath) + 1);
     return result;
   }
 }
@@ -168,11 +168,11 @@ bool vfs_delfile(char *filename) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(filename) + 1);
+    page_free(new_path, strlen(filename) + 1);
     return false;
   }
   int result = vfs->DelFile(vfs, new_path);
-  page_kfree(new_path, strlen(filename) + 1);
+  page_free(new_path, strlen(filename) + 1);
   return result;
 }
 bool vfs_deldir(char *dictname) {
@@ -181,11 +181,11 @@ bool vfs_deldir(char *dictname) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(dictname) + 1);
+    page_free(new_path, strlen(dictname) + 1);
     return false;
   }
   int result = vfs->DelDict(vfs, new_path);
-  page_kfree(new_path, strlen(dictname) + 1);
+  page_free(new_path, strlen(dictname) + 1);
   return result;
 }
 bool vfs_createfile(char *filename) {
@@ -194,11 +194,11 @@ bool vfs_createfile(char *filename) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(filename) + 1);
+    page_free(new_path, strlen(filename) + 1);
     return false;
   }
   int result = vfs->CreateFile(vfs, new_path);
-  page_kfree(new_path, strlen(filename) + 1);
+  page_free(new_path, strlen(filename) + 1);
   return result;
 }
 bool vfs_createdict(char *filename) {
@@ -207,11 +207,11 @@ bool vfs_createdict(char *filename) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(filename) + 1);
+    page_free(new_path, strlen(filename) + 1);
     return false;
   }
   int result = vfs->CreateDict(vfs, new_path);
-  page_kfree(new_path, strlen(filename) + 1);
+  page_free(new_path, strlen(filename) + 1);
   return result;
 }
 bool vfs_renamefile(char *filename, char *filename_of_new) {
@@ -220,11 +220,11 @@ bool vfs_renamefile(char *filename, char *filename_of_new) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(filename) + 1);
+    page_free(new_path, strlen(filename) + 1);
     return false;
   }
   int result = vfs->RenameFile(vfs, new_path, filename_of_new);
-  page_kfree(new_path, strlen(filename) + 1);
+  page_free(new_path, strlen(filename) + 1);
   return result;
 }
 bool vfs_attrib(char *filename, ftype type) {
@@ -233,11 +233,11 @@ bool vfs_attrib(char *filename, ftype type) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(filename) + 1);
+    page_free(new_path, strlen(filename) + 1);
     return false;
   }
   int result = vfs->Attrib(vfs, new_path, type);
-  page_kfree(new_path, strlen(filename) + 1);
+  page_free(new_path, strlen(filename) + 1);
   return result;
 }
 bool vfs_format(uint8_t disk_number, char *FSName) {
@@ -254,11 +254,11 @@ vfs_file *vfs_fileinfo(char *filename) {
   vfs_t *vfs = ParsePath(new_path);
   if (vfs == NULL) {
     WARNING_K("Attempt read a nonexistent disk");
-    page_kfree(new_path, strlen(filename) + 1);
+    page_free(new_path, strlen(filename) + 1);
     return false;
   }
   vfs_file *result = vfs->FileInfo(vfs, new_path);
-  page_kfree(new_path, strlen(filename) + 1);
+  page_free(new_path, strlen(filename) + 1);
   return result;
 }
 bool vfs_change_disk(uint8_t drive) {
@@ -266,12 +266,12 @@ bool vfs_change_disk(uint8_t drive) {
   if (vfs_now != NULL) {
     while (FindForCount(1, vfs_now->path) != NULL) {
       // printk("%d\n",vfs_now->path->ctl->all);
-      page_kfree(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val,
+      page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val,
                  255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
     }
     DeleteList(vfs_now->path);
-    page_kfree(vfs_now, sizeof(vfs_t));
+    page_free(vfs_now, sizeof(vfs_t));
   }
   PDEBUG("Find mount.......");
   vfs_t *f;
@@ -293,12 +293,12 @@ bool vfs_change_disk_for_task(uint8_t drive, struct TASK *task) {
   if (vfs(task) != NULL) {
     while (FindForCount(1, vfs(task)->path) != NULL) {
       //("%d\n",vfs_now->path->ctl->all);
-      page_kfree(FindForCount(vfs(task)->path->ctl->all, vfs(task)->path)->val,
+      page_free(FindForCount(vfs(task)->path->ctl->all, vfs(task)->path)->val,
                  255);
       DeleteVal(vfs(task)->path->ctl->all, vfs(task)->path);
     }
     DeleteList(vfs(task)->path);
-    page_kfree(vfs(task), sizeof(vfs_t));
+    page_free(vfs(task), sizeof(vfs_t));
   }
   PDEBUG("Find mount.......");
   vfs_t *f;

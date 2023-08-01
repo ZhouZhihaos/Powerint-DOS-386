@@ -39,8 +39,7 @@ typedef vram_t color_t;
 #define DEBUG_F(info, ...) DEBUG_Print(printf, info, ##__VA_ARGS__)
 #define get_tid(task) task->sel / 8 - 103
 #define POWERINTDOS 0
-#define POWERDESKTOP 1
-#define HIGHTEXTMODE 2
+#define HIGHTEXTMODE 1
 extern struct MOUSE_DEC mdec;
 extern int gmx, gmy;
 extern unsigned char *font, *ascfont, *hzkfont;
@@ -214,6 +213,7 @@ struct FAT_CACHE {
   struct FAT_FILEINFO *root_directory;
   struct List *directory_list;
   struct List *directory_clustno_list;
+  struct List *directory_max_list;
   int *fat;
   int FatMaxTerms;
   unsigned int ClustnoBytes;
@@ -388,6 +388,23 @@ struct SHTCTL {
   struct SHEET *sheets[MAX_SHEETS];
   struct SHEET sheets0[MAX_SHEETS];
 };
+#define COL_000000 0x00000000
+#define COL_FF0000 0x00ff0000
+#define COL_00FF00 0x0000ff00
+#define COL_FFFF00 0x00ffff00
+#define COL_0000FF 0x000000ff
+#define COL_FF00FF 0x00ff00ff
+#define COL_00FFFF 0x0000ffff
+#define COL_C6C6C6 0x00c6c6c6
+#define COL_848484 0x00848484
+#define COL_840000 0x00840000
+#define COL_008400 0x00008400
+#define COL_848400 0x00848400
+#define COL_000084 0x00000084
+#define COL_840084 0x00840084
+#define COL_008484 0x00008484
+#define COL_FFFFFF 0x00ffffff
+#define COL_TRANSPARENT 0x50ffffff
 
 /* drivers.h */
 struct ACPI_RSDP {
@@ -697,88 +714,6 @@ struct IDEHardDiskInfomationBlock {
   char ID[40];
 };
 
-/* gui.h */
-struct Button {
-  int x, y, w, h;    // 16
-  struct SHEET *buf; // 20
-  char *text;        // 24
-  int cont;          // 28
-  bool is_clicking;  // 32
-  void (*OnClick)(); // 36
-  struct TASK *task; // 40
-  // NoFrameButton专有
-  color_t bc;
-  bool hide;
-  bool clicking_first;
-} __attribute__((packed));
-typedef struct Button Button;
-struct TextBox {
-  int x, y, w, h;
-  int Write_Pos_X;
-  struct SHEET *buf;
-  char *text;
-  int len;
-  bool is_clicking;
-  int cont;
-};
-typedef struct TextBox TextBox;
-#define CMDLINEXSIZE 650
-#define CMDLINEYSIZE 429
-#define FMXSIZE 350
-#define FMYSIZE 355
-
-#define COL_000000 0x00000000
-#define COL_FF0000 0x00ff0000
-#define COL_00FF00 0x0000ff00
-#define COL_FFFF00 0x00ffff00
-#define COL_0000FF 0x000000ff
-#define COL_FF00FF 0x00ff00ff
-#define COL_00FFFF 0x0000ffff
-#define COL_C6C6C6 0x00c6c6c6
-#define COL_848484 0x00848484
-#define COL_840000 0x00840000
-#define COL_008400 0x00008400
-#define COL_848400 0x00848400
-#define COL_000084 0x00000084
-#define COL_840084 0x00840084
-#define COL_008484 0x00008484
-#define COL_FFFFFF 0x00ffffff
-// 透明色
-#define COL_TRANSPARENT 0x50ffffff
-
-typedef struct listBox_t {
-  int x;
-  int y;
-  int width;
-  int height;
-  int view_max;
-  struct SHEET *sheet;
-  int item_num;
-  int now_min;
-  int now_max;
-  int cont;
-  char **item;
-  Button **btns;
-  int itm_arr_sz;
-  Button *button1; // 上
-  Button *button2; // 下
-} listBox_t;
-
-typedef struct GUI_Position {
-  uint32_t x;
-  uint32_t y;
-  uint32_t w;
-  uint32_t h;
-} GuiPosition;
-typedef struct loadBox {
-  GuiPosition position;
-  // load进度
-  uint8_t load_progress;
-  uint32_t count; // 在链表中的位置
-
-  struct SHEET *sheet;
-} loadBox;
-
 /* net */
 #define swap32(x)                                                              \
   ((((x)&0xff000000) >> 24) | (((x)&0x00ff0000) >> 8) |                        \
@@ -939,6 +874,7 @@ struct DNS_Header {
   uint16_t ANcount;
   uint16_t NScount;
   uint16_t ARcount;
+  uint8_t reserved;
 } __attribute__((packed));
 struct DNS_Question {
   uint16_t type;
@@ -950,6 +886,7 @@ struct DNS_Answer {
   uint16_t Class;
   uint32_t TTL;
   uint16_t RDlength;
+  uint8_t reserved;
   uint8_t RData[0];
 } __attribute__((packed));
 // TCP
