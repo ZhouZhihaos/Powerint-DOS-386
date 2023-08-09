@@ -107,7 +107,8 @@
         "stdlib.h": "c",
         "elf.h": "c",
         "x86.h": "c",
-        "mstr.h": "c"
+        "mstr.h": "c",
+        "pfs.h": "c"
     },
     "cSpell.words": [],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [

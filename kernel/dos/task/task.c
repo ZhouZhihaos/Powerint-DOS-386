@@ -249,25 +249,10 @@ static unsigned int default_drive_number;
 struct TASK *register_task(char *name, int level, int cs, int eip, int ds,
                            int ss, int esp) {
   if (!flags_once) {
-    if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
-        memcmp((void *)"FAT16   ", (void *)0x7c00 + BS_FileSysType, 8) == 0) {
-      if (*(unsigned char *)(0x7c00 + BS_DrvNum) >= 0x80) {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BS_DrvNum) - 0x80 + 0x02;
-      } else {
-        default_drive_number = *(unsigned char *)(0x7c00 + BS_DrvNum);
-      }
-    } else if (memcmp((void *)"FAT32   ",
-                      (void *)0x7c00 + BPB_Fat32ExtByts + BS_FileSysType,
-                      8) == 0) {
-      if (*(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) >= 0x80) {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) - 0x80 +
-            0x02;
-      } else {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum);
-      }
+    if (*(unsigned char *)(0x7c00) >= 0x80) {
+      default_drive_number = *(unsigned char *)(0x7c00) - 0x80 + 0x02;
+    } else {
+      default_drive_number = *(unsigned char *)(0x7c00);
     }
     default_drive = default_drive_number + 0x41;
     flags_once = true;
@@ -359,25 +344,10 @@ struct TASK *register_task(char *name, int level, int cs, int eip, int ds,
 struct TASK *register_user_task(char *name, int level, int cs, int eip, int ds,
                                 int ss, int esp) {
   if (!flags_once) {
-    if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
-        memcmp((void *)"FAT16   ", (void *)0x7c00 + BS_FileSysType, 8) == 0) {
-      if (*(unsigned char *)(0x7c00 + BS_DrvNum) >= 0x80) {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BS_DrvNum) - 0x80 + 0x02;
-      } else {
-        default_drive_number = *(unsigned char *)(0x7c00 + BS_DrvNum);
-      }
-    } else if (memcmp((void *)"FAT32   ",
-                      (void *)0x7c00 + BPB_Fat32ExtByts + BS_FileSysType,
-                      8) == 0) {
-      if (*(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) >= 0x80) {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) - 0x80 +
-            0x02;
-      } else {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum);
-      }
+    if (*(unsigned char *)(0x7c00) >= 0x80) {
+      default_drive_number = *(unsigned char *)(0x7c00) - 0x80 + 0x02;
+    } else {
+      default_drive_number = *(unsigned char *)(0x7c00);
     }
     default_drive = default_drive_number + 0x41;
     flags_once = true;
@@ -561,43 +531,14 @@ struct TASK *get_task_unsafe(int taskNum) {
   return (struct TASK *)(res2 - 0xc);
 }
 void __sub_task(struct TASK *task) {
-  // Maskirq(0);  // 关闭时钟中断 防止有任务来打扰
-  // SleepTask(task);
-  // struct SEGMENT_DESCRIPTOR* gdt = (struct SEGMENT_DESCRIPTOR*)ADR_GDT;
-  // int bmpNum = tasknum;
-  // int index = tasknum - (task->sel / 8 - 103) - 1;
-  // tasknum -= index;
-  // if (index == 0) {  // 最后一个
-  //   // gdt描述符清空
-  //   tasknum--;
-  //   set_segmdesc(gdt + 103 + bmpNum, 0, 0, 0);
-  //   ClearMaskIrq(0);
-  //   return;
-  // }
-  // // printf("\nTASKSEL:%d*8 TASKNUM:%d INDEX:%d
-  // // BMPNUM:%d\n",task->sel/8,tasknum,index,bmpNum);
-  // page_free((void *)task, sizeof(struct TASK));
-  // for (int i = bmpNum - index + 1; i < bmpNum + index; i++) {
-  //   page_free((void *)GetTask_NoSafe(i), sizeof(struct TASK));
-  //   struct TASK* ntask =
-  //       AddTask(GetTask_NoSafe(i)->name, GetTask_NoSafe(i)->level,
-  //               GetTask_NoSafe(i)->tss.cs, GetTask_NoSafe(i)->tss.eip,
-  //               GetTask_NoSafe(i)->tss.ds, GetTask_NoSafe(i)->tss.ss,
-  //               GetTask_NoSafe(i)->tss.esp);
-  //   ntask->sleep = GetTask_NoSafe(i)->sleep;
-  //   ntask->fifosleep = GetTask_NoSafe(i)->fifosleep;
-  //   ntask->keyfifo = GetTask_NoSafe(i)->keyfifo;
-  //   ntask->mousefifo = GetTask_NoSafe(i)->mousefifo;
-  //   ntask->IPC_header = GetTask_NoSafe(i)->IPC_header;
-  // }
-  // tasknum -= 2;
-  // ClearMaskIrq(0);
   irq_mask_set(0);
   io_cli();
   for (int i = 0; get_task(i) != NULL; i++) {
     struct TASK *t = get_task(i);
     if (t->is_child == 1 && t->thread.father == task) {
       __sub_task(t);
+	  irq_mask_set(0);
+	  i--;
     }
   }
   struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *)ADR_GDT;
@@ -616,7 +557,7 @@ void __sub_task(struct TASK *task) {
       int t, p;
       page2tpo(i, &t, &p);
       void *ptr = (void *)get_line_address(t, p, 0);
-      //  printk("SubTask Free a page:%08x\n",ptr);
+      // printk("SubTask Free a page:%08x\n",ptr);
       page_free_one(ptr);
     }
   }
@@ -624,21 +565,8 @@ void __sub_task(struct TASK *task) {
   mt_tr1 = 103 * 8;
   mt_tr2 = 103 * 8;
   mt_tr3 = 103 * 8;
-  // printk("try.\n");
-  // disableExp();            // 关闭蓝屏
-  // ClearExpFlag();          // 清除err标志
-  // SetCatchEip(get_eip());  // 重定位Catch后返回的EIP
-  // if (GetExpFlag()) {      // 是否产生了异常？
-  //   mt_tr1 = 103 * 8;
-  //   mt_tr2 = 103 * 8;
-  //   mt_tr3 = 103 * 8;
-  //   printf("error catch!\n");  // 产生了
-  //   ClearExpFlag();            // 清除标志
-  //   EnableExp();               // 测试完成，开启蓝屏
-  // }
   io_sti();
   irq_mask_clear(0);
-  // sleep(10);
 }
 void change_level(struct TASK *task, int nlevel) {
   if (task == NULL) {

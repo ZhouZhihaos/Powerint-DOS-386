@@ -1,7 +1,7 @@
 #include <io.h>
 extern char keytable[];
 extern char keytable1[];
-void input(char *ptr, int len) {
+void input(char* ptr, int len) {
   /**
    * 别问我为什么这么写，我也不知道为什么
    * 将就用吧，能用就行
@@ -22,8 +22,10 @@ void input(char *ptr, int len) {
       continue;
     }
     if (in == '\n') {
-      ptr[strlen(ptr)] = 0;
+     // printf("1 %d\n", strlen(ptr));
 
+      ptr[strlen(ptr)] = 0;
+   //   printf("2");
       if (Bmy >= get_ysize() - 1) {
         int bx = get_x();
         int by = get_y();
@@ -39,7 +41,6 @@ void input(char *ptr, int len) {
         input_stack_put(ptr);
         input_stack_set_now(BNOW - 1);
       }
-
       return;
     } else if (in == '\b') {
       if (i == 0) {
@@ -47,7 +48,6 @@ void input(char *ptr, int len) {
         continue;
       }
       if (ptr[i] == 0) {
-
         i--;
         ptr[i] = 0;
         i--;
@@ -85,7 +85,7 @@ void input(char *ptr, int len) {
     } else if (in == -1) {
       int bx = get_x();
       int by = get_y();
-      if (get_free() != 1023 && NOW != 1023) //没有输入
+      if (get_free() != 1023 && NOW != 1023)  //没有输入
       {
         if (NOW < 1022) {
           NOW++;
@@ -98,7 +98,7 @@ void input(char *ptr, int len) {
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = input_stack_pop();
+        char* Str = input_stack_pop();
         clean(ptr, len);
         strcpy(ptr, Str);
         i = strlen(ptr);
@@ -124,7 +124,7 @@ void input(char *ptr, int len) {
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = input_stack_pop();
+        char* Str = input_stack_pop();
         clean(ptr, len);
         strcpy(ptr, Str);
         i = strlen(ptr);
@@ -176,7 +176,7 @@ void input(char *ptr, int len) {
       int RNy = get_raw_y();
       if (NY >= get_ysize() - 1) {
         if (BMPY == NY && NX <= BMPX) {
-          gotoxy(bx + 1, by - (RNy - ry)); //还原到它应该在的地方
+          gotoxy(bx + 1, by - (RNy - ry));  //还原到它应该在的地方
         } else {
           gotoxy(bx + 1, by);
         }
@@ -185,7 +185,7 @@ void input(char *ptr, int len) {
       }
     }
   }
-  ptr[strlen(ptr)] = 0; //设置终止符号0
+  ptr[strlen(ptr)] = 0;  //设置终止符号0
 
   if (Bmy >= get_ysize() - 1) {
     int bx = get_x();
@@ -200,10 +200,10 @@ void input(char *ptr, int len) {
   input_stack_set_now(BNOW);
   if (i > 0) {
     input_stack_put(ptr);
-    input_stack_set_now(BNOW - 1); // Now-1
+    input_stack_set_now(BNOW - 1);  // Now-1
   }
 }
-void input_no_endl(char *ptr, int len) {
+void input_no_endl(char* ptr, int len) {
   int i;
   int BNOW = input_stack_get_now();
   int NOW = input_stack_get_now();
@@ -237,7 +237,6 @@ void input_no_endl(char *ptr, int len) {
         continue;
       }
       if (ptr[i] == 0) {
-
         i--;
         ptr[i] = 0;
         i--;
@@ -263,14 +262,13 @@ void input_no_endl(char *ptr, int len) {
       int bx = get_x();
       int by = get_y();
       if (Get_times() > 0) {
-
         for (int j = 0; j < strlen(ptr) - i; j++) {
           printchar(' ');
         }
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = input_stack_pop();
+        char* Str = input_stack_pop();
         strcpy(ptr, Str);
         i = strlen(ptr);
         print(ptr);
@@ -294,7 +292,7 @@ void input_no_endl(char *ptr, int len) {
         for (int j = 0; j < strlen(ptr); j++) {
           printchar('\b');
         }
-        char *Str = input_stack_pop();
+        char* Str = input_stack_pop();
         strcpy(ptr, Str);
         i = strlen(ptr);
         print(ptr);

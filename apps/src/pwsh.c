@@ -1,172 +1,209 @@
-#include <syscall.h>
 #include <mouse.h>
 #include <string.h>
-void Create_Button(int x, int y, int w, int h, char *text)
-{
-    Text_Draw_Box(x, y, x + w, y + h, 0xf0);
-    goto_xy(y, x + w / 2);
-    print(text);
+#include <syscall.h>
+#define max_file_list_num 17
+static struct finfo_block *file_list;
+static int roll = 0, choose = 0, file_list_num;
+static char *path;
+static int tid_main, tid_mouse;
+void Create_Button(int x, int y, int w, int h, char *text, char color) {
+  goto_xy(x + (w - strlen(text)) / 2, y);
+  print(text);
+  T_DrawBox(x, y, w, h, color);
 }
-void New_CreateButton(int x, int y, char *text)
-{
-    Create_Button(y, x, 3, 10, text);
+void Draw_UI() {
+  system("cls");
+  goto_xy(32, 0);
+  printf("Powerint Shell");
+  goto_xy(2, 1);
+  printf("Path: %s", path);
+  goto_xy(2, 3);
+  printf("NAME");
+  goto_xy(22, 3);
+  printf("SIZE");
+  goto_xy(36, 3);
+  printf("TYPE");
+  goto_xy(52, 3);
+  printf("DATE       TIME");
+  for (int i = 0;
+       file_list[roll + i].name[0] != 0 && roll + i <= max_file_list_num; i++) {
+    goto_xy(2, 4 + i);
+    printf("%s", file_list[roll + i].name);
+    goto_xy(22, 4 + i);
+    printf("%d", file_list[roll + i].size);
+    goto_xy(36, 4 + i);
+    if (file_list[roll + i].type == FLE) {
+      printf("FILE");
+    } else if (file_list[roll + i].type == DIR) {
+      printf("DIR");
+    } else if (file_list[roll + i].type == RDO) {
+      printf("READ-ONLY");
+    } else if (file_list[roll + i].type == SYS) {
+      printf("SYSTEM-FILE");
+    } else if (file_list[roll + i].type == HID) {
+      printf("HIDE");
+    }
+    goto_xy(52, 4 + i);
+    printf("%04d-%02d-%02d %02d:%02d", file_list[roll + i].year,
+           file_list[roll + i].month, file_list[roll + i].day,
+           file_list[roll + i].hour, file_list[roll + i].minute);
+  }
+  T_DrawBox(2, 4 + choose, 76, 1, 0xf0);
+  Create_Button(2, 23, 13, 1, "CHANGE PATH", 0xf0);
+  Create_Button(18, 23, 6, 1, "EXIT", 0xf0);
 }
-bool Button_Click_Left(int x, int y, int w, int h)
-{
+void mouse_thread() {
+  tid_mouse = NowTaskID();
+  while (1) {
     int mouse = get_mouse();
-    int x1 = GetMouse_x(mouse);
-    int y1 = GetMouse_y(mouse);
+    int x = GetMouse_x(mouse);
+    int y = GetMouse_y(mouse);
     int btn = GetMouse_btn(mouse);
-    if (x1 >= x && x1 <= x + w && y1 >= y && y1 <= y + h && btn == CLICK_LEFT)
-    {
-        return true;
+    if (btn == 1) {
+      if (x >= 2 && x <= 78 && y <= 4 + file_list_num - 1 &&
+          y <= 4 + max_file_list_num && y >= 4) {
+        choose = y - 4;
+      } else if (x >= 2 && x <= 2 + 13 && y == 23) {
+        TaskLock();
+        goto_xy(8, 1);
+        while (_kbhit())
+          getch(); // 清空输入缓冲区
+        scan(path, 512);
+        free((void *)file_list);
+        file_list = listfile(path);
+        for (file_list_num = 0; file_list[file_list_num].name[0] != 0;
+             file_list_num++)
+          ;
+        roll = 0;
+        choose = 0;
+        TaskUnlock();
+      } else if (x >= 18 && x <= 18 + 6 && y == 23) {
+        system("cls");
+        SendMessage(tid_main, "\0", 1);
+      }
+      Draw_UI();
+    } else if (btn == 4) {
+      if (choose > 0) {
+        choose--;
+      } else if (roll > 0) {
+        roll--;
+      }
+      Draw_UI();
+    } else if (btn == 5) {
+      if (choose >= file_list_num - 1 && file_list_num > max_file_list_num &&
+          roll < file_list_num - max_file_list_num) {
+        roll++;
+      } else if (choose < file_list_num - 1) {
+        choose++;
+      }
+      Draw_UI();
     }
-    return false;
+  }
 }
-bool Button_Click_Right(int x, int y, int w, int h)
-{
-    int mouse = get_mouse();
-    int x1 = GetMouse_x(mouse);
-    int y1 = GetMouse_y(mouse);
-    int btn = GetMouse_btn(mouse);
-    if (x1 >= x && x1 <= x + w && y1 >= y && y1 <= y + h && btn == CLICK_RIGHT)
-    {
-        return true;
+int main(int argc, char **argv) {
+  tid_main = NowTaskID();
+  path = (char *)malloc(512);
+  strcpy(path, "/");
+  file_list = listfile(path);
+  for (file_list_num = 0; file_list[file_list_num].name[0] != 0;
+       file_list_num++)
+    ;
+  Draw_UI();
+  unsigned int stack = (unsigned int)malloc(16 * 1024);
+  AddThread("mouse", &mouse_thread, stack + 16 * 1024);
+  while (1) {
+    if (_kbhit()) {
+      int c = getch();
+      if (c == -1) {
+        if (choose > 0) {
+          choose--;
+        } else if (roll > 0) {
+          roll--;
+        }
+      } else if (c == -2) {
+        if (choose >= file_list_num - 1 && file_list_num > max_file_list_num &&
+            roll < file_list_num - max_file_list_num) {
+          roll++;
+        } else if (choose < file_list_num - 1) {
+          choose++;
+        }
+      } else if (c == '\n') {
+        if (file_list[choose].type == FLE || file_list[choose].type == HID) {
+          TaskLock();
+          system("cls");
+          T_DrawBox(15, 9, 50, 6, 0xf0);
+          T_DrawBox(16, 10, 48, 4, 0x0f);
+          goto_xy(21, 10);
+          printf("What do you want to do with this file?");
+          Create_Button(21, 12, 14, 1, "Open With...", 0xf0);
+          Create_Button(38, 12, 8, 1, "Delete", 0x0f);
+          Create_Button(49, 12, 8, 1, "Cancel", 0x0f);
+          int move = 0;
+          for (;;) {
+            if (_kbhit()) {
+              int c1 = getch();
+              if (c1 == -3 && move > 0) {
+                move--;
+                if (move == 0) {
+                  Create_Button(21, 12, 14, 1, "Open With...", 0xf0);
+                  Create_Button(38, 12, 8, 1, "Delete", 0x0f);
+                } else {
+                  Create_Button(38, 12, 8, 1, "Delete", 0xf0);
+                  Create_Button(49, 12, 8, 1, "Cancel", 0x0f);
+                }
+              } else if (c1 == -4 && move <= 2) {
+                move++;
+                if (move == 1) {
+                  Create_Button(21, 12, 14, 1, "Open With...", 0x0f);
+                  Create_Button(38, 12, 8, 1, "Delete", 0xf0);
+                } else {
+                  Create_Button(38, 12, 8, 1, "Delete", 0x0f);
+                  Create_Button(49, 12, 8, 1, "Cancel", 0xf0);
+                }
+              } else if (c1 == '\n') {
+                char *buffer = (char *)malloc(512);
+                if (move == 0) {
+                  goto_xy(2, 15);
+                  printf("Program Path: ");
+                  scan(buffer, 512);
+                  sprintf(buffer, "%s %s%s", buffer, path,
+                          file_list[choose].name);
+                  system(buffer);
+                } else if (move == 1) {
+                  sprintf(buffer, "del %s%s", path, file_list[choose].name);
+                  system(buffer);
+                  choose--;
+                }
+                free((void *)file_list);
+                file_list = listfile(path);
+                for (file_list_num = 0; file_list[file_list_num].name[0] != 0;
+                     file_list_num++)
+                  ;
+                free(buffer);
+                TaskUnlock();
+                break;
+              }
+            }
+          }
+        }
+      } else if (c == 1) {
+        TaskLock();
+        goto_xy(8, 1);
+        scan(path, 512);
+        free((void *)file_list);
+        file_list = listfile(path);
+        for (file_list_num = 0; file_list[file_list_num].name[0] != 0;
+             file_list_num++)
+          ;
+        roll = 0;
+        choose = 0;
+        TaskUnlock();
+      }
+      Draw_UI();
     }
-    return false;
-}
-bool Button_Click_Middle(int x, int y, int w, int h)
-{
-    int mouse = get_mouse();
-    int x1 = GetMouse_x(mouse);
-    int y1 = GetMouse_y(mouse);
-    int btn = GetMouse_btn(mouse);
-    if (x1 >= x && x1 <= x + w && y1 >= y && y1 <= y + h && btn == CLICK_MIDDLE)
-    {
-        return true;
+    if (haveMsg()) {
+      exit();
     }
-    return false;
-}
-void MessageBox(int x, int y, char *text)
-{
-    system("cls");
-    Text_Draw_Box(0, 0, 25, 80, 0xa0);
-    Text_Draw_Box(y, x, x + 10, y + 20, 0xb0);
-    goto_xy(y, x + 10 / 2);
-    print(text);
-    Create_Button(y + 8, x + 14, 2, 5, "OK");
-    while (1)
-    {
-        int mouse = get_mouse();
-        int x1 = GetMouse_x(mouse);
-        int y1 = GetMouse_y(mouse);
-        int btn = GetMouse_btn(mouse);
-        if (Button_Click_Left(x + 14, y + 8, 5, 2))
-        {
-            break;
-        }
-    }
-    system("cls");
-    Draw_UI();
-}
-void Draw_UI()
-{
-    Text_Draw_Box(0, 0, 25, 80, 0xa0);
-    New_CreateButton(5, 5, "Exit");
-    New_CreateButton(5, 9, "About");
-    New_CreateButton(5, 13, "System");
-    New_CreateButton(5, 17, "CLICK");
-}
-void Click(int x,int y)
-{
-    system("cls");
-    Text_Draw_Box(0, 0, 25, 80, 0xa0);
-    Text_Draw_Box(y, x, x + 10, y + 50, 0xb0);
-    Text_Draw_Box(y + 1, x + 10 / 2, x + 1, y + 48, 0xf0);
-    int n = 0;
-    Create_Button(y + 7, x + 25, 3, 5, "CLICK");
-    Create_Button(y + 1, x + 43, 2, 4, " X");
-    while (1)
-    {
-        int mouse = get_mouse();
-        int x1 = GetMouse_x(mouse);
-        int y1 = GetMouse_y(mouse);
-        int btn = GetMouse_btn(mouse);
-        if (Button_Click_Left(x + 25, y + 7, 5, 3))
-        {
-            n++;
-            goto_xy(y + 1, x + 10 / 2);
-			char *s = malloc(100);
-            sprintf(s,"TIMES:%d",n);
-			print(s);
-        }
-        if (Button_Click_Left(x + 43, y + 1, 4, 2))
-        {
-            break;
-        }
-    }
-    system("cls");
-    Draw_UI();
-}
-void System_Box(int x, int y)
-{
-    system("cls");
-    Text_Draw_Box(0, 0, 25, 80, 0xa0);
-    Text_Draw_Box(y, x, x + 10, y + 50, 0xb0);
-    Text_Draw_Box(y + 1, x + 10 / 2, x + 1, y + 48, 0xf0);
-    goto_xy(y + 1, x + 10 / 2);
-    print("Command:");
-    char *com = malloc(48);
-    scan(com, 48);
-    goto_xy(y + 1, x + 10 / 2 + 1);
-    system(com);
-    for (int i = 0; i < 48; i++)
-    {
-        com[i] = 0;
-    }
-    api_free(com, 48);
-    Create_Button(y + 7, x + 25, 3, 5, "OK");
-    while (1)
-    {
-        int mouse = get_mouse();
-        int x1 = GetMouse_x(mouse);
-        int y1 = GetMouse_y(mouse);
-        int btn = GetMouse_btn(mouse);
-        if (Button_Click_Left(x + 25, y + 7, 5, 3))
-        {
-            break;
-        }
-    }
-    system("cls");
-    Draw_UI();
-}
-int main(int argc,char **argv)
-{
-    system("cls");
-    Draw_UI();
-    while (1)
-    {
-        /* code */
-        int mouse = get_mouse();
-        int x = GetMouse_x(mouse);
-        int y = GetMouse_y(mouse);
-        int btn = GetMouse_btn(mouse);
-        if (Button_Click_Left(5, 5, 10, 3))
-        {
-            break;
-        }
-        else if (Button_Click_Left(5, 9, 10, 3))
-        {
-            MessageBox(5, 5, "Power shell v1.0");
-        }
-        else if (Button_Click_Left(5, 13, 10, 3))
-        {
-            System_Box(5, 5);
-        }
-        else if (Button_Click_Left(5, 17, 10, 3))
-        {
-            Click(5,5);
-        }
-    }
-    return 0;
+  }
+  return 0;
 }

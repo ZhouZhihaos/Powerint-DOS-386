@@ -7,6 +7,15 @@
 extern "C" {
 #endif
 #include <ctypes.h>
+#define T_DrawBox(x, y, w, h, c) Text_Draw_Box((y), (x), (h) + y, (w) + x, (c))
+typedef enum { FLE, DIR, RDO, HID, SYS } ftype;
+struct finfo_block {
+  char name[255];
+  ftype type;
+  unsigned int size;
+  unsigned short year, month, day;
+  unsigned short hour, minute;
+};
 void putch(char ch);
 unsigned int getch();
 char input_char_inSM();
@@ -29,7 +38,7 @@ int api_ReadFile(char *filename, char *res);
 void bmpview(char *filename);
 void Draw_Box(int x, int y, int w, int h, int color);
 void Draw_Px(int x, int y, int color);
-void Text_Draw_Box(int x, int y, int w, int h, int color);
+void Text_Draw_Box(int y, int x, int h, int w, int color);
 void beep(int point, int notes, int dup);
 void GetCmdline(char *_Str);
 int Get_System_Version();
@@ -38,6 +47,7 @@ int _kbhit();
 void mkfile(char *filename);
 void mkdir(char *filename);
 void Edit_File(char *filename, char *dest, int len, int offset);
+struct finfo_block *listfile(char *path);
 void SwitchTo320X200X256_BIOS();
 void SwitchToText8025_BIOS();
 void TaskForever();
@@ -54,7 +64,7 @@ int haveMsg();
 void GetMessageAll(void *data);
 char PhyMemGetByte(int addr);
 void PhyMemSetByte(int addr, char data);
-int format(unsigned drive);
+int format(unsigned drive, char *fs_name);
 void *malloc(int size);
 void free(void *p);
 void *realloc(void *ptr, uint32_t size);
@@ -74,9 +84,7 @@ void VBEDraw_Px(int x, int y, unsigned int color);
 unsigned int VBEGet_Px(int x, int y);
 void VBEGetBuffer(void *buffer);
 void VBESetBuffer(int x,int y,int w,int h,void *buffer);
-//void VBESetBuffer(int x,int y,int w,int h,void *buffer);
 void VBEDraw_Box(int x, int y, int x1, int y1, int color);
-void roll(int ysize);
 char get_cons_color();
 void set_cons_color(uint8_t c);
 void start_keyboard_message();
@@ -86,6 +94,7 @@ uint8_t get_key_press();
 uint8_t get_key_up();
 unsigned api_heapsize();
 void sbrk(unsigned size);
+int api_current_drive();
 #ifdef __cplusplus
 }
 #endif

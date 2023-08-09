@@ -889,7 +889,7 @@ int format(char drive) {
       page_free(null_sec, 512);
       // page_free((void*)info, 256 * sizeof(short));
     } else if (disk_Size(drive) > 2097152 &&
-               disk_Size(drive) <= 134217728) { // 2MB~128MB fat16
+               disk_Size(drive) <= 2147483648) { // 2MB~2GB fat16
       fread(read_in, fp->fileSize, 1, fp);
       unsigned int clustno_size =
           ((disk_Size(drive) - 1) / 65536 + 512) / 512 * 512;
@@ -929,7 +929,7 @@ int format(char drive) {
         Disk_Write(1 + fatsz * 2 + i, 1, null_sec, drive);
       }
       page_free(null_sec, 512);
-    } else if (disk_Size(drive) > 134217728) { // 128MB以上 fat32
+    } else if (disk_Size(drive) > 2147483648) { // 2GB以上 fat32
       fread(read_in, fp_32->fileSize, 1, fp_32);
       unsigned int clustno_size =
           (disk_Size(drive) - 1) / 268435456 * 512 + 512;

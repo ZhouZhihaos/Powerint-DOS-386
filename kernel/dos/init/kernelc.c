@@ -64,10 +64,10 @@ retry:
       break;
     }
   }
-  if (fsz("AUTOEXEC.BAT") == -1) {
+  if (fsz("autoexec.bat") == -1) {
     printf("Boot Warning:No AUTOEXEC.BAT in Drive %c\n", current_task()->drive);
   } else {
-    run_bat("AUTOEXEC.BAT");
+    run_bat("autoexec.bat");
   }
   extern struct tty* tty_default;
   tty_set(current_task(), tty_default);
@@ -78,6 +78,7 @@ void shell_handler() {
   task->line = (char*)page_malloc(1024);
   char buf[255];
   while (1) {
+    
     vfs_getPath(buf);
     printf("%s>", buf);
     clean(task->line, 1024);

@@ -2,7 +2,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 
-int open(const char *pathname, int flags, mode_t mode) {
+int open(const char *pathname, int flags, ...) {
     FILE *file;
     
     if (flags & O_CREAT) {
@@ -18,7 +18,9 @@ int open(const char *pathname, int flags, mode_t mode) {
     } else {
         file = fopen(pathname, "r");
     }
-
+    if(!file) {
+        return -1;
+    }
     return (int)(uintptr_t)file;
 }
 

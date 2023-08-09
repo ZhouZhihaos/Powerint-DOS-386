@@ -2,7 +2,7 @@
 ; Copyright (C) zhouzhihao 2020-2022
 bootseg		equ		7c0h
 dataseg		equ		800h
-readsize	equ		144			; DOSLDR.BIN的大小
+readsize	equ		184 		; DOSLDR.BIN的大小
 %define e_ident 0
 %define e_type 16
 %define e_machine 18
@@ -61,13 +61,13 @@ start:
 	mov	ds,ax
 	mov	ax,dataseg
 	mov	es,ax
+	mov [0],dl
 	mov byte[drvnum],dl
-
+	
 	mov ax,[rotentcnt]
 	xor dx,dx
 	mov bx,16
 	div bx
-
 .longdiv.end:
 	mov cl,byte[numfats]
 	xor ch,ch
@@ -83,9 +83,9 @@ start:
 	cmp cl,readsize
 	jae .intoprotectmode
 	call read1sector
-	add word[packet.off],72*512
-	add dword[packet.lba],72
-	add cl,72
+	add word[packet.seg],92*512/16
+	add dword[packet.lba],92
+	add cl,92
 	jmp .lba_read_loop
 .chs:
 	mov bl,2*18
@@ -170,7 +170,7 @@ read1sector:
 	ret
 .hard:
 	mov ah,42h
-	mov dl,80h
+	mov dl,[drvnum]
 	mov si,packet
 	int 13h
 	ret
@@ -256,7 +256,7 @@ read: db 0
 packet:
 	db	10h
 	db	0
-	dw	72
+	dw	92
 .off:
 	dw	0
 .seg:

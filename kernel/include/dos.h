@@ -198,7 +198,7 @@ bool SetDrive(unsigned char *name);
 unsigned int GetDriveCode(unsigned char *name);
 bool DriveSemaphoreTake(unsigned int drive_code);
 void DriveSemaphoreGive(unsigned int drive_code);
-int disk_Size(char drive);
+unsigned int disk_Size(char drive);
 void Disk_Read(unsigned int lba, unsigned int number, void *buffer, char drive);
 void Disk_Write(unsigned int lba, unsigned int number, void *buffer,
                 char drive);

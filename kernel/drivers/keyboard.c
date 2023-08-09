@@ -158,25 +158,15 @@ void inthandler21(int* esp) {
     return;
   }
   // 快捷键处理
-  extern int app_task_num;  // 现在运行的程序（HIGHTEXTMODE模式下）
   if (data == 0x3b && !shift) {
     // 仅仅按下F1
-    if (running_mode == POWERINTDOS) {
-      for (int i = 1; get_task(i) != 0; i++) {
-        if (get_task(i)->TTY->vram == 0xB8000 && get_task(i)->app == 1) {
-          // printf("Break EIP:%08x",esp[1]);
-          //  POWERINTDOS模式下找到现在运行的程序（掌握TTY屏幕主导权 & 是程序）
-          KILLAPP0(0xff, i);  // 0xff是快捷键结束程序的便条
-          return;
-        }
-      }
-
-    } else {
-      if (app_task_num != -1) {  // 有程序在运行
-        KILLAPP0(0xff, app_task_num);
+    for (int i = 1; get_task(i) != 0; i++) {
+      if (get_task(i)->TTY == now_tty() && get_task(i)->app == 1) {
+        // 找到现在运行的程序（掌握TTY屏幕主导权 & 是程序）
+        KILLAPP0(0xff, i);  // 0xff是快捷键结束程序的便条
+        return;
       }
     }
-
     io_sti();
     return;
   } else if (data >= 0x3b && data <= 0x47 && shift) {
@@ -214,16 +204,12 @@ void inthandler21(int* esp) {
   for (int i = 1; i < tasknum + 1; i++) {
     // 按下键通常处理
     struct TASK* task = get_task(i);  // 每个进程都处理一遍
-    if (task->sleep == 1 || task->fifosleep)
-      // 如果进程正在休眠
+    if (task->sleep || task->fifosleep || task->lock)
+      // 如果进程正在休眠或被锁了
       continue;
     // 一般进程
-    // printk("Send packet to %s ID %d\n",task->name,Get_Tid(task));
     fifo8_put(task_get_key_fifo(task), data + e0_flag);
-    // printk(
-    //    "TASKNUM:%d TASK NAME:%s TASK ID:%d TASK FIFO:%08x STATUS:%d
-    //    DATA:%c\n", tasknum, task->name, Get_Tid(task), TaskGetKeyfifo(task),
-    //    fifo8_status(TaskGetKeyfifo(task)), data);
+	printk("%02x %s\n",data+e0_flag,task->name);
   }
   io_sti();
   return;

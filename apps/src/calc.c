@@ -2,11 +2,6 @@
 #include <string.h>  //导入string.h
 #include <rand.h>    //导入rand.h
 
-//字符串转数字
-int atoi(char *str)
-{
-    return strtol(str, NULL, 10);
-}
 
 /*数据栈*/
 struct shuju   //struct结构体构建栈 

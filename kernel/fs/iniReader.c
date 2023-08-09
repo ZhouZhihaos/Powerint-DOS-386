@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 // 替换字符串
-char* replace(char* str, char* old, char* new) {
+char *replace(char *str, char *old, char *new) {
   char *ret, *r;
   int i, count = 0;
   int newlen = strlen(new);
@@ -11,7 +11,7 @@ char* replace(char* str, char* old, char* new) {
     if (strncmp(&str[i], old, oldlen) == 0)
       count++;
   }
-  ret = (char*)malloc(i + count * (newlen - oldlen) + 1);
+  ret = (char *)malloc(i + count * (newlen - oldlen) + 1);
   if (ret == NULL)
     return NULL;
   r = ret;
@@ -27,8 +27,8 @@ char* replace(char* str, char* old, char* new) {
   return ret;
 }
 
-int ReadIni_GetSectionForCount(char* IniFile, int count, char* result) {
-  char* p = IniFile;
+int ReadIni_GetSectionForCount(char *IniFile, int count, char *result) {
+  char *p = IniFile;
   for (int i = 0, c = 0, j = 0; i < strlen(IniFile); i++) {
     if (IniFile[i] == '[') {
       c++;
@@ -39,18 +39,16 @@ int ReadIni_GetSectionForCount(char* IniFile, int count, char* result) {
         result[j++] = IniFile[i];
       } else {
         result[j] = '\0';
-        return i + 1;  // 运行正常 返回index
+        return i + 1; // 运行正常 返回index
       }
     }
   }
   // 程序如果执行到这里，说明是没找到，或者出错
   return -1;
 }
-int ReadIni_GetValueForName(char* IniFile,
-                            char* name,
-                            char* section,
-                            char* result) {
-  char* p = IniFile;
+int ReadIni_GetValueForName(char *IniFile, char *name, char *section,
+                            char *result) {
+  char *p = IniFile;
   char buf[500];
   for (int i = 0; ReadIni_GetNameForCount(IniFile, i, section, buf) != 1; i++) {
     //		printf("\n%s\n",buf);
@@ -101,10 +99,8 @@ int ReadIni_GetValueForName(char* IniFile,
   }
   return 1;
 }
-int ReadIni_GetNameForCount(char* IniFile,
-                            int count,
-                            char* section,
-                            char* result) {
+int ReadIni_GetNameForCount(char *IniFile, int count, char *section,
+                            char *result) {
   char buf[500];
   int flag = 0, adr;
   for (int i = 1; ReadIni_GetSectionForCount(IniFile, i, buf) != -1; i++) {
@@ -134,7 +130,7 @@ int ReadIni_GetNameForCount(char* IniFile,
     if (j == count) {
       //			printf("Got It! %d\n",i);
       while (IniFile[i] == '#' || IniFile[i] == ' ' ||
-             IniFile[i] == '\t')  // 注释
+             IniFile[i] == '\t') // 注释
       {
         for (; (IniFile[i] == ' ' || IniFile[i] == '\t') && i < strlen(IniFile);
              i++)

@@ -20,7 +20,6 @@ LOADERPATH = ../Loader/out/
 
 MAKE     = make -r
 NASM     = nasm
-FATTOOLS = $(FATTOOLSPATH)fattools
 RULEFILE = make.rul
 COPY     = copy
 DEL      = rm
@@ -58,62 +57,130 @@ default :
 
 $(OUTPATH)boot.bin : $(BOOTPATH)boot.asm Makefile
 	$(NASM) $(BOOTPATH)boot.asm -o $(OUTPATH)boot.bin
+$(OUTPATH)boot_pfs.bin : $(BOOTPATH)boot_pfs.asm Makefile
+	$(NASM) $(BOOTPATH)boot_pfs.asm -o $(OUTPATH)boot_pfs.bin
 $(OUTPATH)boot32.bin : $(BOOTPATH)boot32.asm Makefile
 	$(NASM) $(BOOTPATH)boot32.asm -o $(OUTPATH)boot32.bin
 
 $(OUTPATH)kernel.bin : $(OBJS_BOOTPACK) Makefile
 	ld -m elf_i386 -static -Ttext 0x280000 -e KernelMain $(OBJS_BOOTPACK) -o $(OUTPATH)kernel.bin
-Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot32.bin Makefile
-	$(FATTOOLS) -file $(IMGPATH)Powerint_DOS_386.img \
-		-format $(OUTPATH)boot.bin 12 \
-		-copy $(LOADERPATH)dosldr.bin dosldr.bin \
-		-copy $(OUTPATH)kernel.bin kernel.bin \
-		-copy $(RESPATH)autoexec.bat autoexec.bat \
-		-copy $(RESPATH)env.cfg env.cfg \
-		-copy $(OUTPATH)boot.bin boot.bin \
-		-copy $(OUTPATH)boot32.bin boot32.bin \
-		-copy $(RESPATH)setup.bat setup.bat \
-		-copy $(APPSOUTPATH)setup1.bin setup1.bin \
-		-copy $(APPSOUTPATH)CREUS.bin creus.bin \
-		-copy $(APPSOUTPATH)bainian.bin bainian.bin \
-		-mkdir other \
-		-copy $(FONTPATH)font.bin other/font.bin \
-		-copy $(FONTPATH)HZK16 other/HZK16 \
-		-copy $(APPSOUTPATH)copy.bin other/copy.bin \
-		-copy $(APPSOUTPATH)uname.bin other/uname.bin \
-		-copy $(RESPATH)coin.wav other/coin.wav
-	$(FATTOOLS) -file $(IMGPATH)Disk3.img \
-		-format $(OUTPATH)boot.bin 12 \
-		-copy $(APPSOUTPATH)ttf.bin ttf.bin \
-		-copy $(RESPATH)font.ttf font.ttf \
-		-copy $(APPSOUTPATH)image.bin image.bin \
-		-copy $(APPSOUTPATH)c4.bin c4.bin \
-		-copy $(APPSOUTPATH)luac.bin luac.bin
-	$(FATTOOLS) -file $(IMGPATH)res.img \
-		-format $(OUTPATH)boot.bin 12 \
-		-copy $(RESPATH)hello.nas hello.nas \
-		-copy $(RESPATH)coin.wav coin.wav \
-		-copy $(RESPATH)test.wav test.wav \
-		-copy $(RESPATH)desktop.jpg desktop.jpg \
-		-copy $(RESPATH)huaji.jpg huaji.jpg \
-		-copy $(RESPATH)load.jpg load.jpg \
-		-copy $(RESPATH)io.bas io.bas \
-		-copy $(RESPATH)shot.png shot.png \
-		-copy $(RESPATH)shot1.png shot1.png \
-		-copy $(RESPATH)test.htm test.htm \
-		-copy $(RESPATH)test1.htm test1.htm \
-		-copy $(RESPATH)yee.bmp yee.bmp \
-		-copy $(RESPATH)fib.lua fib.lua \
-		-copy $(RESPATH)guess.lua guess.lua \
-		-copy $(RESPATH)gobang.lua gobang.lua \
-		-copy $(RESPATH)bainian.lua bainian.lua \
-		-copy $(RESPATH)studnet.lua student.lua \
-		-copy $(RESPATH)asm.lua asm.lua \
-		-copy $(RESPATH)chinese.txt chinese.txt \
-		-copy $(RESPATH)bf.txt bf.txt \
-		-copy ../apps/src/c4.c c4.c
 
-
+make_img:
+	qemu-img create $(IMGPATH)Powerint_DOS_386.img 1474560
+	qemu-img create $(IMGPATH)Disk2.img 1474560
+	qemu-img create $(IMGPATH)Disk3.img 1474560
+	qemu-img create $(IMGPATH)res.img 1474560
+	qemu-img create $(IMGPATH)tcc.img 1474560
+	mformat -f 1440 -B $(OUTPATH)boot.bin -i $(IMGPATH)Powerint_DOS_386.img
+	mformat -f 1440 -B $(OUTPATH)boot.bin -i $(IMGPATH)Disk2.img
+	mformat -f 1440 -B $(OUTPATH)boot.bin -i $(IMGPATH)Disk3.img
+	mformat -f 1440 -B $(OUTPATH)boot.bin -i $(IMGPATH)res.img
+	mformat -f 1440 -B $(OUTPATH)boot.bin -i $(IMGPATH)tcc.img
+	
+Mimg : $(OUTPATH)kernel.bin $(OUTPATH)boot.bin $(OUTPATH)boot_pfs.bin $(OUTPATH)boot32.bin Makefile
+	$(MAKE) make_img
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(LOADERPATH)dosldr.bin ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(OUTPATH)kernel.bin ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(RESPATH)autoexec.bat ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(RESPATH)env.cfg ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(OUTPATH)boot.bin ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(OUTPATH)boot32.bin ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(OUTPATH)boot_pfs.bin ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(RESPATH)setup.bat ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(APPSOUTPATH)setup1.bin ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(APPSOUTPATH)CREUS.bin ::
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(APPSOUTPATH)bainian.bin ::
+		mmd -i $(IMGPATH)Powerint_DOS_386.img other
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(FONTPATH)font.bin ::/other
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(FONTPATH)HZK16 ::/other
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(APPSOUTPATH)copy.bin ::/other
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(APPSOUTPATH)uname.bin ::/other
+		mcopy -i $(IMGPATH)Powerint_DOS_386.img $(RESPATH)coin.wav ::/other
+		
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)aigobang.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)snake.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)RandNum.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)bf.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)copy.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)basic.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)lua.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)cale.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)bitz.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)editor.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)calc.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)clock.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)pwsh.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(RESPATH)editor.mst ::
+		mcopy -i $(IMGPATH)Disk2.img $(RESPATH)make.rul ::
+		mcopy -i $(IMGPATH)Disk2.img $(BIDPATH)nask.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(BIDPATH)obj2bim.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(APPSOUTPATH)bim2hrb.bin ::
+		mcopy -i $(IMGPATH)Disk2.img $(BIDPATH)plib.lib ::
+		
+		mcopy -i $(IMGPATH)Disk3.img $(APPSOUTPATH)ttf.bin ::
+		mcopy -i $(IMGPATH)Disk3.img $(RESPATH)font.ttf ::
+		mcopy -i $(IMGPATH)Disk3.img $(APPSOUTPATH)image.bin ::
+		mcopy -i $(IMGPATH)Disk3.img $(APPSOUTPATH)c4.bin ::
+		mcopy -i $(IMGPATH)Disk3.img $(APPSOUTPATH)lox.bin ::
+		mcopy -i $(IMGPATH)Disk3.img $(APPSOUTPATH)luac.bin ::
+		mcopy -i $(IMGPATH)Disk3.img $(BIDPATH)litenes.bin ::
+		mcopy -i $(IMGPATH)Disk3.img $(BIDPATH)5.NES ::
+		
+		mcopy -i $(IMGPATH)res.img $(RESPATH)hello.nas ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)coin.wav ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)test.wav ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)desktop.jpg ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)huaji.jpg ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)load.jpg ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)io.bas ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)shot.png ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)shot1.png ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)test.htm ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)test1.htm ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)yee.bmp ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)fib.lua ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)guess.lua ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)gobang.lua ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)bainian.lua ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)student.lua ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)asm.lua ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)chinese.txt ::
+		mcopy -i $(IMGPATH)res.img $(RESPATH)bf.txt ::
+		mcopy -i $(IMGPATH)res.img ../apps/src/c4.c ::
+		
+		mmd -i $(IMGPATH)tcc.img tcc
+		mmd -i $(IMGPATH)tcc.img tcc/lib
+		mmd -i $(IMGPATH)tcc.img tcc/crt
+		mmd -i $(IMGPATH)tcc.img tcc/include
+		mmd -i $(IMGPATH)tcc.img tcc/inst
+		mcopy -i $(IMGPATH)tcc.img $(APPSOUTPATH)tcc.bin ::
+		mcopy -i $(IMGPATH)tcc.img $(APPSOUTPATH)tccinst.bin ::
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)src/tcc/crti.c ::
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)libp.a ::/tcc/lib
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)libtcc1.a ::/tcc/inst
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/arg.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/assert.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/ctype.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/ctypes.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/errno.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/fcntl.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/features.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/inttypes.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/limits.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/locale.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/math.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/net.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/rand.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/setjmp.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/stdarg.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/stdbool.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/stddef.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/stdint.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/stdio.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/stdlib.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/string.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/syscall.h ::/tcc/include
+		mcopy -i $(IMGPATH)tcc.img $(APPSPATH)include/time.h ::/tcc/include
 # 运行程序
 
 img_run :
@@ -126,7 +193,7 @@ img_run :
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
-	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 2048
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -hda disk.img -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/tcc.img -boot a -m 2048 -enable-kvm
 full :
 	$(MAKE) -C $(DOSPATH)
 	$(MAKE) -C $(IOPATH)
@@ -139,7 +206,7 @@ full :
 	$(MAKE) -C $(MSTPATH)
 	$(MAKE) Mimg
 run:
-	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512
+	qemu-system-i386 -d in_asm -no-reboot -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512
 full_run:
 	$(MAKE) -C $(DOSPATH)
 	$(MAKE) -C $(IOPATH)
@@ -150,7 +217,7 @@ full_run:
 	$(MAKE) -C $(NETPATH)
 	$(MAKE) -C $(APPSPATH)
 	$(MAKE) Mimg
-	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512
+	qemu-system-i386 -net nic,model=pcnet -net user -serial stdio -device sb16 -device floppy -fda ./img/Powerint_DOS_386.img -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -hdb ./img/Disk2.img -hdc ./img/Disk3.img -hdd ./img/res.img -boot a -m 512 -enable-kvm
 clean :
 	rm obj/*
 	$(MAKE) -C $(APPSPATH) clean

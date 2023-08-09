@@ -13,6 +13,9 @@ extern "C" {
 #define SEEK_CUR 1
 #define SEEK_END 2
 #define BUFSIZ (4096*2)
+#include <syscall.h>
+#define putchar putch
+#define getchar getch
 typedef struct FILE {
   unsigned int mode;
   unsigned int fileSize;
@@ -47,6 +50,9 @@ int ferror(FILE *stream);
 int getc(FILE *stream);
 int sscanf(const char * s, const char * fmt, ...);
 int snprintf(char * s, unsigned n, const char *fmt, ...);
+int scanf(const char * fmt, ...);
+uint32_t fileno(FILE *fp);
+void rewind(FILE *stream);
 #ifdef __cplusplus
 }
 #endif

@@ -123,7 +123,7 @@ void Disk_Read(unsigned int lba, unsigned int number, void *buffer,
     }
   }
 }
-int disk_Size(char drive) {
+unsigned int disk_Size(char drive) {
   unsigned char drive1 = drive;
   if (have_vdisk(drive1)) {
     int indx = drive1 - 'A';

@@ -48,30 +48,16 @@ void DOSLDR_MAIN() {
   init_vfs(); 
   init_floppy();
   Register_fat_fileSys();
+  reg_pfs();
   ide_initialize(0x1F0, 0x3F6, 0x170, 0x376, 0x000);
   bool flags_once = false;
   char default_drive;
   unsigned int default_drive_number;
   if (!flags_once) {
-    if (memcmp((void *)"FAT12   ", (void *)0x7c00 + BS_FileSysType, 8) == 0 ||
-        memcmp((void *)"FAT16   ", (void *)0x7c00 + BS_FileSysType, 8) == 0) {
-      if (*(unsigned char *)(0x7c00 + BS_DrvNum) >= 0x80) {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BS_DrvNum) - 0x80 + 0x02;
-      } else {
-        default_drive_number = *(unsigned char *)(0x7c00 + BS_DrvNum);
-      }
-    } else if (memcmp((void *)"FAT32   ",
-                      (void *)0x7c00 + BPB_Fat32ExtByts + BS_FileSysType,
-                      8) == 0) {
-      if (*(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) >= 0x80) {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum) - 0x80 +
-            0x02;
-      } else {
-        default_drive_number =
-            *(unsigned char *)(0x7c00 + BPB_Fat32ExtByts + BS_DrvNum);
-      }
+    if (*(unsigned char *)(0x7c00) >= 0x80) {
+      default_drive_number = *(unsigned char *)(0x7c00) - 0x80 + 0x02;
+    } else {
+      default_drive_number = *(unsigned char *)(0x7c00);
     }
     default_drive = default_drive_number + 0x41;
     flags_once = true;
@@ -87,6 +73,10 @@ void DOSLDR_MAIN() {
   path[0] = NowTask()->drive;
   printf("Load file:%s\n", path);
   FILE *fp = fopen(path, "rb");
+  if(fp == NULL) {
+    printf("DOSLDR can't find kernel.bin in Drive %c",path[0]);
+    for(;;);
+  }
   // printf("fp = %08x\n%d\n",fp, fp->size);
   uint32_t sz = fsz(path);
   unsigned char *s = malloc(sz);

@@ -8,6 +8,9 @@ extern "C" {
 void mysrand(unsigned seed); //设置随机数种子
 int myrand(void);            //获取随机数
 int RAND(void);              //使用时钟获取的随机数（可作为随机数种子使用）
+
+#define rand myrand
+#define srand mysrand
 #ifdef __cplusplus
 }
 #endif

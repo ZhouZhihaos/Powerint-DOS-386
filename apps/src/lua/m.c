@@ -90,6 +90,7 @@
 #include "lutf8lib.c"
 #include "liolib.c"
 #include "linit.c"
+#include "loslib.c"
 #endif
 
 /* lua */
@@ -810,7 +811,7 @@ static int pmain (lua_State *L) {
   luaopen_base(L);
   luaL_setfuncs(L, my_lib_bsp, 0);
   luaL_requiref(L, "pio", open_io, 1);
-  luaL_requiref(L, "os", open_os, 1);
+  //luaL_requiref(L, "os", open_os, 1);
   luaL_openlibs(L);  /* open standard libraries */
   createargtable(L, argv, argc, script);  /* create table 'arg' */
   lua_gc(L, LUA_GCGEN, 0, 0);  /* GC in generational mode */

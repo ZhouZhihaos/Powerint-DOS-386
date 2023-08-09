@@ -1,6 +1,6 @@
 #include <string.h>
 #include <syscall.h>
-#define All_Kernel_files_count 8
+#define All_Kernel_files_count 10
 #define All_App_files_count 30
 #define All_Res_files_count 21
 #define Line_X 205
@@ -114,7 +114,6 @@ void setState(char* msg) {
   T_DrawBox(0, 24, 80, 1, 0x70);
 }
 int main() {
-  // SwitchToText8025_BIOS();
   system("cls");
   system("color 1f");
   Box(0, 0, 80, 24);
@@ -133,7 +132,34 @@ int main() {
   }
   Set_Loading(0);
   setState("Install: Format Disk");
-  if (!format('C')) {
+  Box(34, 4, 11, 5);
+  goto_xy(35, 5);
+  print("Choose fs");
+  goto_xy(35, 6);
+  print("FAT");
+  goto_xy(35, 7);
+  print("PFS");
+  T_DrawBox(35 ,6, 9, 1, 0x4f);
+  T_DrawBox(35 ,7, 9, 1, 0x0f);
+  char *fs_choice = malloc(4);
+  strcpy(fs_choice, "FAT");
+  for (;;) {
+    int i = getch();
+	if (i == '\n') {
+	  break;
+	} else if (i == -1) {
+      T_DrawBox(35 ,6, 9, 1, 0x4f);
+      T_DrawBox(35 ,7, 9, 1, 0x0f);
+	  strcpy(fs_choice, "FAT");
+	} else if (i == -2) {
+      T_DrawBox(35 ,6, 9, 1, 0x0f);
+      T_DrawBox(35 ,7, 9, 1, 0x4f);
+	  strcpy(fs_choice, "PFS");
+	}
+  }
+  putSpace(34, 4, 11, 5);
+  T_DrawBox(34, 4, 11, 5, 0x1f);
+  if (!format('C', fs_choice)) {
     OKMsg("Disk Read Error.");
     system("color 07");
     system("cls");
@@ -180,8 +206,14 @@ int main() {
   Set_Loading(
       (int)((float)((float)(CopyFilesCount) / (float)All_Kernel_files_count) *
             100.0));
+  setState("Install System --- Copy file: boot_pfs.bin");
+  Copy("A:\\boot_pfs.bin", "boot_pfs.bin");
+  CopyFilesCount++;
+  Set_Loading(
+      (int)((float)((float)(CopyFilesCount) / (float)All_Kernel_files_count) *
+            100.0));
   setState("Install System --- mkdir other");
-  mkdir("OTHER");
+  mkdir("other");
   setState("Install System --- Copy file: other/font.bin");
   Copy("A:\\other\\font.bin", "other/font.bin");
   CopyFilesCount++;
@@ -190,6 +222,12 @@ int main() {
             100.0));
   setState("Install System --- Copy file: other/hzk16");
   Copy("A:\\OTHER\\HZK16", "other/hzk16");
+  CopyFilesCount++;
+  Set_Loading(
+      (int)((float)((float)(CopyFilesCount) / (float)All_Kernel_files_count) *
+            100.0));
+  setState("Install System --- Copy file: other/uname.bin");
+  Copy("A:\\other\\uname.bin", "other/uname.bin");
   CopyFilesCount++;
   Set_Loading(
       (int)((float)((float)(CopyFilesCount) / (float)All_Kernel_files_count) *
@@ -247,7 +285,7 @@ int main() {
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
               100.0));
                   setState("Copy Apps --- Copy file: bin/bim2hrb.bin");
-    Copy("A:\\PLIB.LIB", "PLIB.LIB");
+    Copy("A:\\PLIB.LIB", "plib.lib");
     CopyFilesCount++;
     Set_Loading(
         (int)((float)((float)(CopyFilesCount) / (float)All_App_files_count) *
@@ -535,40 +573,16 @@ int main() {
           (int)((float)((float)(CopyFilesCount) / (float)All_Res_files_count) *
                 100.0));
     }
-    Set_Loading(0);
-    setState("Config --- mkdir path.sys");
-    mkfile("env.cfg");
-    Set_Loading(50);
-    setState("Config --- Write path.sys");
-    Edit_File("env.cfg", "\"path\" = \"C:\\BIN;C:\\;\"", 22, 0);
-    Set_Loading(100);
-    OKMsg("Press Enter to Reboot Your computer.");
-    system("reboot");
-    for (;;)
-      ;
-  } else {
-    system("cls");
-    system("color 07");
-    print("Press Any key to reboot your computer...");
-    getch();
-    system("reboot");
-    for (;;)
-      ;
   }
-  // sleep(500);
-  //  Set_Loading(5);
-  //  sleep(500);
-  //  Set_Loading(25);
-  //  sleep(500);
-  //  Set_Loading(35);
-  //  sleep(500);
-  //  Set_Loading(55);
-  //  sleep(500);
-  //  Set_Loading(75);
-  //  sleep(500);
-  //  Set_Loading(85);
-  //  sleep(500);
-  //  Set_Loading(100);
+  Set_Loading(0);
+  setState("Config --- Create env.cfg");
+  mkfile("env.cfg");
+  Set_Loading(50);
+  setState("Config --- Write env.cfg");
+  Edit_File("env.cfg", "\"path\" = \"C:\\bin;C:;\"", 22, 0);
+  Set_Loading(100);
+  OKMsg("Press Enter to Reboot Your computer.");
+  system("reboot");
   for (;;)
     ;
 }

@@ -78,6 +78,15 @@ void page_free_one(void *p) {
   pages[get_page_from_line_address((int)p)].flag = 0;
   pages[get_page_from_line_address((int)p)].task_id = 0;
 }
+unsigned get_shell_tid(struct TASK *task) {
+  if (task->app == 0) {
+    return get_tid(task);
+  }
+  if (task->app == 1) {
+    return get_shell_tid(task->thread.father);
+  }
+  return 0;
+}
 int find_kpage(int line, int n) {
   int free = 0;
   // 找一个连续的线性地址空间
@@ -90,7 +99,7 @@ int find_kpage(int line, int n) {
     if (free == n) {
       for (int j = line - n; j != line + 1; j++) {
         pages[j].flag = 1;
-        pages[j].task_id = current_task()->sel / 8 - 103;
+        pages[j].task_id = get_shell_tid(current_task());
       }
       line -= n - 1;
       break;

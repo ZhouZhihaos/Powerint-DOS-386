@@ -67,7 +67,6 @@
 /*
 * The GNU C compiler also allows 'long long int'
 */
-#if !defined(__STRICT_ANSI__) && defined(__GNUC__)
 #define LONG_LONG_MAX 9223370L
 #define LONG_LONG_MIN (-LONG_LONG_MAX-1)
 #define ULONG_LONG_MAX (2ULL * LONG_LONG_MAX + 1)
@@ -79,5 +78,4 @@
 #define _I64_MIN LONG_LONG_MIN
 #define _I64_MAX LONG_LONG_MAX
 #define _UI64_MAX ULONG_LONG_MAX
-#endif /* Not Strict ANSI and GNU C compiler */
 #endif /* not _LIMITS_H_ */

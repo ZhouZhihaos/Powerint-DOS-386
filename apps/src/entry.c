@@ -1,7 +1,8 @@
 #include <arg.h>
 #include <stdio.h>
 #include <syscall.h>
-int main(int argc, char** argv);
+int main(int argc, char **argv);
+void init_env();
 void init_mem();
 void Main() {
   // 初始化stdio stderr
@@ -13,13 +14,17 @@ void Main() {
   stdout->mode = WRITE;
   stderr->buffer = NULL;
   stderr->mode = WRITE;
-  stdin->buffer = NULL;
+  stdin->buffer = (char *)malloc(1024);
+  stdin->fileSize = -1;
+  stdin->bufferSize = 1024;
+  stdin->p = 0;
   stdin->mode = READ;
-  char* buf = (char*)malloc(1024);
-  char** argv;
+  char *buf = (char *)malloc(1024);
+  char **argv;
   GetCmdline(buf);
+  init_env();
   // printf("buf = %s\n", buf);
-  argv = malloc(sizeof(char*) * (Get_Argc(buf) + 1));
+  argv = malloc(sizeof(char *) * (Get_Argc(buf) + 1));
   for (int i = 0; i <= Get_Argc(buf); i++) {
     argv[i] = malloc(128);
   }

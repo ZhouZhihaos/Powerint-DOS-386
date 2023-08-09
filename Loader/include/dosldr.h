@@ -4,6 +4,7 @@
 #define page_free page_free
 #define page_malloc_one() page_malloc(4)
 typedef unsigned int size_t;
+typedef unsigned int uintptr_t;
 #define NULL 0
 #define bool int
 #define true 1
@@ -201,19 +202,18 @@ struct ListCtl {
 struct List {
   struct ListCtl *ctl;
   struct List *prev;
-  int val;
+  uintptr_t val;
   struct List *next;
 };
 typedef struct List List;
 
-void AddVal(int val, struct List* Obj);
-struct List* FindForCount(int count, struct List* Obj);
-void DeleteVal(int count, struct List* Obj);
-struct List* NewList();
-void Change(int count, struct List* Obj, int val);
-int GetLastCount(struct List* Obj);
-void DeleteList(struct List* Obj);
-
+void AddVal(uintptr_t val, struct List *Obj);
+struct List *FindForCount(size_t count, struct List *Obj);
+void DeleteVal(size_t count, struct List *Obj);
+struct List *NewList();
+void Change(size_t count, struct List *Obj, uintptr_t val);
+int GetLastCount(struct List *Obj);
+void DeleteList(struct List *Obj);
 typedef struct FILE {
   unsigned int mode;
   unsigned int fileSize;

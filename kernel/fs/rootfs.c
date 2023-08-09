@@ -1,52 +1,44 @@
 #include <dos.h>
 
 // do nothing
-static void Read(char drive,
-                 unsigned char* buffer,
-                 unsigned int number,
+static void Read(char drive, unsigned char *buffer, unsigned int number,
                  unsigned int lba) {
   uint32_t **buf = (uint32_t *)buffer;
   **buf = 1;
   printf("[dev fs]don't try to read!\n");
 }
-static void Write(char drive,
-                  unsigned char* buffer,
-                  unsigned int number,
+static void Write(char drive, unsigned char *buffer, unsigned int number,
                   unsigned int lba) {
   printf("[dev fs]don't try to write!\n");
 }
 static bool dev_check(uint8_t disk_number) {
   uint32_t **b = page_malloc(512);
   *b = page_malloc(4);
-  uint32_t *bmp  = *b;
+  uint32_t *bmp = *b;
 
-  Disk_Read(0,1,b,disk_number);
-  if(*b != bmp) {
+  Disk_Read(0, 1, b, disk_number);
+  if (*b != bmp) {
     return false;
   }
-  if(**b) {
+  if (**b) {
     printk("this.\n");
-    page_free(b,512);
-    page_free(*b,4);
+    page_free(b, 512);
+    page_free(*b, 4);
     return true;
   } else {
     printk("false.\n");
-    page_free(b,512);
-    page_free(*b,4);
+    page_free(b, 512);
+    page_free(*b, 4);
     return false;
   }
 }
 
-static void dev_copy_cache(struct vfs_t *dest, struct vfs_t *src) {
-  return;
-}
+static void dev_copy_cache(struct vfs_t *dest, struct vfs_t *src) { return; }
 static void dev_init(struct vfs_t *vfs, uint8_t disk_number) {
   printf("init dev fs.\n");
   return;
 }
-static void dev_cd(struct vfs_t *vfs, char *dictName) {
-  return;
-}
+static void dev_cd(struct vfs_t *vfs, char *dictName) { return; }
 // -----
 void init_devfs() {
   vdisk vd;

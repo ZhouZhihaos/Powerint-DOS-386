@@ -5,9 +5,6 @@ void clean(char* s, int l) {
     s[i] = 0;
   }
 }
-int atoi(char* str) {
-  return strtol(str, NULL, 10);
-}
 int Week(int yy, int mm, int dd) {
   int year = yy;  //因为定义的是全局变量 所以就需要定义新变量来传递值
   int month = mm;  //当然 你也可以定义在main函数内然后用&引用传递

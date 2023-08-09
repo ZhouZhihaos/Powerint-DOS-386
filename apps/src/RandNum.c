@@ -1,10 +1,6 @@
 #include <syscall.h>
 #include <rand.h>
 #include <string.h>
-int atoi(char *str)
-{
-    return strtol(str, NULL, 10);
-}
 int main(int argc,char **argv)
 {
     print("Rand Num Game V1.0\n");

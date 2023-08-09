@@ -17,7 +17,7 @@ typedef long ssize_t;
 #endif
 typedef unsigned short mode_t;
 
-int open(const char *pathname, int flags, mode_t mode);
+int open(const char *pathname, int flags, ...);
 ssize_t write(int fd, const void *buf, size_t count);
 ssize_t read(int fd, void *buf, size_t count);
 off_t lseek(int fd, off_t offset, int whence);

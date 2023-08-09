@@ -2,13 +2,14 @@ NASM = nasm
 OBJS_PACK = ./out/entry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
 			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj ./out/time.obj ./out/posix.obj
 OBJS_PACK_CPP = ./out/CppEntry.obj ./out/syscall.obj ./out/rand.obj ./out/arg.obj \
-			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj
+			./out/mouse.obj ./out/math.obj ./out/libc.obj ./out/net_syscall.obj ./out/time.obj
 MST_LIB = ./out/mst.obj ./out/list.obj
-build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) Makefile
+build : $(OBJS_PACK) $(OBJS_GUI) ./out/CppEntry.obj  $(MST_LIB) Makefile
+	ar rv libp.a $(OBJS_PACK)
 	@python3 build.py bainian $(OBJS_PACK)
 	@python3 build.py bitz $(OBJS_PACK)
 	@python3 build.py calc $(OBJS_PACK)
-	@python3 build.py AIGOBANG $(OBJS_PACK)
+	@python3 build.py aigobang $(OBJS_PACK)
 	@python3 build.py RandNum $(OBJS_PACK)
 	@python3 build.py cale $(OBJS_PACK)
 	@python3 build.py pfn $(OBJS_PACK)
@@ -34,6 +35,9 @@ build : $(OBJS_PACK) $(OBJS_GUI) $(OBJS_PACK_CPP) $(MST_LIB) Makefile
 	@python3 build.py image $(OBJS_PACK)
 	@python3 build.py uname $(OBJS_PACK)
 	@python3 build.py bim2hrb $(OBJS_PACK)
+	@python3 build.py lox $(OBJS_PACK)
+	@python3 build.py tcc $(OBJS_PACK)
+	@python3 build.py tccinst $(OBJS_PACK)
 	@python3 build.py msttest $(OBJS_PACK) $(MST_LIB)
 clean :
 	rm out/*

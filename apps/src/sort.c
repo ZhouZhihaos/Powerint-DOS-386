@@ -26,10 +26,6 @@ void quickSort(int *number, int first, int last) {
         quickSort(number, j + 1, last);
     }
 }
-int atoi(char *str)
-{
-    return strtol(str, NULL, 10);
-}
 int main(int argc,char **argv) // entry
 {
     if(argc < 2)

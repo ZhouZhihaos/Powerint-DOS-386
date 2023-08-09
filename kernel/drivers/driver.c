@@ -6,6 +6,9 @@
 #include <drivers.h>
 #include <dos.h>
 struct driver_ctl* drv_ctl;
+struct TASK* start_drv(char* cmdline) {
+  return NULL;
+}
 void init_driver() {
   drv_ctl = (struct driver_ctl*)page_malloc(sizeof(struct driver_ctl));
   // printk("drv_ctl=%08x\n", drv_ctl);

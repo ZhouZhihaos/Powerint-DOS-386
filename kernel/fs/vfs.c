@@ -264,8 +264,7 @@ bool vfs_change_disk(uint8_t drive) {
   if (vfs_now != NULL) {
     while (FindForCount(1, vfs_now->path) != NULL) {
       // printk("%d\n",vfs_now->path->ctl->all);
-      page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val,
-                 255);
+      page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
     }
     free(vfs_now->cache);
@@ -293,7 +292,7 @@ bool vfs_change_disk_for_task(uint8_t drive, struct TASK *task) {
     while (FindForCount(1, vfs(task)->path) != NULL) {
       //("%d\n",vfs_now->path->ctl->all);
       page_free(FindForCount(vfs(task)->path->ctl->all, vfs(task)->path)->val,
-                 255);
+                255);
       DeleteVal(vfs(task)->path->ctl->all, vfs(task)->path);
     }
     free(vfs(task)->cache);
@@ -335,9 +334,26 @@ void vfs_getPath(char *buffer) {
   }
   delete_char(buffer, pos - 1);
 }
-bool vfs_check_mount(uint8_t drive) {
-  return drive2fs(drive) ? true : false;
+void vfs_getPath_no_drive(char *buffer) {
+  char *path;
+  List *l;
+  buffer[0] = 0;
+  PDEBUG("%s", vfs_now->FSName);
+  int pos = strlen(buffer);
+  int i;
+  for (i = 1; FindForCount(i, vfs_now->path) != NULL; i++) {
+    l = FindForCount(i, vfs_now->path);
+    path = (char *)l->val;
+    insert_char(buffer, pos, '/');
+    pos++;
+    insert_str(buffer, path, pos);
+    pos += strlen(path);
+  }
+  if(i == 1) {
+    insert_char(buffer, 0, '/');
+  }
 }
+bool vfs_check_mount(uint8_t drive) { return drive2fs(drive) ? true : false; }
 void init_vfs() {
   PDEBUG("init vfs..........");
   for (int i = 0; i < 26; i++) {

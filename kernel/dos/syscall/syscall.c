@@ -5,21 +5,78 @@ void kbd_press(uint8_t dat, uint32_t task) {
 void kbd_up(uint8_t dat, uint32_t task) {
   fifo8_put(get_task(task)->Ukeyfifo, dat);
 }
+void *malloc_app_heap(void *alloc_addr, uint32_t ds_base, uint32_t size) {
+  memory *mem = (memory *)alloc_addr;
+  mem->freeinf = (freeinfo *)((char *)mem->freeinf + ds_base);
+  freeinfo *fi;
+  for (fi = mem->freeinf; fi->next != NULL; fi = fi->next) {
+    fi->next = (freeinfo *)((char *)fi->next + ds_base);
+    fi->f = (free_member *)((char *)fi->f + ds_base);
+  }
+  fi->f = (free_member *)((char *)fi->f + ds_base);
+  char *p = (char *)mem_alloc(mem, size + sizeof(int)) + ds_base;
+  *(int *)p = size;
+  p += sizeof(int);
+  fi->f = (free_member *)((char *)fi->f - ds_base);
+  for (fi = mem->freeinf; ((freeinfo *)((char *)fi + ds_base))->next != NULL;
+       fi = ((freeinfo *)((char *)fi + ds_base))->next) {
+    fi->next = (freeinfo *)((char *)fi->next - ds_base);
+    fi->f = (free_member *)((char *)fi->f - ds_base);
+  }
+  mem->freeinf = (freeinfo *)((char *)mem->freeinf - ds_base);
+  return (void *)p;
+}
+void free_app_heap(void *alloc_addr, uint32_t ds_base, void *p) {
+  memory *mem = (memory *)alloc_addr;
+  mem->freeinf = (freeinfo *)((char *)mem->freeinf + ds_base);
+  freeinfo *fi;
+  for (fi = mem->freeinf; fi->next != NULL; fi = fi->next) {
+    fi->next = (freeinfo *)((char *)fi->next + ds_base);
+    fi->f = (free_member *)((char *)fi->f + ds_base);
+  }
+  fi->f = (free_member *)((char *)fi->f + ds_base);
+  uint32_t size = ((int *)p)[-1] + sizeof(int);
+  mem_free(mem, (void *)(&((int *)p)[-1] - ds_base), size);
+  fi->f = (free_member *)((char *)fi->f - ds_base);
+  for (fi = mem->freeinf; ((freeinfo *)((char *)fi + ds_base))->next != NULL;
+       fi = ((freeinfo *)((char *)fi + ds_base))->next) {
+    fi->next = (freeinfo *)((char *)fi->next - ds_base);
+    fi->f = (free_member *)((char *)fi->f - ds_base);
+  }
+  mem->freeinf = (freeinfo *)((char *)mem->freeinf - ds_base);
+  return;
+}
+memory *get_shell_mm(struct TASK *task) {
+  if (task->app == 0) {
+    return task->mm;
+  }
+  return get_shell_mm(task->thread.father);
+}
+void *get_shell_alloc_addr(struct TASK *task) {
+  if (task->app == 0) {
+    return task->alloc_addr;
+  }
+  return get_shell_alloc_addr(task->thread.father);
+}
+int get_shell_alloc_size(struct TASK *task) {
+  if (task->app == 0) {
+    return task->alloc_size;
+  }
+  return get_shell_alloc_size(task->thread.father);
+}
 enum { EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX };
-void inthandler36(int edi,
-                  int esi,
-                  int ebp,
-                  int esp,
-                  int ebx,
-                  int edx,
-                  int ecx,
+void inthandler36(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx,
                   int eax) {
   // PowerintDOS API
-  struct TASK* task = current_task();
+  struct TASK *task = current_task();
   int ds_base = task->ds_base;
-  int alloc_addr = task->alloc_addr;  // malloc地址
+  void *alloc_addr = task->alloc_addr;
   int alloc_size = task->alloc_size;
-  int* reg = &eax + 1; /* eax后面的地址*/
+  memory *current_mm = task->mm;
+  task->mm = get_shell_mm(task);
+  task->alloc_addr = get_shell_alloc_addr(task);
+  task->alloc_size = get_shell_alloc_size(task);
+  int *reg = &eax + 1; /* eax后面的地址*/
                        /*强行改写通过PUSHAD保存的值*/
   /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
   /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
@@ -42,20 +99,20 @@ void inthandler36(int edi,
       } else if (ebx == 0x06) {
         Draw_Px(ecx, edx, esi);
       } else if (ebx == 0x07) {
-        Draw_Str(ecx, edx, (char*)esi + ds_base, edi);
+        Draw_Str(ecx, edx, (char *)esi + ds_base, edi);
       } else if (ebx == 0x08) {
-        PrintChineseStr(ecx, edx, edi, (unsigned char*)esi + ds_base);
+        PrintChineseStr(ecx, edx, edi, (unsigned char *)esi + ds_base);
       }
     }
   } else if (eax == 0x04) {
     gotoxy(edx, ecx);
   } else if (eax == 0x05) {
     // printf("get it! %08x\n",edx);
-    print((char*)edx + ds_base);
+    print((char *)edx + ds_base);
   } else if (eax == 0x06) {
     sleep(edx);
   } else if (eax == 0x08) {
-    reg[EDX] = (alloc_addr - ds_base);
+    reg[EDX] = ((int)alloc_addr - ds_base);
   } else if (eax == 0x09) {
     reg[EDX] = alloc_size;
   } else if (eax == 0x0c) {
@@ -67,19 +124,18 @@ void inthandler36(int edi,
     beep(ebx, ecx, edx);
   } else if (eax == 0x0f) {
     if (running_mode == POWERINTDOS) {
-      struct TASK* task = current_task();
+      struct TASK *task = current_task();
       int i, mx1 = task->mx, my1 = task->my, bufx = task->mx * 8,
              bufy = task->my * 16;
       int bx = mx1;
       int by = my1;
       int bmp =
-          *(char*)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
+          *(char *)(task->TTY->vram + by * task->TTY->xsize * 2 + bx * 2 + 1);
       mouse_ready(&mdec);
       for (;;) {
         if (fifo8_status(task_get_mouse_fifo(task)) == 0) {
           io_stihlt();
         } else {
-          // printk("mx = %d my = %d\n",task->mx,task->my);
           i = fifo8_get(task_get_mouse_fifo(task));
           if (mouse_decode(&mdec, i) != 0) {
             if (task->TTY != now_tty() && task->TTY->using1 == 1) {
@@ -123,12 +179,12 @@ void inthandler36(int edi,
             }
             task->mx = bufx / 8;
             task->my = bufy / 16;
-            *(char*)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
-                     1) = bmp;
-            bmp = *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                           task->mx * 2 + 1);
-            *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-                     task->mx * 2 + 1) = ~bmp;
+            *(char *)(task->TTY->vram + my1 * task->TTY->xsize * 2 + mx1 * 2 +
+                      1) = bmp;
+            bmp = *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                            task->mx * 2 + 1);
+            *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                      task->mx * 2 + 1) = ~bmp;
             //  mouse_sleep(&mdec);
             //  sleep(50);
             mouse_ready(&mdec);
@@ -136,8 +192,8 @@ void inthandler36(int edi,
         }
       }
       mouse_sleep(&mdec);
-      *(char*)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
-               task->mx * 2 + 1) = bmp;
+      *(char *)(task->TTY->vram + task->my * task->TTY->xsize * 2 +
+                task->mx * 2 + 1) = bmp;
       task->mx = mx1;
       task->my = my1;
     }
@@ -147,80 +203,82 @@ void inthandler36(int edi,
     } else if (ebx == 0x02) {
       reg[EDX] = input_char_inSM();
     } else if (ebx == 0x03) {
-      input((char*)(edx + ds_base), ecx);
+      input((char *)(edx + ds_base), ecx);
     }
   } else if (eax == 0x19) {
-    command_run((char*)(edx + ds_base));
+    command_run((char *)(edx + ds_base));
   } else if (eax == 0x1a) {
     if (ebx == 0x01) {
-      int fsize = vfs_filesize((char*)(edx + ds_base));
-      if (fsize != -1) {
-        reg[EDX] = fsize;
-      } else {
-        reg[EDX] = -1;
-      }
+      int fsize = vfs_filesize((char *)(edx + ds_base));
+      reg[EDX] = fsize;
     } else if (ebx == 0x02) {
-      int fsize = vfs_filesize((char*)(ds_base + edx));
-      FILE* fp = fopen((char*)(ds_base + edx), "r");
-      char* p = (char*)fp->buffer;
-      char* q = (char*)ds_base + esi;
-      int i;
+      int fsize = vfs_filesize((char *)(ds_base + edx));
+      FILE *fp = fopen((char *)(ds_base + edx), "r");
+      char *p = (char *)fp->buffer;
+      char *q = (char *)ds_base + esi;
       if (fp != 0) {
-        for (i = 0; i != fsize; i++) {
-          q[i] = p[i];
-        }
+        memcpy(q, p, fsize);
         fclose(fp);
         reg[EAX] = 1;
       } else {
-        reg[EAX] = 1;
+        reg[EAX] = 0;
       }
     } else if (ebx == 0x03) {
-      char* FilePath = (char*)(ds_base + edx);
+      char *FilePath = (char *)(ds_base + edx);
       vfs_createfile(FilePath);
     } else if (ebx == 0x04) {
-      char* FilePath = (char*)(ds_base + edx);
-      char buf[270];
-      sprintf(buf, "mkdir %s", FilePath);
-      command_run(buf);
+      char *FilePath = (char *)(ds_base + edx);
+      vfs_createdict(FilePath);
     } else if (ebx == 0x05) {
-      printk("EDIT_FILE\n");
-      char* FilePath = (char*)(ds_base + edx);
-      char* Ptr = (char*)ds_base + esi;
+      char *FilePath = (char *)(ds_base + edx);
+      char *Ptr = (char *)ds_base + esi;
       int length = ecx;
       int offset = edi;
       EDIT_FILE(FilePath, Ptr, length, offset);
+    } else if (ebx == 0x06) {
+      char *Path = (char *)(ds_base + edx);
+      struct List *file_list = vfs_listfile(Path);
+      int number;
+      for (number = 1; FindForCount(number, file_list) != NULL; number++)
+        ;
+      char *p = (char *)malloc_app_heap(alloc_addr, ds_base,
+                                        number * sizeof(vfs_file));
+      for (int i = 1; FindForCount(i, file_list) != NULL; i++) {
+        memcpy((void *)(p + sizeof(vfs_file) * (i - 1)),
+               (void *)FindForCount(i, file_list)->val, sizeof(vfs_file));
+      }
+      memset((void *)(p + (number - 1) * sizeof(vfs_file)), 0,
+             sizeof(vfs_file));
+      reg[EAX] = (int)p - ds_base;
     }
   } else if (eax == 0x1b) {
     int i;
-    char* bes = (char*)(edx + ds_base);
+    char *bes = (char *)(edx + ds_base);
     while (!task->line)
       ;
     for (i = 0; i < strlen(task->line); i++) {
       bes[i] = task->line[i];
     }
     bes[i] = 0;
-    // printf("%s\n",bes);
   } else if (eax == 0x1c) {
-    reg[EAX] = Copy((char*)(edx + ds_base), (char*)(esi + ds_base));
+    reg[EAX] = Copy((char *)(edx + ds_base), (char *)(esi + ds_base));
   } else if (eax == 0x1d) {
     reg[EAX] = kbhit();
   } else if (eax == 0x1e) {
     while (FindForCount(1, vfs_now->path) != NULL) {
-      // printk("%d\n",vfs_now->path->ctl->all);
       page_free(FindForCount(vfs_now->path->ctl->all, vfs_now->path)->val, 255);
       DeleteVal(vfs_now->path->ctl->all, vfs_now->path);
-      extern struct TASK* mouse_use_task;
+      extern struct TASK *mouse_use_task;
       if (mouse_use_task == task) {
         mouse_sleep(&mdec);
       }
     }
     DeleteList(vfs_now->path);
-    page_free((void*)vfs_now, sizeof(vfs_t));
+    page_free((void *)vfs_now, sizeof(vfs_t));
     extern uint32_t app_num;
     app_num--;
-    printk("at the last\n");
     task->running = 0;
-    task_wake_up(get_task(1));  // 别睡了，起来干活
+    task_wake_up(get_task(1)); // 别睡了，起来干活
     task_sleep(current_task());
     while (1)
       ;
@@ -230,7 +288,7 @@ void inthandler36(int edi,
       if (ebx == 0x01) {
         reg[EAX] = SwitchVBEMode(ecx);
       } else if (ebx == 0x02) {
-        reg[EAX] = check_vbe_mode(ecx, (struct VBEINFO*)VBEINFO_ADDRESS);
+        reg[EAX] = check_vbe_mode(ecx, (struct VBEINFO *)VBEINFO_ADDRESS);
       } else if (ebx == 0x05) {
         reg[EAX] = set_mode(ecx, edx, 32);
       }
@@ -249,9 +307,9 @@ void inthandler36(int edi,
     if (ebx == 0x03) {
       task->forever = 1;
     } else if (ebx == 0x04) {
-      send_ipc_message(ecx, (void*)(ds_base + edx), esi, asynchronous);
+      send_ipc_message(ecx, (void *)(ds_base + edx), esi, asynchronous);
     } else if (ebx == 0x05) {
-      get_ipc_message((void*)(ds_base + edx), ecx);
+      get_ipc_message((void *)(ds_base + edx), ecx);
     } else if (ebx == 0x06) {
       reg[EAX] = ipc_message_len(ecx);
     } else if (ebx == 0x07) {
@@ -259,17 +317,17 @@ void inthandler36(int edi,
     } else if (ebx == 0x08) {
       reg[EAX] = have_msg();
     } else if (ebx == 0x09) {
-      get_msg_all((void*)(ds_base + edx));
+      get_msg_all((void *)(ds_base + edx));
     } else if (ebx == 0x0a) {
-      io_cli();  // 防止任务提前运行
+      io_cli(); // 防止任务提前运行
       extern int init_ok_flag;
       init_ok_flag = 0;
-      struct TASK* t = register_user_task((char*)(ecx + ds_base), task->level,
+      struct TASK *t = register_user_task((char *)(ecx + ds_base), task->level,
                                           task->cs_start, edx, task->ss_start,
                                           task->ss_start, esi);
       init_ok_flag = 1;
-      t->alloc_addr = task->alloc_addr;
-      t->alloc_size = task->alloc_size;
+      t->alloc_addr = alloc_addr;
+      t->alloc_size = alloc_size;
       t->app = 1;
       t->forever = task->forever;
       t->tss.esp0 = (int)page_malloc(64 * 1024) + 64 * 1024;
@@ -277,24 +335,24 @@ void inthandler36(int edi,
       t->cs_base = task->cs_base;
       t->ds_base = task->ds_base;
       t->nfs = task->nfs;
-      char* kfifo = (char*)page_malloc(sizeof(struct FIFO8));
-      char* mfifo = (char*)page_malloc(sizeof(struct FIFO8));
-      char* kbuf = (char*)page_malloc(4096);
-      char* mbuf = (char*)page_malloc(4096);
-      fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
-      fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
-      task_set_fifo(t, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
+      char *kfifo = (char *)page_malloc(sizeof(struct FIFO8));
+      char *mfifo = (char *)page_malloc(sizeof(struct FIFO8));
+      char *kbuf = (char *)page_malloc(4096);
+      char *mbuf = (char *)page_malloc(4096);
+      fifo8_init((struct FIFO8 *)kfifo, 4096, (unsigned char *)kbuf);
+      fifo8_init((struct FIFO8 *)mfifo, 4096, (unsigned char *)mbuf);
+      task_set_fifo(t, (struct FIFO8 *)kfifo, (struct FIFO8 *)mfifo);
       t->is_child = 1;
       t->TTY = task->TTY;
       t->thread.father = task;
       // command_run("tl");
-      io_sti();  // 让任务运行
+      io_sti(); // 让任务运行
     } else if (ebx == 0x0b) {
       task_lock();
     } else if (ebx == 0x0c) {
       task_unlock();
     } else if (ebx == 0x0d) {
-      task_delete((struct TASK*)ecx);
+      task_delete((struct TASK *)ecx);
     }
   } else if (eax == 0x23) {
     if (ebx == 0x01) {
@@ -305,12 +363,11 @@ void inthandler36(int edi,
   } else if (eax == 0x24) {
     // 计时器API
     if (ebx == 0x00) {
-      // printf("Task:%s timer init\n",task->name);
       io_cli();
       task->timer = timer_alloc();
-      task->timer->fifo = (struct FIFO8*)page_malloc(sizeof(struct FIFO8));
+      task->timer->fifo = (struct FIFO8 *)page_malloc(sizeof(struct FIFO8));
       task->timer->fifo->buf =
-          (unsigned char*)page_malloc(50 * sizeof(unsigned char));
+          (unsigned char *)page_malloc(50 * sizeof(unsigned char));
       fifo8_init(task->timer->fifo, 50, task->timer->fifo->buf);
       timer_init(task->timer, task->timer->fifo, 1);
       io_sti();
@@ -323,12 +380,12 @@ void inthandler36(int edi,
         reg[EAX] = 0;
       }
     } else if (ebx == 0x03) {
-      page_free((void*)task->timer->fifo->buf, 50 * sizeof(unsigned char));
-      page_free((void*)task->timer->fifo, sizeof(struct FIFO8));
+      page_free((void *)task->timer->fifo->buf, 50 * sizeof(unsigned char));
+      page_free((void *)task->timer->fifo, sizeof(struct FIFO8));
       timer_free(task->timer);
     }
   } else if (eax == 0x25) {
-    reg[EAX] = vfs_format(ebx, "FAT");
+    reg[EAX] = vfs_format(ebx, (char *)(ecx + ds_base));
   } else if (eax == 0x26) {
     // CMOS时间
     if (ebx == 0x00) {
@@ -348,31 +405,30 @@ void inthandler36(int edi,
     }
   } else if (eax == 0x27) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      // printk("x =%d y=%d color =%08x\n", ebx, ecx, edx);
-      SDraw_Px((vram_t*)vbe->vram, ebx, ecx, edx, vbe->xsize);
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      SDraw_Px((vram_t *)vbe->vram, ebx, ecx, edx, vbe->xsize);
     }
   } else if (eax == 0x28) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* r = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *r = (vram_t *)vbe->vram;
       reg[EAX] = r[ebx * vbe->xsize + ecx];
     }
   } else if (eax == 0x29) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* r = (vram_t*)vbe->vram;
-      memcpy((void*)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *r = (vram_t *)vbe->vram;
+      memcpy((void *)(ebx + ds_base), r, vbe->xsize * vbe->ysize * 4);
     }
   } else if (eax == 0x2a) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* r = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *r = (vram_t *)vbe->vram;
       int x = ebx;
       int y = ecx;
       int w = edx;
       int h = esi;
-      unsigned int* buffer = (unsigned int*)(edi + ds_base);
+      unsigned int *buffer = (unsigned int *)(edi + ds_base);
       for (int i = x; i < x + w; i++) {
         for (int j = y; j < y + h; j++) {
           r[j * vbe->xsize + i] = buffer[(j - y) * w + (i - x)];
@@ -384,11 +440,10 @@ void inthandler36(int edi,
       int a, c;
       a = 0;
       c = ebx;
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* vram_buffer = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *vram_buffer = (vram_t *)vbe->vram;
       for (; c <= vbe->ysize; c++, a++) {
         for (int i = 0; i < vbe->xsize; i++) {
-          // VBEDraw_Px(i,a,VBEGet_Px(i,c));
           vram_buffer[a * vbe->xsize + i] = vram_buffer[c * vbe->xsize + i];
         }
       }
@@ -396,10 +451,10 @@ void inthandler36(int edi,
     }
   } else if (eax == 0x2c) {
     if (running_mode == POWERINTDOS) {
-      struct VBEINFO* vbe = (struct VBEINFO*)VBEINFO_ADDRESS;
-      vram_t* vram_buffer = (vram_t*)vbe->vram;
+      struct VBEINFO *vbe = (struct VBEINFO *)VBEINFO_ADDRESS;
+      vram_t *vram_buffer = (vram_t *)vbe->vram;
       (void)(vram_buffer);
-      SDraw_Box((vram_t*)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
+      SDraw_Box((vram_t *)vbe->vram, ebx, ecx, edx, esi, edi, vbe->xsize);
     }
   } else if (eax == 0x2d) {
     reg[EAX] = ntp_time_stamp(get_year(), get_mon_hex(), get_day_of_month(),
@@ -412,8 +467,8 @@ void inthandler36(int edi,
   } else if (eax == 0x30) {
     current_task()->Pkeyfifo = malloc(sizeof(struct FIFO8));
     current_task()->Ukeyfifo = malloc(sizeof(struct FIFO8));
-    unsigned char* kbuf = (unsigned char*)page_malloc(4096);
-    unsigned char* mbuf = (unsigned char*)page_malloc(4096);
+    unsigned char *kbuf = (unsigned char *)page_malloc(4096);
+    unsigned char *mbuf = (unsigned char *)page_malloc(4096);
     fifo8_init(current_task()->Pkeyfifo, 4096, kbuf);
     fifo8_init(current_task()->Ukeyfifo, 4096, mbuf);
     current_task()->keyboard_press = kbd_press;
@@ -427,21 +482,36 @@ void inthandler36(int edi,
   } else if (eax == 0x34) {
     reg[EAX] = fifo8_get(current_task()->Ukeyfifo);
   } else if (eax == 0x35) {
-    char* new_buf = (char*)page_malloc(task->gdt_data[1] + ebx);
-    memcpy(new_buf, (void*)task->gdt_data[2], task->gdt_data[1]);
-    page_free((void*)task->gdt_data[2], task->gdt_data[1]);
+    char *new_buf = (char *)page_malloc(task->gdt_data[1] + ebx);
+    memcpy(new_buf, (void *)task->gdt_data[2], task->gdt_data[1]);
+    page_free((void *)task->gdt_data[2], task->gdt_data[1]);
     task->gdt_data[2] = (uint32_t)new_buf;
     task->gdt_data[1] = task->gdt_data[1] + ebx;
-    set_segmdesc((struct SEGMENT_DESCRIPTOR*)task->gdt_data[0],
+    set_segmdesc((struct SEGMENT_DESCRIPTOR *)task->gdt_data[0],
                  task->gdt_data[1], task->gdt_data[2], task->gdt_data[3]);
     if (task->cs_base == task->ds_base) {
-      set_segmdesc((struct SEGMENT_DESCRIPTOR*)task->gdt_data[4],
+      set_segmdesc((struct SEGMENT_DESCRIPTOR *)task->gdt_data[4],
                    task->gdt_data[1], task->gdt_data[2], AR_CODE32_ER | 3 << 5);
       task->cs_base = (uint32_t)new_buf;
     }
     task->ds_base = (uint32_t)new_buf;
-    task->alloc_size = task->gdt_data[1];
-    task->alloc_addr = (void*)new_buf;
+    alloc_size = task->gdt_data[1];
+    alloc_addr = (void *)new_buf;
+  } else if (eax == 0x36) {
+    char *s = env_read(ebx + ds_base);
+    if (s) {
+      strcpy(ecx + ds_base, s);
+      reg[EAX] = 1;
+    } else {
+      reg[EAX] = 0;
+    }
+  } else if (eax == 0x37) {
+    vfs_getPath_no_drive(ebx+ds_base);
+  } else if (eax == 0x38) {
+    reg[EAX] = task->nfs->drive;
   }
+  task->mm = current_mm;
+  task->alloc_addr = alloc_addr;
+  task->alloc_size = alloc_size;
   return;
 }

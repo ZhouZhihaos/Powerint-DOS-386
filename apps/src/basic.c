@@ -119,10 +119,6 @@ static const struct keyword_token keywords[] = {
   {"end", TOKENIZER_END},
   {NULL, TOKENIZER_ERROR}
 };
-int atoi(char *str)
-{
-    return strtol(str, NULL, 10);
-}
 /*---------------------------------------------------------------------------*/
 static int
 singlechar(void)

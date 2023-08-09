@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <syscall.h>
+#include <rand.h>
+#include <time.h>
+#include <limits.h>
+#define SZ_4K				(0x00001000)
 typedef unsigned int uintmax_t;
 typedef uintmax_t uintptr_t;
 typedef int intmax_t;
@@ -17,6 +21,8 @@ int vsnprintf(char* buf, size_t n, const char* fmt, va_list ap);
 #define LONG_MIN (-LONG_MAX - 1)
 #define INT_MAX 0x7fffffff
 #define INT_MIN (-LONG_MAX - 1)
+
+
 // strcmp
 int strcmp(const char* s1, const char* s2) {
   while (*s1 == *s2) {
@@ -1308,6 +1314,12 @@ int vsprintf(char* buf, const char* fmt, va_list args) {
   int rv = vsnprintf(buf, ~(size_t)0, fmt, args);
   return rv;
 }
+int vfprintf(FILE *fp, const char* fmt, va_list args) {
+  char buf[1000];
+  int rv = vsnprintf(buf, ~(size_t)0, fmt, args);
+  fputs(buf,fp);
+  return rv;
+}
 // sprintf
 int sprintf(char* buf, const char* fmt, ...) {
   va_list ap;
@@ -1339,7 +1351,7 @@ void strrev(char* s) {
 int printf(const char* format, ...) {
   va_list ap;
   int rv;
-  char buf[1000];
+  char buf[5000];
   va_start(ap, format);
   rv = vsnprintf(buf, ~(size_t)0, format, ap);
   puts(buf);
@@ -2593,92 +2605,34 @@ double fmod(double x, double y) {
   ux.i = uxi;
   return ux.f;
 }
-uint64_t __udivmoddi4(uint64_t num, uint64_t den, uint64_t* rem_p) {
-  uint64_t quot = 0, qbit = 1;
+int64_t __divmoddi4(int64_t num, int64_t den, int64_t * rem_p)
+{
+    int64_t quot = 0, qbit = 1;
 
-  if (den == 0) {
-    __asm__ __volatile__("int $0");
-    return 0; /* If trap returns... */
-  }
-
-  /* Left-justify denominator and count shift */
-  while ((int64_t)den >= 0) {
-    den <<= 1;
-    qbit <<= 1;
-  }
-
-  while (qbit) {
-    if (den <= num) {
-      num -= den;
-      quot += qbit;
+    if (den == 0) {
+	__asm__ __volatile__ ("int $0");
+	return 0;		/* If trap returns... */
     }
-    den >>= 1;
-    qbit >>= 1;
-  }
 
-  if (rem_p)
-    *rem_p = num;
+    /* Left-justify denominator and count shift */
+    while ((int64_t) den >= 0) {
+	den <<= 1;
+	qbit <<= 1;
+    }
 
-  return quot;
-}
-typedef unsigned int UQItype __attribute__((mode(QI)));
-typedef int SItype __attribute__((mode(SI)));
-typedef unsigned int USItype __attribute__((mode(SI)));
-typedef int DItype __attribute__((mode(DI)));
-typedef unsigned int UDItype __attribute__((mode(DI)));
-#define Wtype SItype
-#define HWtype SItype
-#define DWtype DItype
-#define UWtype USItype
-#define UHWtype USItype
-#define UDWtype UDItype
-#define W_TYPE_SIZE 32
-DWtype __divdi3(DWtype u, DWtype v) {
-  Wtype c = 0;
-  DWtype w;
+    while (qbit) {
+	if (den <= num) {
+	    num -= den;
+	    quot += qbit;
+	}
+	den >>= 1;
+	qbit >>= 1;
+    }
 
-  if (u < 0) {
-    c = ~c;
-    u = -u;
-  }
-  if (v < 0) {
-    c = ~c;
-    v = -v;
-  }
-  w = __udivmoddi4(u, v, NULL);
-  if (c)
-    w = -w;
-  return w;
-}
-// strong_alias (__divdi3, __divdi3_internal)
+    if (rem_p)
+	*rem_p = num;
 
-DWtype __moddi3(DWtype u, DWtype v) {
-  Wtype c = 0;
-  DWtype w;
-
-  if (u < 0) {
-    c = ~c;
-    u = -u;
-  }
-  if (v < 0)
-    v = -v;
-  __udivmoddi4(u, v, (UDWtype*)&w);
-  if (c)
-    w = -w;
-  return w;
-}
-// strong_alias (__moddi3, __moddi3_internal)
-
-UDWtype __udivdi3(UDWtype u, UDWtype v) {
-  return __udivmoddi4(u, v, NULL);
-}
-// strong_alias (__udivdi3, __udivdi3_internal)
-
-UDWtype __umoddi3(UDWtype u, UDWtype v) {
-  UDWtype w;
-
-  __udivmoddi4(u, v, &w);
-  return w;
+    return quot;
 }
 static const double ivln10hi =
                         4.34294481878168880939e-01, /* 0x3fdbcb7b, 0x15200000 */
@@ -3166,10 +3120,18 @@ FILE* fopen(char* filename, char* mode) {
 }
 int fgetc(FILE* stream) {
   if (CANREAD(stream->mode)) {
-    if (stream == stdin) {
-      return getch();
-    }
-    if (stream->p >= stream->fileSize) {
+    if (stream->p >= stream->fileSize || stream->fileSize == -1) {
+      if(stream == stdin) {
+        if(stream->fileSize == -1) {
+          scan(stream->buffer,1024);
+          stream->fileSize = strlen(stream->buffer);
+          stream->p = 0;
+          return fgetc(stream);
+        } else {
+          stream->fileSize = -1;
+          return EOF;
+        }
+      }
       return EOF;
     } else {
       return stream->buffer[stream->p++];
@@ -3993,7 +3955,24 @@ int snprintf(char* s, size_t n, const char* fmt, ...) {
   va_end(ap);
   return ret;
 }
-void getenv() {
+#define MAX_ENV_VARIABLES 100
+#define MAX_ENV_LENGTH 100
+char environment[MAX_ENV_VARIABLES][MAX_ENV_LENGTH];
+void init_env() {
+    for (int i = 0; i < MAX_ENV_LENGTH; i++) {
+    environment[i][0] = 0;
+  }
+}
+char *getenv(char *name) {
+  for (int i = 0; i < MAX_ENV_VARIABLES; i++) {
+    if (!environment[i][0])
+      if (api_get_env(name, environment[i]) != NULL) {
+        char *delim = environment[i];
+        return delim;
+      }
+  }
+
+  // 没有找到匹配的环境变量
   return NULL;
 }
 #define weak __attribute__((__weak__))
@@ -4323,3 +4302,672 @@ double log2(double x) {
 }
 void __dso_handle() {}
 void __cxa_atexit() {}
+uint32_t fileno(FILE *fp) {
+  return (uint32_t)fp;
+}
+char *tmpnam(char *str) {
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static const int length = sizeof(charset) - 1;
+    static const int filename_length = 8;  // 临时文件名长度
+
+    if (str == NULL) {
+        return NULL;
+    }
+
+    srand(clock());
+
+    for (int i = 0; i < filename_length; ++i) {
+        str[i] = charset[rand() % length];
+    }
+    str[filename_length] = '\0';
+
+    return str;
+}
+
+void remove(char *filename) {
+  char *s = (char *)malloc(strlen(filename) + 5);
+  sprintf(s,"del %s",filename);
+  system(s);
+}
+void rename(char *filename1,char *filename2) {
+  char *s = (char *)malloc(strlen(filename1) + strlen(filename2) + 9);
+  sprintf(s,"rename %s %s",filename1,filename2);
+  system(s);
+}
+
+
+static char * aday[] = {
+    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+};
+
+static char * day[] = {
+    "Sunday", "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday"
+};
+
+static char * amonth[] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+
+static char * month[] = {
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+};
+
+static char buf[26];
+
+static int powers[5] = { 1, 10, 100, 1000, 10000 };
+
+static void strfmt(char * str, const char * fmt, ...)
+{
+	int ival, ilen;
+	char *sval;
+	va_list vp;
+
+	va_start(vp, fmt);
+	while (*fmt)
+	{
+		if (*fmt++ == '%')
+		{
+			ilen = *fmt++ - '0';
+			if (ilen == 0)
+			{
+				sval = va_arg(vp, char *);
+				while (*sval)
+					*str++ = *sval++;
+			}
+			else
+			{
+				ival = va_arg(vp, int);
+
+				while (ilen)
+				{
+					ival %= powers[ilen--];
+					*str++ = (char) ('0' + ival / powers[ilen]);
+				}
+			}
+		}
+		else
+			*str++ = fmt[-1];
+	}
+	*str = '\0';
+	va_end(vp);
+}
+
+size_t strftime(char * s, size_t max, const char * fmt, const struct tm * t)
+{
+	int w, d;
+	char *p, *q, *r;
+
+	p = s;
+	q = s + max - 1;
+	while ((*fmt != '\0'))
+	{
+		if (*fmt++ == '%')
+		{
+			r = buf;
+			switch (*fmt++)
+			{
+			case '%':
+				r = "%";
+				break;
+
+			case 'a':
+				r = aday[t->tm_wday];
+				break;
+
+			case 'A':
+				r = day[t->tm_wday];
+				break;
+
+			case 'b':
+				r = amonth[t->tm_mon];
+				break;
+
+			case 'B':
+				r = month[t->tm_mon];
+				break;
+
+			case 'c':
+				strfmt(r, "%0 %0 %2 %2:%2:%2 %4", aday[t->tm_wday],
+						amonth[t->tm_mon], t->tm_mday, t->tm_hour, t->tm_min,
+						t->tm_sec, t->tm_year + 1900);
+				break;
+
+			case 'd':
+				strfmt(r, "%2", t->tm_mday);
+				break;
+
+			case 'H':
+				strfmt(r, "%2", t->tm_hour);
+				break;
+
+			case 'I':
+				strfmt(r, "%2", (t->tm_hour % 12) ? t->tm_hour % 12 : 12);
+				break;
+
+			case 'j':
+				strfmt(r, "%3", t->tm_yday + 1);
+				break;
+
+			case 'm':
+				strfmt(r, "%2", t->tm_mon + 1);
+				break;
+
+			case 'M':
+				strfmt(r, "%2", t->tm_min);
+				break;
+
+			case 'p':
+				r = (t->tm_hour > 11) ? "PM" : "AM";
+				break;
+
+			case 'S':
+				strfmt(r, "%2", t->tm_sec);
+				break;
+
+			case 'U':
+				w = t->tm_yday / 7;
+				if (t->tm_yday % 7 > t->tm_wday)
+					w++;
+				strfmt(r, "%2", w);
+				break;
+
+			case 'W':
+				w = t->tm_yday / 7;
+				if (t->tm_yday % 7 > (t->tm_wday + 6) % 7)
+					w++;
+				strfmt(r, "%2", w);
+				break;
+
+			case 'V':
+				w = (t->tm_yday + 7 - (t->tm_wday ? t->tm_wday - 1 : 6)) / 7;
+				d = (t->tm_yday + 7 - (t->tm_wday ? t->tm_wday - 1 : 6)) % 7;
+
+				if (d >= 4)
+				{
+					w++;
+				}
+				else if (w == 0)
+				{
+					w = 53;
+				}
+				strfmt(r, "%2", w);
+				break;
+
+			case 'w':
+				strfmt(r, "%1", t->tm_wday);
+				break;
+
+			case 'x':
+				strfmt(r, "%3s %3s %2 %4", aday[t->tm_wday], amonth[t->tm_mon],
+						t->tm_mday, t->tm_year + 1900);
+				break;
+
+			case 'X':
+				strfmt(r, "%2:%2:%2", t->tm_hour, t->tm_min, t->tm_sec);
+				break;
+
+			case 'y':
+				strfmt(r, "%2", t->tm_year % 100);
+				break;
+
+			case 'Y':
+				strfmt(r, "%4", t->tm_year + 1900);
+				break;
+
+			case 'Z':
+				r = t->tm_isdst ? "DST" : "GMT";
+				break;
+
+			default:
+				buf[0] = '%';
+				buf[1] = fmt[-1];
+				buf[2] = '\0';
+				if (buf[1] == 0)
+					fmt--;
+				break;
+			}
+			while (*r)
+			{
+				if (p == q)
+				{
+					*q = '\0';
+					return 0;
+				}
+				*p++ = *r++;
+			}
+		}
+		else
+		{
+			if (p == q)
+			{
+				*q = '\0';
+				return 0;
+			}
+			*p++ = fmt[-1];
+		}
+	}
+
+	*p = '\0';
+	return p - s;
+}
+void rewind(FILE *stream) {
+  fseek(stream,0,SEEK_SET);
+}
+int fscanf(FILE * f, const char * fmt, ...)
+{
+	va_list ap;
+	char * buf;
+	int rv;
+
+	buf = malloc(SZ_4K);
+	if(!buf)
+		return 0;
+
+	memset(buf, 0, SZ_4K);
+	fread(buf, 1, SZ_4K, f);
+
+	va_start(ap, fmt);
+	rv = vsscanf(buf, fmt, ap);
+	va_end(ap);
+
+	free(buf);
+	return rv;
+}
+int scanf(const char * fmt, ...)
+{
+	va_list ap;
+	char * buf;
+	int rv;
+
+	buf = malloc(SZ_4K);
+	if(!buf)
+		return 0;
+
+	memset(buf, 0, SZ_4K);
+	fread(buf, 1, SZ_4K, stdin);
+
+	va_start(ap, fmt);
+	rv = vsscanf(buf, fmt, ap);
+	va_end(ap);
+
+	free(buf);
+	return rv;
+}
+char pwd[255];
+
+void getcwd() {
+  api_getcwd(pwd);
+}
+int unlink(const char *pathname) {
+  remove(pathname);
+  return 1;
+}
+unsigned long strtoul(const char *s, char **endptr, int base) {
+    unsigned long result = 0;
+    int sign = 1;
+
+    // 跳过空白字符
+    while (isspace(*s)) {
+        s++;
+    }
+
+    // 检查正负号
+    if (*s == '-' || *s == '+') {
+        sign = (*s++ == '-') ? -1 : 1;
+    }
+
+    // 检查进制前缀
+    if ((base == 0 || base == 16) && s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        base = 16;
+        s += 2;
+    } else if (base == 0 && s[0] == '0') {
+        base = 8;
+        s++;
+    } else if (base == 0) {
+        base = 10;
+    }
+
+    // 转换字符为数字并累加
+    while (isalnum(*s)) {
+        int digit;
+        if (isdigit(*s)) {
+            digit = *s - '0';
+        } else {
+            digit = toupper(*s) - 'A' + 10;
+        }
+
+        if (digit >= base) {
+            break;
+        }
+
+        result = result * base + digit;
+        s++;
+    }
+
+    // 设置结束指针
+    if (endptr != NULL) {
+        *endptr = (char *)s;
+    }
+
+    return sign * result;
+}
+
+float strtof(const char * nptr, char ** endptr)
+{
+	return (float)strtod(nptr, endptr);
+}
+FILE *fdopen(int fd,char *mode) {
+  unsigned int flag = 0;
+  FILE* fp = (FILE*)fd;
+  while (*mode != '\0') {
+    switch (*mode) {
+      case 'a':
+        flag |= APPEND;
+        break;
+      case 'b':
+        break;
+      case 'r':
+        flag |= READ;
+        break;
+      case 'w':
+        flag |= WRITE;
+        break;
+      case '+':
+        flag |= PLUS;
+        break;
+      default:
+        break;
+    }
+    mode++;
+  }
+  fp->mode = flag;
+  return fp;
+}
+
+long long strtoll(const char * nptr, char ** endptr, int base)
+{
+	const char * s;
+	long long acc, cutoff;
+	int c;
+	int neg, any, cutlim;
+
+	/*
+	 * Skip white space and pick up leading +/- sign if any.
+	 * If base is 0, allow 0x for hex and 0 for octal, else
+	 * assume decimal; if base is already 16, allow 0x.
+	 */
+	s = nptr;
+	do {
+		c = (unsigned char) *s++;
+	} while (isspace(c));
+
+	if (c == '-')
+	{
+		neg = 1;
+		c = *s++;
+	}
+	else
+	{
+		neg = 0;
+		if (c == '+')
+			c = *s++;
+	}
+
+	if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X'))
+	{
+		c = s[1];
+		s += 2;
+		base = 16;
+	}
+
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+
+	/*
+	 * Compute the cutoff value between legal numbers and illegal
+	 * numbers.  That is the largest legal value, divided by the
+	 * base.  An input number that is greater than this value, if
+	 * followed by a legal input character, is too big.  One that
+	 * is equal to this value may be valid or not; the limit
+	 * between valid and invalid numbers is then based on the last
+	 * digit.  For instance, if the range for long long is
+	 * [-9223372036854775808..9223372036854775807] and the input base
+	 * is 10, cutoff will be set to 922337203685477580 and cutlim to
+	 * either 7 (neg==0) or 8 (neg==1), meaning that if we have
+	 * accumulated a value > 922337203685477580, or equal but the
+	 * next digit is > 7 (or 8), the number is too big, and we will
+	 * return a range error.
+	 *
+	 * Set any if any 'digits' consumed; make it negative to indicate
+	 * overflow.
+	 */
+
+	switch (base)
+	{
+	case 4:
+		if (neg)
+		{
+			cutlim = LLONG_MIN % 4;
+			cutoff = LLONG_MIN / 4;
+		}
+		else
+		{
+			cutlim = LLONG_MAX % 4;
+			cutoff = LLONG_MAX / 4;
+		}
+		break;
+
+	case 8:
+		if (neg)
+		{
+			cutlim = LLONG_MIN % 8;
+			cutoff = LLONG_MIN / 8;
+		}
+		else
+		{
+			cutlim = LLONG_MAX % 8;
+			cutoff = LLONG_MAX / 8;
+		}
+		break;
+
+	case 10:
+		if (neg)
+		{
+			cutlim = LLONG_MIN % 10;
+			cutoff = LLONG_MIN / 10;
+		}
+		else
+		{
+			cutlim = LLONG_MAX % 10;
+			cutoff = LLONG_MAX / 10;
+		}
+		break;
+
+	case 16:
+		if (neg)
+		{
+			cutlim = LLONG_MIN % 16;
+			cutoff = LLONG_MIN / 16;
+		}
+		else
+		{
+			cutlim = LLONG_MAX % 16;
+			cutoff = LLONG_MAX / 16;
+		}
+		break;
+
+	default:
+		cutoff = neg ? LLONG_MIN : LLONG_MAX;
+		cutlim = cutoff % base;
+		cutoff /= base;
+		break;
+	}
+
+	if (neg)
+	{
+		if (cutlim > 0)
+		{
+			cutlim -= base;
+			cutoff += 1;
+		}
+		cutlim = -cutlim;
+	}
+
+	for (acc = 0, any = 0;; c = (unsigned char) *s++)
+	{
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+
+		if (c >= base)
+			break;
+
+		if (any < 0)
+			continue;
+
+		if (neg)
+		{
+			if (acc < cutoff || (acc == cutoff && c > cutlim))
+			{
+				any = -1;
+				acc = LLONG_MIN;
+				errno = ERANGE;
+			}
+			else
+			{
+				any = 1;
+				acc *= base;
+				acc -= c;
+			}
+		}
+		else
+		{
+			if (acc > cutoff || (acc == cutoff && c > cutlim))
+			{
+				any = -1;
+				acc = LLONG_MAX;
+				errno = ERANGE;
+			}
+			else
+			{
+				any = 1;
+				acc *= base;
+				acc += c;
+			}
+		}
+	}
+
+	if (endptr != 0)
+		*endptr = (char *) (any ? s - 1 : nptr);
+
+	return (acc);
+}
+unsigned long long strtoull(const char * nptr, char ** endptr, int base)
+{
+	const char * s;
+	unsigned long long acc, cutoff;
+	int c;
+	int neg, any, cutlim;
+
+	s = nptr;
+	do {
+		c = (unsigned char) *s++;
+	} while (isspace(c));
+
+	if (c == '-')
+	{
+		neg = 1;
+		c = *s++;
+	}
+	else
+	{
+		neg = 0;
+		if (c == '+')
+			c = *s++;
+	}
+
+	if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X'))
+	{
+		c = s[1];
+		s += 2;
+		base = 16;
+	}
+
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+
+	switch (base)
+	{
+    case 4:
+    	cutoff = ULLONG_MAX / 4;
+        cutlim = ULLONG_MAX % 4;
+        break;
+
+    case 8:
+    	cutoff = ULLONG_MAX / 8;
+        cutlim = ULLONG_MAX % 8;
+        break;
+
+    case 10:
+    	cutoff = ULLONG_MAX / 10;
+        cutlim = ULLONG_MAX % 10;
+        break;
+
+    case 16:
+    	cutoff = ULLONG_MAX / 16;
+        cutlim = ULLONG_MAX % 16;
+        break;
+
+	default:
+		cutoff = ULLONG_MAX / base;
+		cutlim = ULLONG_MAX % base;
+		break;
+	}
+
+	for (acc = 0, any = 0;; c = (unsigned char) *s++)
+	{
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+
+		if (c >= base)
+			break;
+
+		if (any < 0)
+			continue;
+
+		if (acc > cutoff || (acc == cutoff && c > cutlim))
+		{
+			any = -1;
+			acc = ULLONG_MAX;
+			errno = ERANGE;
+		}
+		else
+		{
+			any = 1;
+			acc *= (unsigned long long) base;
+			acc += c;
+		}
+	}
+
+	if (neg && any > 0)
+		acc = -acc;
+
+	if (endptr != 0)
+		*endptr = (char *) (any ? s - 1 : nptr);
+
+	return (acc);
+}
+int atoi(const char * nptr)
+{
+	return (int)strtol(nptr, NULL, 10);
+}

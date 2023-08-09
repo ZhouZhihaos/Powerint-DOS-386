@@ -2,16 +2,16 @@
 GLOBAL putch,putstr,getch,get_mouse,get_xy,goto_xy
 GLOBAL SwitchTo320X200X256,SwitchToText8025,Draw_Char,sleep
 GLOBAL PrintChineseChar,PrintChineseStr,Draw_Str,api_malloc,api_free
-GLOBAL print,scan,system,filesize,api_ReadFile
+GLOBAL print,scan,system,filesize,api_ReadFile,api_get_env
 GLOBAL Draw_Box,Draw_Px,Text_Draw_Box
 GLOBAL input_char_inSM,beep,RAND,GetCmdline,Get_System_Version,Copy,_kbhit
 GLOBAL mkdir,mkfile,Edit_File,SwitchTo320X200X256_BIOS,SwitchToText8025_BIOS
 GLOBAL TaskForever,SendMessage,GetMessage,MessageLength,NowTaskID
-GLOBAL exit,key_press_status,key_up_status,get_key_press,get_key_up,sbrk
+GLOBAL exit,key_press_status,key_up_status,get_key_press,get_key_up,sbrk,api_getcwd
 GLOBAL timer_alloc,timer_settime,timer_out,timer_free,clock,start_keyboard_message
-GLOBAL haveMsg,PhyMemGetByte,GetMessageAll,PhyMemSetByte,format,api_heapsize
+GLOBAL haveMsg,PhyMemGetByte,GetMessageAll,PhyMemSetByte,format,api_heapsize,api_current_drive
 GLOBAL get_hour_hex,get_min_hex,get_sec_hex,get_day_of_month,get_day_of_week,get_mon_hex,get_year,AddThread,init_float
-GLOBAL TaskLock,TaskUnlock,SubThread,set_mode,VBEDraw_Px,VBEGet_Px,VBEGetBuffer,VBESetBuffer,roll,VBEDraw_Box
+GLOBAL TaskLock,TaskUnlock,SubThread,set_mode,VBEDraw_Px,VBEGet_Px,VBEGetBuffer,VBESetBuffer,roll,VBEDraw_Box,listfile
 [SECTION .text]
 putch:
 push	edx
@@ -640,9 +640,12 @@ PhyMemSetByte:
 	ret
 format:
 	push ebx
+	push ecx
 	mov eax,0x25
-	mov ebx,[esp+4+4]
+	mov ebx,[esp+4+8]
+	mov ecx,[esp+8+8]
 	int 36h
+	pop ecx
 	pop ebx
 	ret
 
@@ -953,4 +956,37 @@ sbrk:
 	int 0x36
 	pop eax
 	pop ebx
+	ret
+listfile:
+push	ebx
+push	edx
+mov	eax,0x1a
+mov	ebx,0x06
+mov edx,[ss:esp+4+8]
+int 36h
+pop edx
+pop ebx
+ret
+api_get_env:
+	push ebx
+	push ecx
+	mov eax, 0x36
+	mov ebx, [esp + 4 + 8] ; name
+	mov ecx, [esp + 8 + 8]
+	int 0x36
+	pop ecx
+	pop ebx
+	ret
+api_getcwd:
+	push eax
+	push ebx
+	mov eax,0x37
+	mov ebx,[esp + 4 + 8]
+	int 0x36
+	pop ebx
+	pop eax
+	ret
+api_current_drive:
+	mov eax,0x38
+	int 0x36
 	ret

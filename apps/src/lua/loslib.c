@@ -91,7 +91,7 @@
 #else				/* }{ */
 
 /* ISO C definitions */
-#define l_gmtime(t,r)		((void)(r)->tm_sec, gmtime(t))
+#define l_gmtime(t,r)		((void)(r)->tm_sec, localtime(t))
 #define l_localtime(t,r)	((void)(r)->tm_sec, localtime(t))
 
 #endif				/* } */
@@ -129,7 +129,7 @@
 #else				/* }{ */
 
 /* ISO C definitions */
-#define LUA_TMPNAMBUFSIZE	L_tmpnam
+#define LUA_TMPNAMBUFSIZE	9
 #define lua_tmpnam(b,e)		{ e = (tmpnam(b) == NULL); }
 
 #endif				/* } */
@@ -143,7 +143,8 @@ static int os_execute (lua_State *L) {
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat;
   errno = 0;
-  stat = system(cmd);
+  stat = 0;
+  system(cmd);
   if (cmd != NULL)
     return luaL_execresult(L, stat);
   else {
@@ -386,7 +387,7 @@ static int os_setlocale (lua_State *L) {
      "numeric", "time", NULL};
   const char *l = luaL_optstring(L, 1, NULL);
   int op = luaL_checkoption(L, 2, "all", catnames);
-  lua_pushstring(L, setlocale(cat[op], l));
+  lua_pushstring(L, "the system does not support locale");
   return 1;
 }
 
@@ -399,7 +400,7 @@ static int os_exit (lua_State *L) {
     status = (int)luaL_optinteger(L, 1, EXIT_SUCCESS);
   if (lua_toboolean(L, 2))
     lua_close(L);
-  if (L) exit(status);  /* 'if' to avoid warnings for unreachable 'return' */
+  if (L) exit();  /* 'if' to avoid warnings for unreachable 'return' */
   return 0;
 }
 

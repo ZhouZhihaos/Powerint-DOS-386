@@ -1,8 +1,7 @@
-// （驱动）应用程序和批处理文件的处理函数
+// 应用程序和批处理文件的处理函数
 #include <ELF.h>
 #include <cmd.h>
 #include <dos.h>
-int app_task_num = -1;  // 应用程序的任务号（-1代表没在运行应用程序）
 int run_bat(char* cmdline) {
   // 运行批处理文件
   char* file;
@@ -27,7 +26,7 @@ int run_bat(char* cmdline) {
   if (fsize == -1)  //没找到这个文件
   {
     //加上后缀再试一遍
-    name = strcat(name, ".BAT");
+    name = strcat(name, ".bat");
     fsize = vfs_filesize(name);
   }
   if (fsize == -1) {
@@ -37,7 +36,7 @@ int run_bat(char* cmdline) {
     }
   }
   if (fsize != -1) {
-    if (stricmp(".BAT", &name[strlen(name) - 4]) != 0) {
+    if (stricmp(".bat", &name[strlen(name) - 4]) != 0) {
       page_free(file1, 1024);
       page_free(name, 300);
       return 0;
@@ -52,16 +51,12 @@ int run_bat(char* cmdline) {
         }
         command_run(file1);
         j = 0;
-        int p;
-        (void)(p);
         clean(file1, 1024);
         continue;
       }
       file1[j] = file[i];
       j++;
     }
-    int p;
-    (void)(p);
     command_run(file1);
     fclose(fp);
     page_free(file1, 1024);
@@ -74,17 +69,10 @@ int run_bat(char* cmdline) {
   }
 }
 uint32_t app_num = 0;
-struct TASK* start_drv(char* cmdline) {
-  return NULL;
-}
 int cmd_app(char* cmdline) {
   struct SEGMENT_DESCRIPTOR* gdt = (struct SEGMENT_DESCRIPTOR*)ADR_GDT;
-  char *name, *p, *q,
-      *alloc;  // name:文件名，p:代码段，q:数据段，alloc:分配的内存
+  char *name, *p, *q;  // name:文件名，p:代码段，q:数据段
   unsigned char* stack;  // 用于应用程序系统调用及硬件中断的堆栈
-  struct TASK* app_task;  //任务
-  (void)(app_task);
-  (void)(alloc);
   int i, segsiz, datsiz, dathrb, esp;
   name = (char*)page_malloc(300);  //分配300字节内存
   clean(name, 300);  //清空内存(为了避免脏数据，这里全部填充为0)
@@ -110,7 +98,7 @@ int cmd_app(char* cmdline) {
   if (fsize == -1)  //没找到这个文件
   {
     //加上后缀再试一遍
-    name = strcat(name, ".BIN");
+    name = strcat(name, ".bin");
     fsize = vfs_filesize(name);
   }
   if (fsize == -1) {
@@ -120,13 +108,12 @@ int cmd_app(char* cmdline) {
     }
   }
   if (fsize != -1) {
-    if (stricmp(".BIN", &name[strlen(name) - 4]) != 0) {
+    if (stricmp(".bin", &name[strlen(name) - 4]) != 0) {
       page_free((void*)name, 300);
       return 0;
     }
     // 代码段的物理内存必须是连续的
     FILE* fp = fopen(name, "r");
-    printk("open ok!\n");
     extern int init_ok_flag;
     if (fsize >= 36 && strncmp((char*)fp->buffer + 4, "Hari", 4) == 0)
     // Hari=C, C程序 代码拥有两个段的程序（代码段和数据段）
@@ -168,8 +155,6 @@ int cmd_app(char* cmdline) {
         // printf("%c",p[dathrb + i]);
         q[esp + i] = p[dathrb + i];  //这里通过头数据拷贝数据段数据
       }
-      int n = current_task()->level;
-      (void)(n);
       change_level(current_task(), 3);
       io_cli();
       char* kfifo = (char*)page_malloc(sizeof(struct FIFO8));
@@ -181,6 +166,7 @@ int cmd_app(char* cmdline) {
           register_user_task(name, 1, ((3 + app_num * 2) * 8), 0x1b,
                       ((4 + app_num * 2) * 8), ((4 + app_num * 2) * 8), esp);
       init_ok_flag = 1;
+	  this_task->thread.father = current_task();
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
       this_task->cs_start = this_task->tss.cs;
@@ -200,15 +186,15 @@ int cmd_app(char* cmdline) {
         path = (char*)l->val;
         this_task->nfs->cd(this_task->nfs, path);
       }
-      
       this_task->line = current_task()->line;
       this_task->drive = current_task()->drive;
       this_task->drive_number = current_task()->drive_number;
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
       task_set_fifo(this_task, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
+	  struct tty *tty_backup = current_task()->TTY;
       this_task->TTY = current_task()->TTY;
-      app_task_num = this_task->sel / 8 - 103;
+	  current_task()->TTY = NULL;
       app_num++;
       this_task->forever = 0;
       task_sleep_fifo(current_task());
@@ -227,21 +213,19 @@ int cmd_app(char* cmdline) {
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, kbuf, 4096);
           change_page_task_id(this_task->sel / 8 - 103, mbuf, 4096);
+		  current_task()->TTY = tty_backup;
           change_level(current_task(), now);
           change_level(this_task, 2);
           this_task->app = 0;
           io_sti();
           task_wake_up(current_task());
-          app_task_num = -1;
           print("\n");
-          printk("a task set forever.\n");
           goto end;
         }
       }
-      printk("done.\n");
+	  current_task()->TTY = tty_backup;
       change_level(current_task(), now);
       task_wake_up(current_task());
-      app_task_num = -1;
       page_free((void *)kfifo, sizeof(struct FIFO8));
       page_free((void *)mfifo, sizeof(struct FIFO8));
       page_free((void *)kbuf, 4096);
@@ -252,7 +236,6 @@ int cmd_app(char* cmdline) {
       free(gdt_data);
       print("\n");
     } else if (elf32Validate((Elf32_Ehdr*)fp->buffer)) {
-//  printk("----------ProGram Running Malloc Info-----------");
 #define ELF32_HEAP_SIZE (4 * 1024 * 1024)
 #define ELF32_STACK_SIZE (512 * 1024)
 
@@ -276,8 +259,6 @@ int cmd_app(char* cmdline) {
       gdt_data[4] = gdt + 3 + app_num * 2;
       // printf("size = %08x\n", segsiz - 1 + alloc_data_size);
 
-      int n = current_task()->level;
-      (void)(n);
       change_level(current_task(), 3);
       io_cli();
       char* kfifo = (char*)page_malloc(sizeof(struct FIFO8));
@@ -289,6 +270,7 @@ int cmd_app(char* cmdline) {
                                            entry, ((4 + app_num * 2) * 8),
                                            ((4 + app_num * 2) * 8), alloc_size - ELF32_HEAP_SIZE);
       init_ok_flag = 1;
+	  this_task->thread.father = current_task();
       this_task->cs_base = (int)p;
       this_task->ds_base = (int)q;
       this_task->cs_start = this_task->tss.cs;
@@ -316,8 +298,9 @@ int cmd_app(char* cmdline) {
       fifo8_init((struct FIFO8*)kfifo, 4096, (unsigned char*)kbuf);
       fifo8_init((struct FIFO8*)mfifo, 4096, (unsigned char*)mbuf);
       task_set_fifo(this_task, (struct FIFO8*)kfifo, (struct FIFO8*)mfifo);
+	  struct tty *tty_backup = current_task()->TTY;
       this_task->TTY = current_task()->TTY;
-      app_task_num = this_task->sel / 8 - 103;
+	  current_task()->TTY = NULL;
       app_num++;
       this_task->forever = 0;
       task_sleep_fifo(current_task());
@@ -335,21 +318,19 @@ int cmd_app(char* cmdline) {
                               sizeof(struct FIFO8));
           change_page_task_id(this_task->sel / 8 - 103, kbuf, 4096);
           change_page_task_id(this_task->sel / 8 - 103, mbuf, 4096);
+		  current_task()->TTY = tty_backup;
           change_level(current_task(), now);
           change_level(this_task, 2);
           this_task->app = 0;
           io_sti();
           task_wake_up(current_task());
-          app_task_num = -1;
           print("\n");
-          printk("a task set forever.\n");
           goto end;
         }
       }
-      printk("done.\n");
+	  current_task()->TTY = tty_backup;
       change_level(current_task(), now);
       task_wake_up(current_task());
-      app_task_num = -1;
       page_free((void *)kfifo, sizeof(struct FIFO8));
       page_free((void *)mfifo, sizeof(struct FIFO8));
       page_free((void *)kbuf, 4096);
@@ -360,7 +341,7 @@ int cmd_app(char* cmdline) {
       print("\n");
     } else {
       // 未知的文件类型
-      print("Isn't Powerint DOS 386 Execute File.\n\n");
+      print("Isn't Powerint DOS 386 execute file.\n\n");
     }
   end:
     page_free(name, 300);  //将name字符指针所占用的内存释放

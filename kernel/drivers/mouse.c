@@ -118,24 +118,14 @@ int mouse_decode(struct MOUSE_DEC* mdec, unsigned char dat) {
 }
 // int a = 1;
 void inthandler2c(int* esp) {
-  extern int tasknum;
   unsigned char data;
   io_out8(PIC1_OCW2, 0x64);
   io_out8(PIC0_OCW2, 0x62);
   data = io_in8(PORT_KEYDAT);
-  // printk("data=%02x\n", data);
-  if (mouse_use_task != NULL) {
+  if (mouse_use_task != NULL || !mouse_use_task->sleep ||
+      !mouse_use_task->fifosleep || !mouse_use_task->lock) {
     fifo8_put(task_get_mouse_fifo(mouse_use_task), data);
     task_run(mouse_use_task);
   }
-  // if (mdec.sleep == 0) {
-  //   for (int i = 1; i < tasknum + 1; i++) {
-  //     struct TASK* task = GetTask(i);
-  //     if (task->sleep == 1 || task->fifosleep == 1)
-  //       continue;
-  //     //  printf("task:%s\n",task->name);
-  //     fifo8_put(TaskGetMousefifo(task), data);
-  //   }
-  // }
   return;
 }

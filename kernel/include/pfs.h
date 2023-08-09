@@ -52,6 +52,7 @@ typedef struct pfs pfs_t;
 typedef struct pfs {
   List* file_list;
   List* bitmap;
+  List* bitmap_buffer;
   uint32_t resd_sec_start;
   uint32_t resd_sec_end;
   uint32_t first_sec_of_bitmap;
@@ -60,7 +61,9 @@ typedef struct pfs {
   void (*read_block)(pfs_t* pfs, uint32_t lba, uint32_t numbers, void* buff);
   void (*write_block)(pfs_t* pfs, uint32_t lba, uint32_t numbers, void* buff);
   uint8_t disk_number;
-  uint8_t current_dict_block;
+  uint32_t current_dict_block;
+  int64_t current_bitmap_block;
+  uint8_t *bitmap_buff;
   List * prev_dict_block;
 } pfs_t;
 typedef struct {

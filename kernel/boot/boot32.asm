@@ -2,7 +2,7 @@
 ; Copyright (C) zhouzhihao 2020-2022
 bootseg		equ		7c0h
 dataseg		equ		800h
-readsize	equ		144			; DOSLDR.BIN的大小
+readsize	equ		188			; DOSLDR.BIN的大小
 %define e_ident 0
 %define e_type 16
 %define e_machine 18
@@ -63,6 +63,7 @@ start:
 	mov	ds,ax
 	mov	ax,dataseg
 	mov	es,ax
+	mov [0],dl
 	mov byte[drvnum],dl
 
 	mov al,byte[rootclus]
@@ -79,10 +80,10 @@ start:
 	cmp cl,readsize
 	jae .intoprotectmode
 	call read1sector
-	add word[packet.off],72*512
-	add dword[packet.lba],72
-	add cl,72
-	jmp .lba_read_loop
+	add word[packet.seg],94*512/16
+	add dword[packet.lba],94
+	add cl,94
+jmp .lba_read_loop
 .intoprotectmode:
 	; 1.让CPU支持1M以上内存、设置A20GATE
 	in	al,92h

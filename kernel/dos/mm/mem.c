@@ -416,9 +416,7 @@ void free(void *p) {
   if (p == NULL)
     return;
   int size = *(int *)((char *)p - sizeof(int));
-  if (p >= current_task()->alloc_addr &&
-      (char *)p <=
-          (char *)current_task()->alloc_addr + current_task()->alloc_size) {
+  if (current_task()->mm != NULL && size < 4 * 1024 - sizeof(int)) {
     mem_free(current_task()->mm, (char *)p - sizeof(int), size + sizeof(int));
   } else {
     page_free((char *)p - sizeof(int), size + sizeof(int));

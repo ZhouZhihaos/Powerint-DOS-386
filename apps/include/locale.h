@@ -45,7 +45,8 @@ struct lconv {
 
 char * setlocale(int category, const char * locale);
 struct lconv * localeconv(void);
-
+typedef unsigned locale_t;
+#define CURRENT_LOCALE 0
 #ifdef __cplusplus
 }
 #endif
